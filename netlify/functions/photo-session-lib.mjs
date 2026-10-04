@@ -3,6 +3,7 @@ import { getStore } from "@netlify/blobs";
 
 export const SESSION_MINUTES = 15;
 export const sessionKey = (id) => "sessions/" + id + ".json";
+export const voiceAudioKey = (id, index) => "audio/" + id + "/" + index + ".b64";
 export const nowIso = () => new Date().toISOString();
 export const expiresIso = () => new Date(Date.now() + SESSION_MINUTES * 60000).toISOString();
 export const token = (bytes = 24) => randomBytes(bytes).toString("base64url");
