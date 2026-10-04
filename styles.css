@@ -1008,3 +1008,14 @@ button{border:0;cursor:pointer}
 .platformWall .devicePrivacyCard .platformStatus{
   color:color-mix(in srgb,var(--brand) 78%,white)
 }
+
+
+.publicSourceOpen{
+  margin-top:12px;
+  padding-top:10px;
+  border-top:1px solid rgba(255,255,255,.06);
+  color:#84defd;
+  font-size:.6rem;
+  font-weight:950;
+  letter-spacing:.11em
+}
