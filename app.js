@@ -2,6 +2,10 @@
   "use strict";
 
   const $ = (id) => document.getElementById(id);
+  const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (ch) => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+  })[ch]);
+
   const consent = $("consent");
   const consentBox = $("consentBox");
   const liveSearchBtn = $("liveSearchBtn");
@@ -482,7 +486,7 @@ function setConsentState() {
     (report.stats || []).forEach((s) => {
       const el = document.createElement("div");
       el.className = "stat";
-      el.innerHTML = '<div class="provenanceMini ' + modeClass + '">' + modeLabel + '</div><div class="n">' + s.n + '</div><div class="k">' + s.k + "</div>";
+      el.innerHTML = '<div class="provenanceMini ' + modeClass + '">' + escapeHtml(modeLabel) + '</div><div class="n">' + escapeHtml(s.n) + '</div><div class="k">' + escapeHtml(s.k) + "</div>";
       $("stats").appendChild(el);
     });
 
@@ -491,8 +495,8 @@ function setConsentState() {
       const row = document.createElement("div");
       row.className = "findingRow";
       row.innerHTML =
-        '<div class="cat">' + f[0] + '<div class="provenanceMini ' + modeClass + '">' + modeLabel + '</div></div>' +
-        '<div class="desc">' + f[1] + '</div><div class="badge">' + f[2] + "</div>";
+        '<div class="cat">' + escapeHtml(f[0]) + '<div class="provenanceMini ' + modeClass + '">' + escapeHtml(modeLabel) + '</div></div>' +
+        '<div class="desc">' + escapeHtml(f[1]) + '</div><div class="badge">' + escapeHtml(f[2]) + "</div>";
       $("findingRows").appendChild(row);
     });
 
@@ -502,7 +506,7 @@ function setConsentState() {
     (report.accounts || []).forEach((a) => {
       const card = document.createElement("div");
       card.className = "accountMatch";
-      card.innerHTML = '<div class="provenanceMini ' + modeClass + '">' + modeLabel + '</div><strong>' + a[0] + '</strong><div class="maskedHandle">' + a[1] + "</div>";
+      card.innerHTML = '<div class="provenanceMini ' + modeClass + '">' + escapeHtml(modeLabel) + '</div><strong>' + escapeHtml(a[0]) + '</strong><div class="maskedHandle">' + escapeHtml(a[1]) + "</div>";
       $("accountMatchesGrid").appendChild(card);
     });
 
@@ -515,7 +519,7 @@ function setConsentState() {
       (report.sourceCoverage.sources || []).forEach((source) => {
         const chip = document.createElement("div");
         chip.className = "sourceChip" + (source.matched ? " hit" : "");
-        chip.innerHTML = '<span class="sourceModeDot ' + modeClass + '"></span>' + (source.matched ? "✓ " : "○ ") + source.name;
+        chip.innerHTML = '<span class="sourceModeDot ' + modeClass + '"></span>' + (source.matched ? "✓ " : "○ ") + escapeHtml(source.name);
         $("sourceCoverageGrid").appendChild(chip);
       });
     } else {
@@ -540,16 +544,16 @@ function setConsentState() {
         const reasons = (source.reasons || []).join(" • ");
         card.innerHTML =
           '<div class="publicSourceTop">' +
-            '<span class="publicSourcePlatform">' + (source.platform || source.domain || "Public web") + '</span>' +
+            '<span class="publicSourcePlatform">' + escapeHtml(source.platform || source.domain || "Public web") + '</span>' +
             '<span class="matchConfidence ' + (source.confidence || "possible") + '">' +
               (source.confidence === "strong" ? "STRONG MATCH" : "POSSIBLE MATCH") +
             '</span>' +
           '</div>' +
-          '<strong>' + (source.title || source.domain || "Public result") + '</strong>' +
-          '<p>' + (source.snippet || "Open the source to review this result.") + '</p>' +
+          '<strong>' + escapeHtml(source.title || source.domain || "Public result") + '</strong>' +
+          '<p>' + escapeHtml(source.snippet || "Open the source to review this result.") + '</p>' +
           '<div class="publicSourceMeta">' +
-            '<span>' + (source.domain || "") + '</span>' +
-            '<span>' + (reasons || "name match") + '</span>' +
+            '<span>' + escapeHtml(source.domain || "") + '</span>' +
+            '<span>' + escapeHtml(reasons || "name match") + '</span>' +
           '</div>';
         publicSourcesGrid.appendChild(card);
       });
@@ -560,7 +564,7 @@ function setConsentState() {
     (report.signals || []).forEach((s) => {
       const card = document.createElement("div");
       card.className = "signalCard";
-      card.innerHTML = '<div class="provenanceMini ' + modeClass + '">' + modeLabel + '</div><div class="signalIcon">' + s[0] + "</div><strong>" + s[1] + "</strong><p>" + s[2] + "</p>";
+      card.innerHTML = '<div class="provenanceMini ' + modeClass + '">' + escapeHtml(modeLabel) + '</div><div class="signalIcon">' + escapeHtml(s[0]) + "</div><strong>" + escapeHtml(s[1]) + "</strong><p>" + escapeHtml(s[2]) + "</p>";
       $("profileSignalsGrid").appendChild(card);
     });
 
@@ -572,7 +576,7 @@ function setConsentState() {
       $("activityTotal").textContent = (report.activity || []).reduce((sum, x) => sum + Number(x[1] || 0), 0);
       renderBreakdown("imageBreakdown", report.imageBreakdown || []);
       renderBreakdown("activityTypes", report.activity || []);
-      $("themeBreakdown").innerHTML = '<span class="provenanceMini ' + modeClass + '">' + modeLabel + '</span>';
+      $("themeBreakdown").innerHTML = '<span class="provenanceMini ' + modeClass + '">' + escapeHtml(modeLabel) + '</span>';
       (report.themes || []).forEach((t) => {
         const el = document.createElement("span");
         el.className = "themePill";
