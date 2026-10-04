@@ -276,6 +276,12 @@ export default async (req) => {
     const results = await searchWeb(apiKey, query.q);
     for (const raw of results) {
       if (!raw?.url) continue;
+      try {
+        const parsedUrl = new URL(raw.url);
+        if (!["http:","https:"].includes(parsedUrl.protocol)) continue;
+      } catch {
+        continue;
+      }
       const match = matchResult(raw, person);
       if (match.confidence === "discard") continue;
 
