@@ -1808,3 +1808,39 @@ body.reportDeckActive{overflow:hidden}
   .reportDeck .platformDesc{display:none}
   .devicePrivacyGrid .platformCard,.reportDeck #deviceParentGrid .platformCard{min-height:180px}
 }
+
+
+/* Keep advanced imports out of the primary audience-facing choices */
+.primaryModes{align-items:stretch}
+.presenterTools{
+  margin-top:14px;
+  border:1px solid rgba(255,255,255,.07);
+  border-radius:15px;
+  background:rgba(5,14,22,.38);
+  overflow:hidden
+}
+.presenterTools summary{
+  cursor:pointer;
+  list-style:none;
+  padding:12px 14px;
+  color:#8ca5b6;
+  font-size:.72rem;
+  font-weight:850;
+  letter-spacing:.05em
+}
+.presenterTools summary::-webkit-details-marker{display:none}
+.presenterTools summary::after{content:" +";color:#5f7d90}
+.presenterTools[open] summary::after{content:" −"}
+.presenterToolsBody{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  padding:0 14px 14px
+}
+.presenterToolsBody>div{display:flex;flex-direction:column;gap:3px}
+.presenterToolsBody strong{font-size:.78rem}
+.presenterToolsBody small{color:#738c9d;font-size:.65rem;line-height:1.4;max-width:720px}
+@media(max-width:700px){
+  .presenterToolsBody{flex-direction:column;align-items:stretch}
+}
