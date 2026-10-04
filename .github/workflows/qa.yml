@@ -26,7 +26,7 @@ jobs:
     timeout-minutes: 8
     env:
       SITE_URL: https://sm-profile-tool.netlify.app
-      RELEASE_MARKER: public-footprint-rc2-smoke-v2
+      RELEASE_MARKER: public-footprint-rc2-smoke-v3
     steps:
       - name: Wait for this release to reach Netlify
         shell: bash
@@ -69,9 +69,18 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          result="$(curl -fsS --max-time 45             -H 'content-type: application/json'             -d '{"consent":true,"firstName":"QzzxPublicFootprint","lastName":"SmokeTest20261004","age":"30","city":"","username":"","clues":""}'             "$SITE_URL/api/live-search")"
-          SEARCH_JSON="$result" node - <<'NODE'
+          tmp_body="$(mktemp)"
+          status="$(curl -sS --max-time 60 -o "$tmp_body" -w '%{http_code}'             -H 'content-type: application/json'             -d '{"consent":true,"firstName":"QzzxPublicFootprint","lastName":"SmokeTest20261004","age":"30","city":"","username":"","clues":""}'             "$SITE_URL/api/live-search")"
+          result="$(cat "$tmp_body")"
+          rm -f "$tmp_body"
+
+          SEARCH_STATUS="$status" SEARCH_JSON="$result" node - <<'NODE'
+          const status = Number(process.env.SEARCH_STATUS || 0);
           const data = JSON.parse(process.env.SEARCH_JSON || "{}");
+          if (status !== 200) {
+            const detail = [data.error, data.detail, ...(data.providerErrors || [])].filter(Boolean).join(" | ");
+            throw new Error("Live search HTTP " + status + (detail ? ": " + detail : ""));
+          }
           if (data.dataMode !== "verified") throw new Error("Live search route did not return live public-search mode");
           if (data.provider !== "Brave Search API") throw new Error("Live search did not confirm Brave Search API");
           if (!data.searchHealth || data.searchHealth.completed < 1) throw new Error("No Brave search pass completed");
