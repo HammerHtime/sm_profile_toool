@@ -988,3 +988,23 @@ button{border:0;cursor:pointer}
   .zeroResultFallback{flex-direction:column;align-items:flex-start}
   .zeroResultFallback .syntheticDemoBtn{width:100%}
 }
+
+
+/* Main privacy dashboard device gateways */
+.platformWall .devicePrivacyCard{
+  min-height:168px;
+  background:
+    radial-gradient(circle at 80% 12%,color-mix(in srgb,var(--brand) 18%,transparent),transparent 35%),
+    linear-gradient(145deg,#10283a,#07131d);
+  border-color:color-mix(in srgb,var(--brand) 28%,var(--line))
+}
+.platformWall .devicePrivacyCard .platformIcon{
+  width:50px;
+  height:50px;
+  font-size:1.55rem;
+  box-shadow:0 0 26px color-mix(in srgb,var(--brand) 16%,transparent)
+}
+.platformWall .devicePrivacyCard .platformName{font-size:1.06rem}
+.platformWall .devicePrivacyCard .platformStatus{
+  color:color-mix(in srgb,var(--brand) 78%,white)
+}
