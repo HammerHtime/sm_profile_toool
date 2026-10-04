@@ -256,22 +256,13 @@ function braveThumbnail(result = {}) {
 }
 
 async function searchImages(apiKey, q) {
-  const url = new URL(BRAVE_IMAGE_ENDPOINT);
-  url.searchParams.set("q",q);
-  url.searchParams.set("country","CA");
-  url.searchParams.set("search_lang","en");
-  url.searchParams.set("count","16");
-  url.searchParams.set("safesearch","strict");
-
-  const response = await fetch(url,{
-    headers:{
-      "accept":"application/json",
-      "x-subscription-token":apiKey
-    },
-    signal:AbortSignal.timeout(8000)
+  const data = await braveJson(apiKey, BRAVE_IMAGE_ENDPOINT, {
+    q,
+    country:"CA",
+    search_lang:"en",
+    count:16,
+    safesearch:"strict"
   });
-  const data = await response.json().catch(()=>({}));
-  if (!response.ok) throw new Error(data?.error?.detail || data?.message || "Image search failed");
   return Array.isArray(data?.results) ? data.results : [];
 }
 
@@ -287,25 +278,52 @@ function imageMatchesPerson(result, person) {
   return !!(fullNameMatch || partsMatch || handleMatch);
 }
 
-async function searchWeb(apiKey, q) {
-  const response = await fetch(BRAVE_ENDPOINT, {
-    method:"POST",
-    headers:{
-      "accept":"application/json",
-      "content-type":"application/json",
-      "x-subscription-token":apiKey
-    },
-    body:JSON.stringify({ q, country:"CA", search_lang:"en", count:20 }),
-    signal:AbortSignal.timeout(8000)
-  });
+const providerWait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    const detail = data?.error?.detail || data?.message || "Search provider request failed";
+async function braveJson(apiKey, endpoint, params, maxRetries = 2) {
+  const url = new URL(endpoint);
+  for (const [key,value] of Object.entries(params || {})) {
+    if (value !== undefined && value !== null && value !== "") url.searchParams.set(key,String(value));
+  }
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    const response = await fetch(url, {
+      method:"GET",
+      headers:{
+        "accept":"application/json",
+        "x-subscription-token":apiKey
+      },
+      signal:AbortSignal.timeout(10000)
+    });
+
+    const data = await response.json().catch(() => ({}));
+    if (response.ok) return data;
+
+    const detail = data?.error?.detail || data?.message || ("Search provider returned HTTP " + response.status);
+    if (response.status === 429 && attempt < maxRetries) {
+      const resetHeader = response.headers.get("x-ratelimit-reset") || "";
+      const resetValues = resetHeader.split(",").map(v=>Number(v.trim())).filter(Number.isFinite);
+      const seconds = Math.max(1, Math.min(4, resetValues[0] || 1));
+      await providerWait(seconds * 1000 + 120);
+      continue;
+    }
+
     const error = new Error(detail);
     error.status = response.status;
+    error.code = data?.error?.code || "";
     throw error;
   }
+
+  throw new Error("Search provider retry limit reached");
+}
+
+async function searchWeb(apiKey, q) {
+  const data = await braveJson(apiKey, BRAVE_ENDPOINT, {
+    q,
+    country:"CA",
+    search_lang:"en",
+    count:20
+  });
   return data?.web?.results || [];
 }
 
@@ -366,14 +384,25 @@ export default async (req) => {
   const byUrl = new Map();
   const contactClues = { emails:[], phones:[], addresses:[] };
 
-  const queryBatches = await Promise.all(queries.map(async (query) => {
+  const queryBatches = [];
+  for (const query of queries) {
     try {
-      return { query, results:await searchWeb(apiKey, query.q), error:null };
+      const results = await searchWeb(apiKey, query.q);
+      queryBatches.push({ query, results, error:null });
     } catch (error) {
       console.error("live-search pass failed", query.group, error);
-      return { query, results:[], error:error?.message || "Search pass failed" };
+      queryBatches.push({
+        query,
+        results:[],
+        error:error?.message || "Search pass failed",
+        status:Number(error?.status) || null,
+        code:error?.code || ""
+      });
     }
-  }));
+
+    // A short spacing delay keeps the demo compatible with lower burst-rate plans.
+    if (query !== queries[queries.length - 1]) await providerWait(220);
+  }
 
   const completedPasses = queryBatches.filter(batch => !batch.error);
   const failedPasses = queryBatches.filter(batch => batch.error);
@@ -381,7 +410,12 @@ export default async (req) => {
   if (!completedPasses.length) {
     return respond({
       error:"The public search provider did not complete any search passes.",
-      detail:"Try again in a moment. Synthetic Demo remains available as a presentation fallback."
+      detail:"Try again in a moment. Synthetic Demo remains available as a presentation fallback.",
+      providerErrors:[...new Set(failedPasses.map(batch=>{
+        const status=batch.status ? ("HTTP "+batch.status+" ") : "";
+        const code=batch.code ? (batch.code+" ") : "";
+        return (status+code+(batch.error||"Search pass failed")).trim();
+      }))].slice(0,4)
     }, 502);
   }
 
