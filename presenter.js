@@ -72,19 +72,48 @@ function metadataMap(data){
 function correlationMap(data){
   const st=$('breadcrumbStageCorrelation');if(!st)return;st.replaceChildren();addPhotoCore(st,true);
   const p=data.participant||{};
-  [
-    {title:'Embedded metadata',detail:'File-level privacy signals',icon:'◇',x:2,y:8,tone:'warn'},
-    {title:'Visible text / logos',detail:'Can reveal events, teams or workplaces',icon:'T',x:77,y:8,tone:'warn'},
-    {title:'Location clues',detail:data.findings?.gpsEmbedded?'GPS signal was present':'Background can still reveal context',icon:'⌖',x:2,y:67,tone:'risk'},
-    {title:'Exact-image search',detail:'Can connect copies on public webpages',icon:'▧',x:77,y:67,dashed:true},
-    {title:'Public profiles',detail:p.usernameMasked||'Shown only when verified',icon:'@',x:39,y:2,dashed:true},
-    {title:'Masked contact clues',detail:'Displayed only from verified public pages',icon:'☎',x:39,y:77,dashed:true}
-  ].forEach(o=>addNode(st,o));
-  $('correlationDisclosure').innerHTML='<strong>Breadcrumb logic, not facial identification.</strong> Public correlations appear only when a real source match is returned.';
+  const c=data.correlation||{};
+  const publicNodes=normalizePublicNodes(data);
+  const positions=[
+    {x:2,y:8},{x:77,y:8},{x:2,y:67},{x:77,y:67},{x:39,y:2},{x:39,y:77}
+  ];
+
+  const nodes=[
+    {title:'Embedded metadata',detail:'File-level privacy signals',icon:'◇',tone:'warn'},
+    {title:'Location clues',detail:data.findings?.gpsEmbedded?'GPS signal was present':'No embedded GPS detected',icon:'⌖',tone:data.findings?.gpsEmbedded?'risk':'safe'}
+  ];
+
+  if(publicNodes.length){
+    publicNodes.slice(0,4).forEach(n=>{
+      nodes.push({
+        title:n.name,
+        detail:n.count+' verified public match'+(n.count===1?'':'es')+' from the supplied handle',
+        icon:n.icon,
+        tone:'safe'
+      });
+    });
+  }else{
+    nodes.push(
+      {title:'Exact-image search',detail:'Capability only — no provider match returned',icon:'▧',dashed:true},
+      {title:'Public profiles',detail:p.usernameMasked?'Supplied handle: '+p.usernameMasked:'No public handle supplied',icon:'@',dashed:true},
+      {title:'Public web',detail:'No verified public correlation returned',icon:'⌘',dashed:true},
+      {title:'Other platforms',detail:'Only appears when a real source match is returned',icon:'●',dashed:true}
+    );
+  }
+
+  nodes.slice(0,6).forEach((o,i)=>addNode(st,{...o,...positions[i]}));
+
+  const domains=(c.sourceDomains||[]).slice(0,5);
+  const domainCopy=domains.length?' Sources included: '+domains.join(', ')+'.':'';
+  $('correlationDisclosure').innerHTML=
+    '<strong>Breadcrumb logic, not facial identification.</strong> '+
+    (c.basis||'Public correlations appear only when a real source match is returned.')+
+    domainCopy;
 }
 function impact(data){
   const f=data.findings||{},embedded=[f.gpsEmbedded,f.captureDateEmbedded,f.cameraMetadataEmbedded].filter(Boolean).length;
-  const vals=[[embedded,'embedded signals'],[f.gpsEmbedded?'50 km':'—','location privacy zone'],[data.image?.bytes?1:0,'image analyzed'],[data.participant?.usernameMasked?1:0,'supplied public handle']];
+  const publicMatches=Number(data.correlation?.totalMatches)||0;
+  const vals=[[embedded,'embedded signals'],[f.gpsEmbedded?'50 km':'—','location privacy zone'],[publicMatches,'verified public matches'],[data.participant?.usernameMasked?1:0,'supplied public handle']];
   $('impactStats').innerHTML=vals.map(v=>'<div class="impactStat"><strong>'+v[0]+'</strong><span>'+v[1]+'</span></div>').join('');
 }
 
