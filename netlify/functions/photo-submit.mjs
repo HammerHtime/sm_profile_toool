@@ -179,7 +179,7 @@ export default async (req) => {
     record.status = "submitted";
     record.consent = true;
     record.submittedAt = new Date().toISOString();
-    const requestedVoiceSamples = Array.isArray(body.voiceSamples) ? body.voiceSamples.slice(0,3) : [];
+    const requestedVoiceSamples = Array.isArray(body.voiceSamples) ? body.voiceSamples.slice(0,1) : [];
     const voiceSamples = [];
 
     for (const item of requestedVoiceSamples) {
@@ -188,7 +188,7 @@ export default async (req) => {
       const audioMime = cleanText(item?.mime || "", 80).toLowerCase();
       const audioData = typeof item?.audioData === "string" ? item.audioData : "";
 
-      if (!Number.isInteger(index) || index < 0 || index > 2) continue;
+      if (index !== 0) continue;
       if (!durationMs || !audioData) continue;
       if (!allowedAudio.has(audioMime)) return jsonResponse({ error:"Unsupported voice audio type" },400);
 
