@@ -528,19 +528,15 @@
     currentGuide = null;
   }
 
-  function phoneHtml(title, target, explanation) {
+  function phoneSceneHtml(title, target, explanation) {
     if (explanation) {
-      return '<div class="phoneMock phoneTeaching" style="--brand:' + (guidePlatform.brand || "#52d6ff") + '">' +
-        '<div class="phoneNotch"></div>' +
-        '<div class="phoneStatus"><span>9:41</span><span>● ● ●</span></div>' +
-        '<div class="phoneScreen phoneTeachingScreen">' +
-          '<div class="phoneTitle"><span class="phoneTitleIcon">' + guidePlatform.icon + '</span><span>' + guidePlatform.name + '</span></div>' +
-          '<div class="settingSuccess">' +
-            '<div class="settingSuccessIcon">✓</div>' +
-            '<div class="settingSuccessKicker">SETTING REVIEWED</div>' +
-            '<strong>' + title + '</strong>' +
-            '<span>Pause here and explain what this control changes.</span>' +
-          '</div>' +
+      return '<div class="phoneScreen phoneTeachingScreen">' +
+        '<div class="phoneTitle"><span class="phoneTitleIcon">' + guidePlatform.icon + '</span><span>' + guidePlatform.name + '</span></div>' +
+        '<div class="settingSuccess">' +
+          '<div class="settingSuccessIcon">✓</div>' +
+          '<div class="settingSuccessKicker">SETTING REVIEWED</div>' +
+          '<strong>' + title + '</strong>' +
+          '<span>Pause here and explain what this control changes.</span>' +
         '</div>' +
       '</div>';
     }
@@ -551,13 +547,10 @@
       rows[i] = target;
     }
 
-    let html = '<div class="phoneMock" style="--brand:' + (guidePlatform.brand || "#52d6ff") + '">' +
-      '<div class="phoneNotch"></div>' +
-      '<div class="phoneStatus"><span>9:41</span><span>● ● ●</span></div>' +
-      '<div class="phoneScreen">' +
-        '<div class="phoneTitle"><span class="phoneTitleIcon">' + guidePlatform.icon + '</span><span>' + guidePlatform.name + '</span></div>' +
-        '<div class="phoneCurrentScreen">' + title + '</div>' +
-        '<div class="phoneRows">';
+    let html = '<div class="phoneScreen">' +
+      '<div class="phoneTitle"><span class="phoneTitleIcon">' + guidePlatform.icon + '</span><span>' + guidePlatform.name + '</span></div>' +
+      '<div class="phoneCurrentScreen">' + title + '</div>' +
+      '<div class="phoneRows">';
 
     rows.forEach((r) => {
       const isTarget = target !== "EXPLAIN" && r === target;
@@ -566,7 +559,7 @@
         '</div>';
     });
 
-    html += '</div></div></div>';
+    html += '</div></div>';
     return html;
   }
 
@@ -578,41 +571,95 @@
 
   let coachTransitionLocked = false;
 
+  function ensureCoachStructure() {
+    const slide = $("coachSlide");
+    if (slide.querySelector(".phoneViewport")) return;
+
+    slide.innerHTML =
+      '<div class="coachVisual">' +
+        '<div class="phoneMock phoneFixed" style="--brand:' + (guidePlatform.brand || "#52d6ff") + '">' +
+          '<div class="phoneNotch"></div>' +
+          '<div class="phoneStatus"><span>9:41</span><span>● ● ●</span></div>' +
+          '<div class="phoneViewport"></div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="coachCopy"></div>';
+  }
+
+  function updateCoachCopy(title, body, target, isExplain, direction = 0) {
+    const copy = $("coachSlide").querySelector(".coachCopy");
+    const bullets = isExplain
+      ? ["What this control changes","What exposure or risk it reduces","What the child/user will notice","Any trade-off or limitation to understand"]
+      : ["Follow this exact path on the device","The highlighted row is the next tap","Use the presentation clicker to advance one action at a time"];
+
+    const html =
+      '<div class="eyebrow">' + (isExplain ? "WHY THIS SETTING MATTERS" : "STEP " + (guideIndex + 1)) + '</div>' +
+      "<h2>" + title + "</h2><p>" + body + "</p>" +
+      (isExplain
+        ? '<div class="explainBox"><strong>What to explain to the audience</strong><ul>' + bullets.map((b)=>"<li>"+b+"</li>").join("") + "</ul></div>"
+        : '<div class="tapCallout"><strong>Next action:</strong>&nbsp; ' + target + "</div>");
+
+    if (!direction) {
+      copy.innerHTML = html;
+      return;
+    }
+
+    copy.classList.remove("copySwapForward","copySwapBack");
+    void copy.offsetWidth;
+    copy.classList.add(direction > 0 ? "copySwapForward" : "copySwapBack");
+    setTimeout(() => { copy.innerHTML = html; }, 120);
+    setTimeout(() => copy.classList.remove("copySwapForward","copySwapBack"), 390);
+  }
+
+  function updatePhoneScene(title, target, isExplain, direction = 0) {
+    ensureCoachStructure();
+    const viewport = $("coachSlide").querySelector(".phoneViewport");
+    const newScene = document.createElement("div");
+    newScene.className = "phoneScene";
+    newScene.innerHTML = phoneSceneHtml(title,target,isExplain);
+
+    const oldScene = viewport.querySelector(".phoneScene");
+    if (!oldScene || !direction) {
+      viewport.replaceChildren(newScene);
+      return;
+    }
+
+    newScene.classList.add(direction > 0 ? "phoneSceneIncomingRight" : "phoneSceneIncomingLeft");
+    viewport.appendChild(newScene);
+
+    requestAnimationFrame(() => {
+      oldScene.classList.add(direction > 0 ? "phoneSceneExitLeft" : "phoneSceneExitRight");
+      newScene.classList.remove(direction > 0 ? "phoneSceneIncomingRight" : "phoneSceneIncomingLeft");
+      newScene.classList.add("phoneSceneActive");
+    });
+
+    setTimeout(() => {
+      if (oldScene.isConnected) oldScene.remove();
+      newScene.classList.remove("phoneSceneActive");
+    }, 430);
+  }
+
   function renderGuideSlide(direction = 0) {
     if (!currentGuide) return;
+    ensureCoachStructure();
+
     const step = currentGuide[guideIndex];
     const title = step[0], body = step[1], target = step[2];
-    const slide = $("coachSlide");
+    const isExplain = target === "EXPLAIN";
+
+    const phone = $("coachSlide").querySelector(".phoneMock");
+    phone.style.setProperty("--brand", guidePlatform.brand || "#52d6ff");
 
     $("coachBrand").textContent = guidePlatform.name + (guidePlatform.device ? " Parent Guide" : " Privacy Guide");
     $("coachCounter").textContent = (guideIndex + 1) + " / " + currentGuide.length;
     $("coachOfficial").href = officialHelp(guidePlatform.name, guidePlatform.device);
     $("coachProgress").innerHTML = '<span class="coachProgressBar" style="width:' + Math.round((guideIndex+1)/currentGuide.length*100) + '%"></span>';
 
-    const isExplain = target === "EXPLAIN";
-    const bullets = isExplain
-      ? ["What this control changes","What exposure or risk it reduces","What the child/user will notice","Any trade-off or limitation to understand"]
-      : ["Follow this exact path on the device","The highlighted row is the next tap","Use the presentation clicker to advance one action at a time"];
-
-    slide.innerHTML =
-      '<div class="coachVisual">' + phoneHtml(title,target,isExplain) + '</div>' +
-      '<div class="coachCopy">' +
-      '<div class="eyebrow">' + (isExplain ? "WHY THIS SETTING MATTERS" : "STEP " + (guideIndex + 1)) + '</div>' +
-      "<h2>" + title + "</h2><p>" + body + "</p>" +
-      (isExplain
-        ? '<div class="explainBox"><strong>What to explain to the audience</strong><ul>' + bullets.map((b)=>"<li>"+b+"</li>").join("") + "</ul></div>"
-        : '<div class="tapCallout"><strong>Next action:</strong>&nbsp; ' + target + "</div>") +
-      "</div>";
+    updatePhoneScene(title,target,isExplain,direction);
+    updateCoachCopy(title,body,target,isExplain,direction);
 
     $("coachPrev").disabled = guideIndex === 0;
     $("coachNext").textContent = guideIndex === currentGuide.length - 1 ? "Finish guide" : "Next";
-
-    if (direction !== 0) {
-      slide.classList.remove("coachEnterForward","coachEnterBack");
-      void slide.offsetWidth;
-      slide.classList.add(direction > 0 ? "coachEnterForward" : "coachEnterBack");
-      setTimeout(() => slide.classList.remove("coachEnterForward","coachEnterBack"), 430);
-    }
   }
 
   function navigateGuide(delta) {
@@ -634,8 +681,7 @@
     if (next === guideIndex) return;
 
     coachTransitionLocked = true;
-    const slide = $("coachSlide");
-    const target = slide.querySelector(".phoneRow.target");
+    const target = $("coachSlide").querySelector(".phoneRow.target");
 
     if (target && delta > 0) {
       target.classList.add("tapActivated");
@@ -645,15 +691,13 @@
     }
 
     setTimeout(() => {
-      slide.classList.add(delta > 0 ? "coachExitForward" : "coachExitBack");
-    }, target && delta > 0 ? 135 : 0);
-
-    setTimeout(() => {
-      slide.classList.remove("coachExitForward","coachExitBack");
       guideIndex = next;
       renderGuideSlide(delta);
+    }, target && delta > 0 ? 175 : 40);
+
+    setTimeout(() => {
       coachTransitionLocked = false;
-    }, target && delta > 0 ? 360 : 245);
+    }, target && delta > 0 ? 630 : 510);
   }
 
   function officialHelp(name, device) {
