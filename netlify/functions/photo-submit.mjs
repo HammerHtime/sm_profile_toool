@@ -6,7 +6,15 @@ const allowed = new Set(["image/jpeg","image/jpg","image/png","image/webp","imag
 const BRAVE_ENDPOINT = "https://api.search.brave.com/res/v1/web/search";
 const MAX_VOICE_BYTES = 150 * 1024;
 const MAX_VOICE_MS = 10000;
-const allowedAudio = new Set(["audio/webm","audio/webm;codecs=opus","audio/mp4","audio/mpeg","audio/ogg","audio/ogg;codecs=opus"]);
+const allowedAudio = new Set(["audio/webm","audio/mp4","audio/mpeg","audio/ogg","audio/aac","audio/x-m4a"]);
+
+function normalizeAudioMime(value = "") {
+  const raw = cleanText(value, 120).toLowerCase().trim();
+  if (!raw) return "";
+  const base = raw.split(";")[0].trim();
+  if (base === "audio/x-m4a") return "audio/mp4";
+  return base;
+}
 
 function normalizeBraveApiKey(value = "") {
   let candidate = String(value || "").trim();
@@ -319,12 +327,17 @@ export default async (req) => {
     for (const item of requestedVoiceSamples) {
       const index = Number(item?.index);
       const durationMs = Math.min(MAX_VOICE_MS, Math.max(0, Number(item?.durationMs) || 0));
-      const audioMime = cleanText(item?.mime || "", 80).toLowerCase();
+      const audioMime = normalizeAudioMime(item?.mime || "");
       const audioData = typeof item?.audioData === "string" ? item.audioData : "";
 
       if (index !== 0) continue;
       if (!durationMs || !audioData) continue;
-      if (!allowedAudio.has(audioMime)) return jsonResponse({ error:"Unsupported voice audio type" },400);
+      if (!allowedAudio.has(audioMime)) {
+        return jsonResponse({
+          error:"Unsupported voice audio type",
+          receivedMime:cleanText(item?.mime || "", 120)
+        },400);
+      }
 
       const audioBytes = Buffer.from(audioData,"base64");
       if (!audioBytes.length || audioBytes.length > MAX_VOICE_BYTES) {
