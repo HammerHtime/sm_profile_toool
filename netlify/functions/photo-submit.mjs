@@ -109,20 +109,43 @@ function correlationThemes(items, handle, firstName, city) {
     .map(([term,count])=>({term,count}));
 }
 
-async function braveSearch(apiKey, q) {
-  const response = await fetch(BRAVE_ENDPOINT, {
-    method:"POST",
-    headers:{
-      "accept":"application/json",
-      "content-type":"application/json",
-      "x-subscription-token":apiKey
-    },
-    body:JSON.stringify({ q, country:"CA", search_lang:"en", count:20 })
-  });
+const braveWait = (ms) => new Promise(resolve => setTimeout(resolve,ms));
 
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data?.error?.detail || data?.message || "Public correlation search failed");
-  return data?.web?.results || [];
+async function braveSearch(apiKey, q, maxRetries = 2) {
+  const url = new URL(BRAVE_ENDPOINT);
+  url.searchParams.set("q",q);
+  url.searchParams.set("country","CA");
+  url.searchParams.set("search_lang","en");
+  url.searchParams.set("count","20");
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    const response = await fetch(url, {
+      method:"GET",
+      headers:{
+        "accept":"application/json",
+        "x-subscription-token":apiKey
+      },
+      signal:AbortSignal.timeout(10000)
+    });
+
+    const data = await response.json().catch(() => ({}));
+    if (response.ok) return data?.web?.results || [];
+
+    if (response.status === 429 && attempt < maxRetries) {
+      const resetHeader = response.headers.get("x-ratelimit-reset") || "";
+      const seconds = Math.max(1, Math.min(4, Number(resetHeader.split(",")[0]) || 1));
+      await braveWait(seconds * 1000 + 120);
+      continue;
+    }
+
+    const detail = data?.error?.detail || data?.message || ("Public correlation search failed with HTTP " + response.status);
+    const error = new Error(detail);
+    error.status = response.status;
+    error.code = data?.error?.code || "";
+    throw error;
+  }
+
+  return [];
 }
 
 async function publicHandleCorrelation(username, firstName, city) {
@@ -160,7 +183,16 @@ async function publicHandleCorrelation(username, firstName, city) {
     [quoted, firstName && '"' + firstName.replaceAll('"',"") + '"', city && '"' + city.replaceAll('"',"") + '"'].filter(Boolean).join(" ")
   ];
 
-  const batches = await Promise.all(queries.map(q => braveSearch(apiKey,q)));
+  const batches = [];
+  for (const q of queries) {
+    try {
+      batches.push(await braveSearch(apiKey,q));
+    } catch (error) {
+      console.error("photo correlation Brave pass failed",error);
+      batches.push([]);
+    }
+    if (q !== queries[queries.length - 1]) await braveWait(220);
+  }
   const seen = new Map();
   const normalizedHandle = normalize(handle);
 
