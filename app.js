@@ -544,7 +544,10 @@ function setConsentState() {
 
     $("subjectName").textContent = report.subject || "Search Subject";
     $("summaryLine").textContent = mode === "verified"
-      ? "Verified public-source findings, privacy-masked before display."
+      ? ("Verified public-source findings, privacy-masked before display." +
+          (report.searchHealth?.failed
+            ? " " + report.searchHealth.completed + " of " + report.searchHealth.attempted + " search passes completed."
+            : ""))
       : mode === "synthetic"
         ? "Synthetic fallback presentation. No live public search produced these values."
         : "Summary of user-supplied evidence. Not independently verified by this build.";
@@ -1255,6 +1258,7 @@ function setConsentState() {
       scanPanel.classList.remove("hidden");
       liveSearchBtn.disabled = true;
 
+      const searchStartedAt = Date.now();
       const statuses = [
         ["Searching the public internet…","Checking open web results without using age as a hard filter."],
         ["Checking public profiles…","Looking for name, city, username and platform matches."],
@@ -1293,6 +1297,9 @@ function setConsentState() {
           throw new Error((data.error || "Live search failed.") + (data.detail ? " " + data.detail : ""));
         }
 
+        const minimumSearchMs = 3200;
+        const waitMs = minimumSearchMs - (Date.now() - searchStartedAt);
+        if (waitMs > 0) await new Promise(resolve => setTimeout(resolve, waitMs));
         renderReport(data);
       } catch (e) {
         alert(e.message);
