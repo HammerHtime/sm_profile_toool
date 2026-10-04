@@ -831,29 +831,97 @@ function setConsentState() {
       const publicSources = report.publicSources || [];
       publicSourcesPanel.classList.toggle("hidden", !publicSources.length);
 
+      const sourceGroups = new Map();
       publicSources.forEach((source) => {
-        const card = document.createElement("a");
-        card.className = "publicSourceCard " + (source.confidence === "strong" ? "strongMatch" : "possibleMatch");
-        card.href = source.url;
-        card.target = "_blank";
-        card.rel = "noopener noreferrer";
-
-        const reasons = (source.reasons || []).join(" • ");
-        card.innerHTML =
-          '<div class="publicSourceTop">' +
-            '<span class="publicSourcePlatform">' + escapeHtml(source.platform || source.domain || "Public web") + '</span>' +
-            '<span class="matchConfidence ' + (source.confidence || "possible") + '">' +
-              (source.confidence === "strong" ? "STRONG MATCH" : "POSSIBLE MATCH") +
-            '</span>' +
-          '</div>' +
-          '<strong>' + escapeHtml((source.platform || "Public web") + " public result") + '</strong>' +
-          '<p>Public/indexed page returned by the search provider. Open the source only when you want to review the underlying page.</p>' +
-          '<div class="publicSourceMeta">' +
-            '<span>' + escapeHtml(source.domain || "") + '</span>' +
-            '<span>' + escapeHtml(reasons || "name match") + '</span>' +
-          '</div><div class="publicSourceOpen">OPEN SOURCE ↗</div>';
-        publicSourcesGrid.appendChild(card);
+        const label = source.platform || source.domain || "Public web";
+        const key = String(label).toLowerCase();
+        if (!sourceGroups.has(key)) {
+          sourceGroups.set(key, {
+            label,
+            sources:[],
+            reasons:new Set(),
+            domains:new Set(),
+            strong:0,
+            possible:0
+          });
+        }
+        const group = sourceGroups.get(key);
+        group.sources.push(source);
+        (source.reasons || []).forEach(reason => group.reasons.add(reason));
+        if (source.domain) group.domains.add(source.domain);
+        if (source.confidence === "strong") group.strong += 1;
+        else group.possible += 1;
       });
+
+      [...sourceGroups.values()]
+        .sort((a,b) => {
+          if (!!a.strong !== !!b.strong) return a.strong ? -1 : 1;
+          if (a.sources.length !== b.sources.length) return b.sources.length - a.sources.length;
+          return a.label.localeCompare(b.label);
+        })
+        .forEach((group) => {
+          const card = document.createElement("article");
+          const bestConfidence = group.strong ? "strong" : "possible";
+          const total = group.sources.length;
+          const reasons = [...group.reasons].slice(0,4).join(" • ");
+          const domains = [...group.domains].slice(0,3).join(" • ");
+
+          card.className = "publicSourceCard publicSourceGroup " + (group.strong ? "strongMatch" : "possibleMatch");
+          card.innerHTML =
+            '<div class="publicSourceTop">' +
+              '<span class="publicSourcePlatform">' + escapeHtml(group.label) + '</span>' +
+              '<span class="sourceGroupCount">' + total + (total === 1 ? " RESULT" : " RESULTS") + '</span>' +
+              '<span class="matchConfidence ' + bestConfidence + '">' +
+                (group.strong ? "STRONGEST: STRONG" : "POSSIBLE MATCHES") +
+              '</span>' +
+            '</div>' +
+            '<strong>' + total + (total === 1 ? " public result" : " public results") + ' from ' + escapeHtml(group.label) + '</strong>' +
+            '<p>Repeated results from this source are grouped together. Expand the list only when you want to inspect the individual public pages.</p>' +
+            '<div class="publicSourceMeta">' +
+              '<span>' + escapeHtml(domains || group.label) + '</span>' +
+              '<span>' + escapeHtml(reasons || "name match") + '</span>' +
+            '</div>' +
+            '<div class="sourceGroupStats">' +
+              (group.strong ? '<span class="strongStat">' + group.strong + ' strong</span>' : '') +
+              (group.possible ? '<span>' + group.possible + ' possible</span>' : '') +
+            '</div>';
+
+          const details = document.createElement("details");
+          details.className = "publicSourceDetails";
+          const summary = document.createElement("summary");
+          summary.textContent = "VIEW " + total + (total === 1 ? " SOURCE LINK" : " SOURCE LINKS");
+          details.appendChild(summary);
+
+          const links = document.createElement("div");
+          links.className = "publicSourceLinks";
+          group.sources
+            .slice()
+            .sort((a,b) => {
+              if (a.confidence !== b.confidence) return a.confidence === "strong" ? -1 : 1;
+              return String(a.domain || "").localeCompare(String(b.domain || ""));
+            })
+            .forEach((source,index) => {
+              const link = document.createElement("a");
+              link.className = "publicSourceLink";
+              link.href = source.url;
+              link.target = "_blank";
+              link.rel = "noopener noreferrer";
+              const sourceReasons = (source.reasons || []).join(" • ") || "name match";
+              const handle = source.handleMasked ? " • " + source.handleMasked : "";
+              link.innerHTML =
+                '<span><b>' + escapeHtml(source.domain || group.label) + '</b><small>' +
+                  escapeHtml(sourceReasons + handle) +
+                '</small></span>' +
+                '<em class="' + (source.confidence === "strong" ? "strong" : "possible") + '">' +
+                  (source.confidence === "strong" ? "STRONG" : "POSSIBLE") +
+                '</em><i>↗</i>';
+              link.setAttribute("aria-label", group.label + " source " + (index + 1) + " opens in a new tab");
+              links.appendChild(link);
+            });
+          details.appendChild(links);
+          card.appendChild(details);
+          publicSourcesGrid.appendChild(card);
+        });
     }
 
     renderPublicVoice(report,modeClass);
