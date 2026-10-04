@@ -14,6 +14,8 @@
   "use strict";
 
   const $ = (id) => document.getElementById(id);
+  const MIN_LIVE_SEARCH_MS = 14000;
+  const wait = (ms) => new Promise(resolve => setTimeout(resolve,ms));
   const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (ch) => ({
     "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
   })[ch]);
@@ -1312,6 +1314,8 @@ function setConsentState() {
         const minimumSearchMs = 3200;
         const waitMs = minimumSearchMs - (Date.now() - searchStartedAt);
         if (waitMs > 0) await new Promise(resolve => setTimeout(resolve, waitMs));
+        const remaining = MIN_LIVE_SEARCH_MS - (Date.now() - searchStartedAt);
+        if (remaining > 0) await wait(remaining);
         renderReport(data);
       } catch (e) {
         alert(e.message);
