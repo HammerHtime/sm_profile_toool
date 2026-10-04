@@ -70,7 +70,7 @@ async function restorePresenterSession(){
 async function createSession(){
   $('startSession').disabled=true;
   try{
-    const data=await request('/.netlify/functions/photo-create',{method:'POST',body:'{}'});
+    const data=await request('/api/photo-create',{method:'POST',body:'{}'});
     session=data;
     sessionStorage.setItem('pfPhotoPresenter',JSON.stringify({
       id:data.id,
