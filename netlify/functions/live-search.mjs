@@ -1,4 +1,5 @@
 const BRAVE_ENDPOINT = "https://api.search.brave.com/res/v1/web/search";
+const BRAVE_IMAGE_ENDPOINT = "https://api.search.brave.com/res/v1/images/search";
 
 const clean = (v, max = 120) =>
   typeof v === "string" ? v.trim().replace(/[\u0000-\u001f]/g, "").slice(0, max) : "";
@@ -187,6 +188,80 @@ function matchResult(result, person) {
   return { confidence:"discard", reasons:[] };
 }
 
+const PRESENTATION_STOP_WORDS = new Set([
+  "the","and","for","with","from","that","this","your","you","are","was","were","has","have","had","but","not","all","can","our","out",
+  "about","into","more","than","their","they","them","his","her","she","him","who","what","when","where","how","why","will","would",
+  "www","http","https","com","org","net","ca","profile","public","page","pages","home","official","view","website","site","search",
+  "facebook","instagram","linkedin","tiktok","twitter","reddit","youtube","threads","github","strava"
+]);
+
+function safeExcerpt(value = "", max = 132) {
+  const masked = redact(String(value || "")).text.replace(/\s+/g," ").trim();
+  if (!masked) return "";
+  if (masked.length <= max) return masked;
+  const cut = masked.slice(0,max).replace(/\s+\S*$/,"").trim();
+  return (cut || masked.slice(0,max)).trim() + "…";
+}
+
+function presentationThemes(items, person) {
+  const excluded = new Set(
+    [person.fullName,person.city,person.username]
+      .filter(Boolean)
+      .flatMap(v=>normalize(v).split(/\s+/))
+      .filter(Boolean)
+  );
+  const counts = new Map();
+  for (const item of items) {
+    const text = normalize([item.title,item.snippet].filter(Boolean).join(" "));
+    for (const token of text.split(/\s+/)) {
+      if (!token || token.length < 4 || token.length > 24) continue;
+      if (/^\d+$/.test(token) || PRESENTATION_STOP_WORDS.has(token) || excluded.has(token)) continue;
+      counts.set(token,(counts.get(token)||0)+1);
+    }
+  }
+  return [...counts.entries()]
+    .sort((a,b)=>b[1]-a[1] || a[0].localeCompare(b[0]))
+    .slice(0,12)
+    .map(([term,count])=>({term,count}));
+}
+
+function braveThumbnail(result = {}) {
+  const candidates = [result.thumbnail?.src,result.profile?.img,result.meta_url?.favicon];
+  return candidates.find(url=>typeof url==="string" && /^https:\/\/imgs\.search\.brave\.com\//i.test(url)) || "";
+}
+
+async function searchImages(apiKey, q) {
+  const url = new URL(BRAVE_IMAGE_ENDPOINT);
+  url.searchParams.set("q",q);
+  url.searchParams.set("country","CA");
+  url.searchParams.set("search_lang","en");
+  url.searchParams.set("count","16");
+  url.searchParams.set("safesearch","strict");
+
+  const response = await fetch(url,{
+    headers:{
+      "accept":"application/json",
+      "x-subscription-token":apiKey
+    },
+    signal:AbortSignal.timeout(8000)
+  });
+  const data = await response.json().catch(()=>({}));
+  if (!response.ok) throw new Error(data?.error?.detail || data?.message || "Image search failed");
+  return Array.isArray(data?.results) ? data.results : [];
+}
+
+function imageMatchesPerson(result, person) {
+  const hay = normalize([result?.title,result?.url,result?.source].filter(Boolean).join(" "));
+  if (!hay) return false;
+  const full = normalize(person.fullName);
+  const handle = normalize(String(person.username || "").replace(/^@/,""));
+  const nameParts = full.split(/\s+/).filter(Boolean);
+  const fullNameMatch = full && hay.includes(full);
+  const partsMatch = nameParts.length >= 2 && nameParts.every(part=>hay.includes(part));
+  const handleMatch = handle && hay.includes(handle);
+  return !!(fullNameMatch || partsMatch || handleMatch);
+}
+
 async function searchWeb(apiKey, q) {
   const response = await fetch(BRAVE_ENDPOINT, {
     method:"POST",
@@ -312,7 +387,10 @@ export default async (req) => {
         confidence:match.confidence,
         reasons:match.reasons,
         queryGroup:query.group,
-        handleMasked:maskedHandle(raw.url,platform)
+        handleMasked:maskedHandle(raw.url,platform),
+        title:safeExcerpt(title.text,120),
+        snippet:safeExcerpt(snippet.text,150),
+        thumbnail:braveThumbnail(raw)
       };
 
       const existing = byUrl.get(raw.url);
@@ -352,6 +430,69 @@ export default async (req) => {
   if (addressClues.length) findings.push(["Address clues",addressClues.length+" masked public address clues. Example: "+addressClues[0],"MASKED"]);
 
   const coverageNames = ["LinkedIn","Instagram","Facebook","TikTok","Threads","Reddit","X / Twitter","YouTube","Strava","GitHub","Medium","Substack"];
+  const quoteSnippets = sources
+    .filter(source=>source.snippet)
+    .slice(0,8)
+    .map(source=>({
+      platform:source.platform,
+      domain:source.domain,
+      text:safeExcerpt(source.snippet,118),
+      confidence:source.confidence
+    }));
+
+  const webThumbnails = sources
+    .filter(source=>source.thumbnail)
+    .map(source=>({
+      src:source.thumbnail,
+      platform:source.platform,
+      domain:source.domain,
+      confidence:source.confidence,
+      basis:"Web result thumbnail"
+    }));
+
+  let imageSearch = { attempted:true, completed:false, error:null, results:[] };
+  try {
+    const imageQuery = [
+      quotedName,
+      city && '"' + city.replaceAll('"',"") + '"',
+      username && '"' + username.replaceAll('"',"") + '"'
+    ].filter(Boolean).join(" ");
+    const imageResults = await searchImages(apiKey,imageQuery);
+    imageSearch.completed = true;
+    imageSearch.results = imageResults
+      .filter(result=>imageMatchesPerson(result,person))
+      .map(result=>({
+        src:braveThumbnail(result),
+        platform:platformFor(result.url || ""),
+        domain:clean(result.source || (()=>{ try{return new URL(result.url).hostname.replace(/^www\./,"");}catch{return"";} })(),100),
+        confidence:"candidate",
+        basis:"Image search matched supplied identifiers"
+      }))
+      .filter(result=>result.src)
+      .slice(0,12);
+  } catch (error) {
+    imageSearch.error = error?.message || "Image search failed";
+    console.error("live image search failed",error);
+  }
+
+  const visualPhotos = [...webThumbnails,...imageSearch.results]
+    .filter((item,index,list)=>list.findIndex(other=>other.src===item.src)===index)
+    .slice(0,12);
+
+  const themeTerms = presentationThemes(sources,person);
+  const signals = [];
+  if (platforms.size > 1) signals.push(["◎","Cross-platform presence",platforms.size+" public source types returned matching pages."]);
+  if (platforms.has("LinkedIn") || platforms.has("News")) signals.push(["▤","Professional or public references","Professional, organization or news results were present in the public search."]);
+  if (platforms.has("Reddit") || platforms.has("X / Twitter")) signals.push(["✎","Public discussion footprint","Public discussion or social-post results were returned by the search provider."]);
+  if (visualPhotos.length) signals.push(["▣","Public image results",visualPhotos.length+" blurred image thumbnails matched the supplied search identifiers. These are not face-verified."]);
+
+  const presentation = {
+    photos:visualPhotos,
+    quotes:quoteSnippets,
+    themes:themeTerms,
+    disclaimer:"Images are public search thumbnails matching supplied identifiers. They are blurred in the presentation and are not verified by facial recognition."
+  };
+
   const sourceCoverage = {
     searched:completedPasses.length,
     attempted:queries.length,
@@ -382,15 +523,18 @@ export default async (req) => {
       note:"Age is a soft supporting signal only and never filters out a result."
     } : null,
     cluesUsed:searchClues,
-    signals:[],
-    imageBreakdown:[],
-    activity:[],
-    themes:[],
+    signals,
+    imageBreakdown:visualPhotos.length ? [["Public image search thumbnails",visualPhotos.length]] : [],
+    activity:quoteSnippets.length ? [["Public excerpts surfaced",quoteSnippets.length]] : [],
+    themes:themeTerms.map(item=>item.term),
+    presentation,
     searchedAt:new Date().toISOString(),
     searchHealth:{
       attempted:queries.length,
       completed:completedPasses.length,
-      failed:failedPasses.length
+      failed:failedPasses.length,
+      imageSearchCompleted:imageSearch.completed,
+      imageSearchError:imageSearch.error
     },
     provider:"Brave Search API"
   });
