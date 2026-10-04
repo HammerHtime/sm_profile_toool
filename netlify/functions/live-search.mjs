@@ -424,7 +424,7 @@ export default async (req) => {
 
   const findings = [
     ["Public pages returned",sources.length+" unique public/indexed pages matched the supplied identifiers.","LIVE SOURCE"],
-    ["Strong identity matches",strong+" results matched multiple identifiers.","MATCH CONFIDENCE"],
+    ["Strong identifier matches",strong+" results matched multiple supplied identifiers.","MATCH CONFIDENCE"],
     ["Possible matches",possible+" results matched name or username but need human confirmation.","REVIEW"]
   ];
 
