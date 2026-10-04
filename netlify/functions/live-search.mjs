@@ -293,10 +293,8 @@ export default async (req) => {
 
       const platform = platformFor(raw.url);
       const item = {
-        title:title.text || platform,
         url:raw.url,
         domain:(()=>{ try { return new URL(raw.url).hostname.replace(/^www\./,""); } catch { return ""; } })(),
-        snippet:snippet.text,
         platform,
         confidence:match.confidence,
         reasons:match.reasons,
