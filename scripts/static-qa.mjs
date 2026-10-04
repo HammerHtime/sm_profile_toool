@@ -93,6 +93,10 @@ if(!app.includes('.filter(step=>step[2]!=="EXPLAIN")')) fail("Social app guides 
 else pass("Social app guides remove redundant explanation slides");
 if(!app.includes("function settingTeachingExpansion(")) fail("Setting-level teaching point expansion is missing");
 else pass("Setting screen carries the full why-it-matters teaching point");
+if(!html.includes('id="privacyGuidesBtn"') || !app.includes("function openPrivacyGuideHub(")) fail("Direct privacy settings launcher is missing");
+else pass("Direct privacy settings launcher exists");
+if(!app.includes('"#privacy-settings"') || !app.includes("showReportStage(4)")) fail("Bookmarkable no-scan privacy route is missing");
+else pass("Privacy settings can open directly without a profile scan");
 if(!app.includes('"NAV:" + target') || !app.includes("function isGuideNavigationTarget(")) fail("Click-by-click setting navigation bridges are missing");
 else pass("Social app guides insert navigation screens before settings");
 if(!app.includes('Tap Back once to return to')) fail("Guides do not explicitly teach users to back out between settings");

@@ -2424,3 +2424,60 @@ body.reportDeckActive{overflow:hidden}
 .settingWhyMain{
   min-width:0;
 }
+
+
+/* RC25 direct privacy settings hub */
+.privacyGuideLaunch{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:10px 16px 10px 10px;
+  border:1px solid rgba(85,227,156,.32);
+  background:rgba(85,227,156,.08);
+  color:#e9fff3;
+}
+.privacyGuideLaunch:hover{
+  transform:translateY(-1px);
+  box-shadow:0 0 35px rgba(85,227,156,.12);
+}
+.privacyGuideLaunchIcon{
+  width:34px;
+  height:34px;
+  border-radius:50%;
+  display:grid;
+  place-items:center;
+  background:linear-gradient(145deg,#55e39c,#1fa76c);
+  color:#04150d;
+  font-size:1.05rem;
+}
+.privacyGuideLaunch span:last-child{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+}
+.privacyGuideLaunch small{
+  font-weight:500;
+  color:#a8cdb8;
+  font-size:.7rem;
+}
+body.privacyGuideDirect .reportStageRail button:not([data-report-target="4"]){
+  display:none;
+}
+body.privacyGuideDirect .reportStageRail button[data-report-target="4"]{
+  pointer-events:none;
+}
+body.privacyGuideDirect .reportDeckControls{
+  display:none;
+}
+body.privacyGuideDirect .hubLegend{
+  display:none;
+}
+body.privacyGuideDirect [data-report-stage="4"] .reportStageIntro>div>span{
+  display:none;
+}
+body.privacyGuideDirect [data-report-stage="4"] .reportStageIntro strong{
+  font-size:1rem;
+}
+@media(max-width:760px){
+  .privacyGuideLaunch{width:100%;justify-content:flex-start}
+}

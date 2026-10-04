@@ -24,6 +24,7 @@
   const consentBox = $("consentBox");
   const liveSearchBtn = $("liveSearchBtn");
   const syntheticDemoBtn = $("syntheticDemoBtn");
+  const privacyGuidesBtn = $("privacyGuidesBtn");
   const uploadLabel = $("uploadLabel");
   const fileInput = $("fileInput");
   const scanPanel = $("scanPanel");
@@ -34,6 +35,7 @@
   const eraseNotice = $("eraseNotice");
   const reportStageNames = ["Snapshot","Sources","What it means","Exposure","App privacy","Phone privacy","Parent controls","Child device controls","Takeaway"];
   let reportStageIndex = 0;
+  let privacyGuideDirectMode = false;
 
   const SOURCE_NAMES = [
     "Instagram","Facebook","TikTok","LinkedIn","Reddit","X / Twitter","Threads","YouTube","Snapchat","Discord (public)",
@@ -897,8 +899,33 @@ function setConsentState() {
 
   function closeReportDeck() {
     results.classList.add("hidden");
-    document.body.classList.remove("reportDeckActive");
+    document.body.classList.remove("reportDeckActive","privacyGuideDirect");
     reportStageIndex = 0;
+    const wasDirect=privacyGuideDirectMode;
+    privacyGuideDirectMode = false;
+    if (wasDirect && window.location.hash === "#privacy-settings") {
+      history.replaceState(null,"",window.location.pathname + window.location.search);
+    }
+  }
+
+  function resetPlatformGuideHitsForDirectMode() {
+    document.querySelectorAll("#platformGrid .platformCard").forEach(card=>{
+      card.classList.remove("foundInSearch");
+      const status=card.querySelector(".platformStatus");
+      if(status)status.textContent="PRIVACY GUIDE →";
+    });
+  }
+
+  function openPrivacyGuideHub(fromHash = false) {
+    privacyGuideDirectMode = true;
+    document.body.classList.add("reportDeckActive","privacyGuideDirect");
+    resetPlatformGuideHitsForDirectMode();
+    if ($("reportDeckSubject")) $("reportDeckSubject").textContent = "Privacy Settings Guide";
+    results.classList.remove("hidden");
+    showReportStage(4);
+    if (!fromHash && window.location.hash !== "#privacy-settings") {
+      history.pushState(null,"","#privacy-settings");
+    }
   }
 
   function renderReport(report) {
@@ -2208,6 +2235,14 @@ function setConsentState() {
     window.scrollTo({top:0,behavior:"smooth"});
   });
 
+  privacyGuidesBtn?.addEventListener("click", () => openPrivacyGuideHub(false));
+
+  window.addEventListener("hashchange",()=>{
+    if(window.location.hash==="#privacy-settings" && !document.body.classList.contains("privacyGuideDirect")){
+      openPrivacyGuideHub(true);
+    }
+  });
+
   $("reportPrev")?.addEventListener("click", () => showReportStage(reportStageIndex - 1));
   $("reportNext")?.addEventListener("click", () => {
     const stages = reportStages();
@@ -2271,4 +2306,5 @@ function setConsentState() {
   populateHubs();
   setConsentState();
   checkLiveSearchReady();
+  if (window.location.hash === "#privacy-settings") openPrivacyGuideHub(true);
 })();
