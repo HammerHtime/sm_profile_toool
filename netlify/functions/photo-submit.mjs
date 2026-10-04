@@ -1,4 +1,5 @@
 import { detectWebImage } from "./google-vision-web.mjs";
+import { reverseGeocodeBroadZone } from "./google-geocoding.mjs";
 import exifr from "exifr";
 import { cleanText, deleteSession, expired, getSession, jsonResponse, putSession, safeEqual, store, voiceAudioKey } from "./photo-session-lib.mjs";
 
@@ -516,7 +517,20 @@ export default async (req) => {
       rawPhotoPersisted: false
     };
 
-    record.webDetection = await detectWebImage(body.imageData);
+    const [webDetection, broadLocation] = await Promise.all([
+      detectWebImage(body.imageData),
+      zone ? reverseGeocodeBroadZone(zone) : Promise.resolve({configured:false,attempted:false,place:null,error:null})
+    ]);
+    record.webDetection = webDetection;
+    record.locationContext = {
+      attempted:!!broadLocation?.attempted,
+      configured:!!broadLocation?.configured,
+      broadPlace:broadLocation?.place || null,
+      error:broadLocation?.error || null,
+      basis:zone
+        ? "Only the already-coarsened 50 km privacy-zone centre was sent for reverse geocoding."
+        : "No embedded GPS was available for broad reverse geocoding."
+    };
 
     try {
       record.correlation = await publicIdentityCorrelation(username, firstName, lastName, city);
