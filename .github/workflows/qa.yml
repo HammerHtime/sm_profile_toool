@@ -26,7 +26,7 @@ jobs:
     timeout-minutes: 8
     env:
       SITE_URL: https://sm-profile-tool.netlify.app
-      RELEASE_MARKER: public-footprint-rc2-smoke-v12
+      RELEASE_MARKER: public-footprint-rc2-smoke-v13
     steps:
       - name: Wait for this release to reach Netlify
         shell: bash
@@ -52,7 +52,7 @@ jobs:
           curl -fsS --max-time 15 "$SITE_URL/presenter.html" >/dev/null
           curl -fsS --max-time 15 "$SITE_URL/volunteer.html" >/dev/null
 
-      - name: Check backend health and Brave configuration
+      - name: Check backend health and API configuration
         shell: bash
         run: |
           set -euo pipefail
@@ -62,7 +62,9 @@ jobs:
           if (!data.ok) throw new Error("Production health endpoint did not report ok=true");
           if (!data.blobs?.ok) throw new Error("Netlify Blobs round-trip is not healthy");
           if (!data.liveSearchConfigured) throw new Error("BRAVE_SEARCH_API_KEY is not visible to production functions");
-          console.log("Health OK, Blobs OK, Brave configured.");
+          if (!data.openAIConfigured) throw new Error("OPENAI_API_KEY is not visible to production functions");
+          if (!data.googleVisionConfigured) throw new Error("GOOGLE_VISION_API_KEY is not visible to production functions");
+          console.log("Health OK, Blobs OK, Brave, OpenAI and Google Vision configured.");
           NODE
 
       - name: Exercise live search provider with synthetic smoke identity
@@ -85,6 +87,25 @@ jobs:
           if (data.provider !== "Brave Search API") throw new Error("Live search did not confirm Brave Search API");
           if (!data.searchHealth || data.searchHealth.completed < 1) throw new Error("No Brave search pass completed");
           console.log("Live Search API completed with Brave.");
+          NODE
+
+      - name: Exercise OpenAI synthesis with synthetic evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          payload='{"consent":true,"evidence":{"subject":{"displayName":"Synthetic QA","city":"Toronto"},"findings":{"publicContent":[{"platform":"Community","title":"Synthetic community item","text":"Synthetic QA attended a public community event in Toronto in May 2025.","date":"2025-05"},{"platform":"Travel","title":"Synthetic travel item","text":"Synthetic QA publicly mentioned a trip to Ottawa in August 2025.","date":"2025-08"}],"timeline":[{"year":2025,"summary":"Synthetic QA appeared at a public community event."}]}}}'
+          tmp_body="$(mktemp)"
+          status="$(curl -sS --max-time 60 -o "$tmp_body" -w '%{http_code}' -H 'content-type: application/json' -d "$payload" "$SITE_URL/.netlify/functions/summarize")"
+          result="$(cat "$tmp_body")"
+          rm -f "$tmp_body"
+
+          AI_STATUS="$status" AI_JSON="$result" node - <<'NODE'
+          const status=Number(process.env.AI_STATUS||0);
+          const data=JSON.parse(process.env.AI_JSON||"{}");
+          if(status!==200) throw new Error("AI synthesis HTTP "+status);
+          if(!data.intelligence?.aiUsed) throw new Error("OpenAI synthesis did not complete: "+(data.intelligence?.mode||"missing intelligence"));
+          if(!data.intelligence?.overview) throw new Error("AI synthesis returned no overview");
+          console.log("OpenAI synthesis completed with "+data.intelligence.model+".");
           NODE
 
       - name: Exercise live photo demo lifecycle
@@ -136,7 +157,10 @@ jobs:
           if(data.status!=="submitted") throw new Error("Photo session is not submitted");
           if(data.image?.mime!=="image/png") throw new Error("Photo metadata did not survive status round-trip");
           if(data.correlation?.attempted!==false) throw new Error("Photo correlation should stay off without a strong identity anchor");
-          console.log("Photo create, submit, status and privacy guard passed.");
+          if(!data.webDetection?.attempted) throw new Error("Google Vision Web Detection did not run");
+          if(!data.webDetection?.configured) throw new Error("Google Vision Web Detection was not configured");
+          if(data.webDetection?.error) throw new Error("Google Vision Web Detection failed: "+data.webDetection.error);
+          console.log("Photo create, Vision web detection, submit, status and privacy guard passed.");
           NODE
 
           erase_payload="$(ID="$id" PRESENTER="$presenter" node -e 'process.stdout.write(JSON.stringify({id:process.env.ID,presenterToken:process.env.PRESENTER}))')"
