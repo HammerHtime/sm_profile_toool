@@ -892,6 +892,17 @@ function renderSubmitted(data){
   }
   revealIndex=0;revealDeck.classList.add('hidden');
 }
+function finishPhotoReveal(){
+  resetVoicePlaybackUi();
+  revealDeck.classList.add('hidden');
+  $('liveSearchStage').classList.add('hidden');
+  const presenterGrid=document.querySelector('.presenterGrid');
+  if(presenterGrid)presenterGrid.classList.remove('hidden');
+  document.body.classList.remove('photoPresentationMode');
+  if($('liveTitle'))$('liveTitle').textContent='Demo complete';
+  if($('liveMessage'))$('liveMessage').textContent='The findings presentation is complete. You can erase the temporary demo data or wait for the session to expire.';
+}
+
 function showReveal(i){
   const slides=[...document.querySelectorAll('.revealSlide')];
   if(!slides.length)return;
@@ -978,7 +989,10 @@ $('erasePhotoDemo').addEventListener('click',erase);
 $('photoPrev')?.addEventListener('click',()=>showReveal(revealIndex-1));
 $('photoNext')?.addEventListener('click',()=>{
   const slides=[...document.querySelectorAll('.revealSlide')];
-  if(revealIndex>=slides.length-1)return;
+  if(revealIndex>=slides.length-1){
+    finishPhotoReveal();
+    return;
+  }
   showReveal(revealIndex+1);
 });
 $('playOriginalConsent')?.addEventListener('click',()=>playOriginalVoiceSample(0));
