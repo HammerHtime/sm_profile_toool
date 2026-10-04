@@ -4,6 +4,7 @@ import { cleanText, deleteSession, expired, getSession, jsonResponse, putSession
 const MAX_BYTES = 4 * 1024 * 1024;
 const allowed = new Set(["image/jpeg","image/jpg","image/png","image/webp","image/heic","image/heif"]);
 const BRAVE_ENDPOINT = "https://api.search.brave.com/res/v1/web/search";
+const BRAVE_IMAGE_ENDPOINT = "https://api.search.brave.com/res/v1/images/search";
 const MAX_VOICE_BYTES = 150 * 1024;
 const MAX_VOICE_MS = 10000;
 const allowedAudio = new Set([
@@ -180,16 +181,68 @@ async function braveSearch(apiKey, q, maxRetries = 2) {
   return [];
 }
 
-async function publicHandleCorrelation(username, firstName, city) {
+async function braveImageSearch(apiKey, q, maxRetries = 2) {
+  const url = new URL(BRAVE_IMAGE_ENDPOINT);
+  url.searchParams.set("q",q);
+  url.searchParams.set("country","CA");
+  url.searchParams.set("search_lang","en");
+  url.searchParams.set("count","16");
+  url.searchParams.set("safesearch","strict");
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    const response = await fetch(url, {
+      method:"GET",
+      headers:{
+        "accept":"application/json",
+        "x-subscription-token":apiKey
+      },
+      signal:AbortSignal.timeout(10000)
+    });
+
+    const data = await response.json().catch(() => ({}));
+    if (response.ok) return Array.isArray(data?.results) ? data.results : [];
+
+    if (response.status === 429 && attempt < maxRetries) {
+      const resetHeader = response.headers.get("x-ratelimit-reset") || "";
+      const seconds = Math.max(1,Math.min(4,Number(resetHeader.split(",")[0])||1));
+      await braveWait(seconds*1000+120);
+      continue;
+    }
+
+    const detail = data?.error?.detail || data?.message || ("Public image search failed with HTTP " + response.status);
+    const error = new Error(detail);
+    error.status = response.status;
+    error.code = data?.error?.code || "";
+    throw error;
+  }
+  return [];
+}
+
+function resultMatchesSuppliedIdentity(result, identity) {
+  const hay = normalize([result?.title,result?.description,result?.url,result?.source].filter(Boolean).join(" "));
+  if (!hay) return false;
+  const handle = normalize(identity.handle);
+  const fullName = normalize(identity.fullName);
+  const city = normalize(identity.city);
+
+  if (handle && hay.includes(handle)) return true;
+  if (fullName && city && hay.includes(fullName) && hay.includes(city)) return true;
+  return false;
+}
+
+async function publicIdentityCorrelation(username, firstName, lastName, city) {
   const handle = cleanText(String(username || "").replace(/^@/, ""), 80);
+  const fullName = [cleanText(firstName,40),cleanText(lastName,60)].filter(Boolean).join(" ").trim();
+  const hasNameAnchor = !!(fullName && lastName && city);
   const apiKey = getBraveApiKey();
 
-  if (!handle) {
+  if (!handle && !hasNameAnchor) {
     return {
       attempted:false,
       configured:!!apiKey,
-      basis:"No public username supplied",
+      basis:"No strong public identity anchor supplied. Add a public username, or a full name plus city.",
       totalMatches:0,
+      publicImages:0,
       platforms:[],
       sourceDomains:[],
       presentation:{photos:[],quotes:[],themes:[]}
@@ -200,23 +253,39 @@ async function publicHandleCorrelation(username, firstName, city) {
     return {
       attempted:false,
       configured:false,
-      basis:"Public username supplied, but live public correlation is not configured",
+      basis:"Identity clues were supplied, but live public correlation is not configured.",
       totalMatches:0,
+      publicImages:0,
       platforms:[],
       sourceDomains:[],
       presentation:{photos:[],quotes:[],themes:[]}
     };
   }
 
-  const quoted = '"' + handle.replaceAll('"',"") + '"';
-  const queries = [
-    quoted + " (site:instagram.com OR site:facebook.com OR site:tiktok.com OR site:linkedin.com OR site:threads.net)",
-    quoted + " (site:reddit.com OR site:x.com OR site:twitter.com OR site:youtube.com OR site:github.com OR site:strava.com)",
-    [quoted, firstName && '"' + firstName.replaceAll('"',"") + '"', city && '"' + city.replaceAll('"',"") + '"'].filter(Boolean).join(" ")
-  ];
+  const identity={handle,fullName:hasNameAnchor?fullName:"",city:hasNameAnchor?city:""};
+  const quotedHandle = handle ? '"' + handle.replaceAll('"',"") + '"' : "";
+  const quotedName = hasNameAnchor ? '"' + fullName.replaceAll('"',"") + '"' : "";
+  const quotedCity = hasNameAnchor ? '"' + city.replaceAll('"',"") + '"' : "";
+  const queries=[];
 
-  const batches = [];
-  for (const q of queries) {
+  if (handle) {
+    queries.push(
+      quotedHandle + " (site:instagram.com OR site:facebook.com OR site:tiktok.com OR site:linkedin.com OR site:threads.net)",
+      quotedHandle + " (site:reddit.com OR site:x.com OR site:twitter.com OR site:youtube.com OR site:github.com OR site:strava.com)"
+    );
+  }
+
+  if (hasNameAnchor) {
+    const base=quotedName+" "+quotedCity;
+    queries.push(
+      base,
+      base + " (site:instagram.com OR site:facebook.com OR site:tiktok.com OR site:linkedin.com OR site:threads.net)",
+      base + " (site:reddit.com OR site:x.com OR site:twitter.com OR site:youtube.com OR site:github.com OR site:strava.com)"
+    );
+  }
+
+  const batches=[];
+  for (const q of [...new Set(queries)]) {
     try {
       batches.push(await braveSearch(apiKey,q));
     } catch (error) {
@@ -225,16 +294,13 @@ async function publicHandleCorrelation(username, firstName, city) {
     }
     if (q !== queries[queries.length - 1]) await braveWait(220);
   }
-  const seen = new Map();
-  const normalizedHandle = normalize(handle);
 
+  const seen=new Map();
   for (const result of batches.flat()) {
-    if (!result?.url) continue;
-    const hay = normalize([result.title,result.description,result.url].filter(Boolean).join(" "));
-    if (!hay.includes(normalizedHandle)) continue;
+    if (!result?.url || !resultMatchesSuppliedIdentity(result,identity)) continue;
 
-    let domain = "";
-    try { domain = new URL(result.url).hostname.replace(/^www\./,"").toLowerCase(); } catch {}
+    let domain="";
+    try { domain=new URL(result.url).hostname.replace(/^www\./,"").toLowerCase(); } catch {}
     if (!domain) continue;
 
     if (!seen.has(result.url)) {
@@ -248,37 +314,77 @@ async function publicHandleCorrelation(username, firstName, city) {
     }
   }
 
-  const matches = [...seen.values()];
-  const counts = new Map();
-  matches.forEach(m => counts.set(m.platform,(counts.get(m.platform)||0)+1));
+  const matches=[...seen.values()];
+  const counts=new Map();
+  matches.forEach(m=>counts.set(m.platform,(counts.get(m.platform)||0)+1));
 
-  const presentationPhotos=matches
+  const imageQuery=[
+    handle && '"' + handle.replaceAll('"',"") + '"',
+    hasNameAnchor && '"' + fullName.replaceAll('"',"") + '"',
+    hasNameAnchor && '"' + city.replaceAll('"',"") + '"'
+  ].filter(Boolean).join(" ");
+
+  let imageMatches=[];
+  if (imageQuery) {
+    try {
+      const imageResults=await braveImageSearch(apiKey,imageQuery);
+      imageMatches=imageResults
+        .filter(result=>resultMatchesSuppliedIdentity(result,identity))
+        .map(result=>({
+          src:braveThumb(result),
+          platform:platformFor(result.url || result.source || ""),
+          domain:(()=>{
+            try { return new URL(result.url || result.source || "").hostname.replace(/^www\./,"").toLowerCase(); }
+            catch { return cleanText(result.source || "",80); }
+          })()
+        }))
+        .filter(item=>item.src)
+        .slice(0,8);
+    } catch (error) {
+      console.error("photo correlation Brave image pass failed",error);
+    }
+  }
+
+  const webPhotos=matches
     .filter(match=>match.thumbnail)
-    .slice(0,8)
-    .map(match=>({
-      src:match.thumbnail,
-      platform:match.platform,
-      domain:match.domain
-    }));
+    .map(match=>({src:match.thumbnail,platform:match.platform,domain:match.domain}));
+
+  const photoSeen=new Set();
+  const presentationPhotos=[...imageMatches,...webPhotos]
+    .filter(photo=>{
+      if(!photo.src||photoSeen.has(photo.src))return false;
+      photoSeen.add(photo.src);
+      return true;
+    })
+    .slice(0,8);
+
   const presentationQuotes=matches
     .filter(match=>match.description && safeForPresentation(match.description))
     .slice(0,6)
-    .map(match=>({
-      platform:match.platform,
-      text:match.description
-    }));
-  const presentationThemes=correlationThemes(matches.filter(match=>safeForPresentation([match.title,match.description].join(" "))),handle,firstName,city);
+    .map(match=>({platform:match.platform,text:match.description}));
+
+  const presentationThemes=correlationThemes(
+    matches.filter(match=>safeForPresentation([match.title,match.description].join(" "))),
+    handle,
+    firstName,
+    city
+  );
+
+  const basisParts=[];
+  if(handle)basisParts.push("supplied public username");
+  if(hasNameAnchor)basisParts.push("supplied full name + city");
 
   return {
     attempted:true,
     configured:true,
-    basis:"Supplied public username only. No facial identification.",
+    basis:"Correlation used " + basisParts.join(" and ") + ". No facial identification.",
     totalMatches:matches.length,
+    publicImages:presentationPhotos.length,
     platforms:[...counts.entries()]
-      .map(([name,count]) => ({ name,count,label:"public pages matching supplied handle" }))
+      .map(([name,count])=>({name,count,label:"verified public pages matching supplied identity clues"}))
       .sort((a,b)=>b.count-a.count)
       .slice(0,10),
-    sourceDomains:[...new Set(matches.map(m=>m.domain))].slice(0,12),
+    sourceDomains:[...new Set(matches.map(m=>m.domain).filter(Boolean))].slice(0,12),
     presentation:{
       photos:presentationPhotos,
       quotes:presentationQuotes,
@@ -306,6 +412,7 @@ export default async (req) => {
     if (body.consent !== true) return jsonResponse({ error: "Consent is required" }, 400);
 
     const firstName = cleanText(body.firstName, 40);
+    const lastName = cleanText(body.lastName, 60);
     const city = cleanText(body.city, 80);
     const username = cleanText(body.username, 80);
     const mime = cleanText(body.mime, 40).toLowerCase();
@@ -387,6 +494,7 @@ export default async (req) => {
 
     record.submission = {
       firstName,
+      lastNameSupplied: !!lastName,
       city,
       usernameMasked: maskHandle(username),
       image: { mime, bytes: bytes.length, width, height },
@@ -408,7 +516,7 @@ export default async (req) => {
     };
 
     try {
-      record.correlation = await publicHandleCorrelation(username, firstName, city);
+      record.correlation = await publicIdentityCorrelation(username, firstName, lastName, city);
     } catch (correlationError) {
       console.error("photo public correlation failed", correlationError);
       record.correlation = {
@@ -416,6 +524,7 @@ export default async (req) => {
         configured:!!getBraveApiKey(),
         basis:"Public correlation failed. No public matches were displayed.",
         totalMatches:0,
+        publicImages:0,
         platforms:[],
         sourceDomains:[],
         presentation:{photos:[],quotes:[],themes:[]}
