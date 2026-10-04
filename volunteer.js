@@ -27,6 +27,8 @@ const voiceSamples = Array.from({length:VOICE_SAMPLE_COUNT}, () => ({
 function normalizeVoiceMime(value = '') {
   const base = String(value || '').toLowerCase().trim().split(';')[0].trim();
   if (base === 'audio/x-m4a') return 'audio/mp4';
+  if (base === 'audio/mp4a-latm') return 'audio/aac';
+  if (base === 'audio/3gp') return 'audio/3gpp';
   return base || 'audio/webm';
 }
 
@@ -270,7 +272,19 @@ async function startVoiceRecording(index) {
     discardVoiceOnStop = false;
     activeVoiceIndex = index;
 
-    const preferred = ['audio/webm;codecs=opus','audio/webm','audio/mp4;codecs=mp4a.40.2','audio/mp4'];
+    const preferred = [
+      'audio/webm;codecs=opus',
+      'audio/webm',
+      'audio/ogg;codecs=opus',
+      'audio/ogg',
+      'audio/mp4;codecs=mp4a.40.2',
+      'audio/mp4',
+      'audio/aac',
+      'audio/mpeg',
+      'audio/3gpp',
+      'audio/amr',
+      'audio/amr-wb'
+    ];
     const supported = preferred.find(type => MediaRecorder.isTypeSupported?.(type));
     const options = {
       ...(supported ? {mimeType:supported} : {}),
