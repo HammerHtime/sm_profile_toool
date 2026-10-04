@@ -1,12 +1,27 @@
 const $ = (id) => document.getElementById(id);
-const params = new URLSearchParams(location.search);
+const params = new URLSearchParams(location.hash ? location.hash.slice(1) : location.search);
 const sessionId = params.get('session') || '';
 const joinToken = params.get('token') || '';
 
+let sessionReady = false;
 let selectedFile = null;
 let selectedSource = '';
 let selectedDimensions = { width:0, height:0 };
 let previewUrl = '';
+const VOICE_SAMPLE_COUNT = 1;
+const VOICE_MAX_MS = 10000;
+let voiceRecorder = null;
+let voiceStream = null;
+let activeVoiceIndex = -1;
+let voiceChunks = [];
+let voiceStartedAt = 0;
+let voiceTimerId = null;
+const voiceSamples = Array.from({length:VOICE_SAMPLE_COUNT}, () => ({
+  blob:null,
+  url:'',
+  durationMs:0,
+  mime:''
+}));
 
 function error(message) {
   $('volunteerError').textContent = message;
@@ -39,14 +54,17 @@ async function markJoined() {
   }
   try {
     await api('/.netlify/functions/photo-join', { id:sessionId, joinToken });
+    sessionReady = true;
+    syncGate();
   } catch (err) {
+    sessionReady = false;
     error(err.message);
     $('submitVolunteer').disabled = true;
   }
 }
 
 function syncGate() {
-  const ok = $('vConsent').checked && $('vFirstName').value.trim() && selectedFile;
+  const ok = sessionReady && $('vConsent').checked && $('vFirstName').value.trim() && selectedFile;
   $('submitVolunteer').disabled = !ok;
 }
 
@@ -94,6 +112,11 @@ async function useSelectedPhoto(file, source) {
 
   if (previewUrl) URL.revokeObjectURL(previewUrl);
   previewUrl = URL.createObjectURL(file);
+  $('photoPreview').onerror = () => {
+    $('photoPreview').classList.add('previewUnavailable');
+    $('photoMeta').textContent = 'Photo selected. Preview is not available for this image format on this browser.';
+  };
+  $('photoPreview').onload = () => $('photoPreview').classList.remove('previewUnavailable');
   $('photoPreview').src = previewUrl;
   $('photoPreviewWrap').classList.remove('hidden');
   $('photoSourceBadge').textContent = source === 'camera' ? 'NEW PHOTO' : 'PHOTO LIBRARY';
@@ -146,6 +169,189 @@ function fileToBase64(file) {
   });
 }
 
+
+function formatVoiceTime(ms) {
+  const total = Math.max(0, Math.floor(ms / 1000));
+  const minutes = Math.floor(total / 60);
+  const seconds = String(total % 60).padStart(2,'0');
+  return minutes + ':' + seconds;
+}
+
+function stopVoiceTimer() {
+  clearInterval(voiceTimerId);
+  voiceTimerId = null;
+}
+
+function updateVoiceTimer(index) {
+  const sample = voiceSamples[index];
+  if (!sample) return;
+  const elapsed = activeVoiceIndex === index && voiceStartedAt
+    ? Math.min(VOICE_MAX_MS, Date.now() - voiceStartedAt)
+    : sample.durationMs;
+  $('voiceTimer' + index).textContent = formatVoiceTime(elapsed);
+}
+
+function stopVoiceStream() {
+  if (voiceStream) {
+    voiceStream.getTracks().forEach(track => track.stop());
+    voiceStream = null;
+  }
+}
+
+function clearVoiceSample(index) {
+  const sample = voiceSamples[index];
+  if (!sample) return;
+
+  if (activeVoiceIndex === index && voiceRecorder?.state === 'recording') {
+    try { voiceRecorder.stop(); } catch {}
+  }
+
+  if (sample.url) {
+    URL.revokeObjectURL(sample.url);
+    sample.url = '';
+  }
+
+  sample.blob = null;
+  sample.durationMs = 0;
+  sample.mime = '';
+
+  $('voicePreview' + index).removeAttribute('src');
+  $('voicePreviewWrap' + index).classList.add('hidden');
+  $('voiceTimer' + index).textContent = '0:00';
+  $('voiceRecordBtn' + index).classList.remove('recording');
+  $('voiceRecordBtn' + index).innerHTML = '<span>●</span> Record consent phrase';
+}
+
+function resetAllVoiceSamples() {
+  stopVoiceTimer();
+  if (voiceRecorder?.state === 'recording') {
+    try { voiceRecorder.stop(); } catch {}
+  }
+  voiceRecorder = null;
+  activeVoiceIndex = -1;
+  voiceChunks = [];
+  voiceStartedAt = 0;
+  stopVoiceStream();
+  voiceSamples.forEach((_, index) => clearVoiceSample(index));
+}
+
+async function startVoiceRecording(index) {
+  clearError();
+
+  if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') {
+    error('Voice recording is not supported by this browser. You can continue without it.');
+    return;
+  }
+
+  if (voiceRecorder?.state === 'recording') {
+    if (activeVoiceIndex === index) {
+      voiceRecorder.stop();
+      return;
+    }
+    voiceRecorder.stop();
+    await new Promise(resolve => setTimeout(resolve, 120));
+  }
+
+  clearVoiceSample(index);
+
+  try {
+    voiceStream = await navigator.mediaDevices.getUserMedia({ audio:true });
+    voiceChunks = [];
+    activeVoiceIndex = index;
+
+    const preferred = ['audio/webm;codecs=opus','audio/webm','audio/mp4'];
+    const supported = preferred.find(type => MediaRecorder.isTypeSupported?.(type));
+    const options = {
+      ...(supported ? {mimeType:supported} : {}),
+      audioBitsPerSecond:48000
+    };
+
+    voiceRecorder = new MediaRecorder(voiceStream, options);
+
+    voiceRecorder.addEventListener('dataavailable', (event) => {
+      if (event.data?.size) voiceChunks.push(event.data);
+    });
+
+    voiceRecorder.addEventListener('stop', () => {
+      const completedIndex = activeVoiceIndex;
+      stopVoiceTimer();
+
+      const durationMs = voiceStartedAt
+        ? Math.min(VOICE_MAX_MS, Math.max(0, Date.now() - voiceStartedAt))
+        : 0;
+
+      voiceStartedAt = 0;
+      activeVoiceIndex = -1;
+
+      const type = voiceRecorder?.mimeType || voiceChunks[0]?.type || 'audio/webm';
+      const blob = new Blob(voiceChunks, { type });
+      const sample = voiceSamples[completedIndex];
+
+      if (sample) {
+        if (sample.url) URL.revokeObjectURL(sample.url);
+        sample.blob = blob;
+        sample.durationMs = durationMs;
+        sample.mime = type;
+        sample.url = URL.createObjectURL(blob);
+
+        $('voicePreview' + completedIndex).src = sample.url;
+        $('voicePreviewWrap' + completedIndex).classList.remove('hidden');
+        $('voiceTimer' + completedIndex).textContent = formatVoiceTime(durationMs);
+        $('voiceRecordBtn' + completedIndex).classList.remove('recording');
+        $('voiceRecordBtn' + completedIndex).innerHTML = '<span>●</span> Record again';
+      }
+
+      stopVoiceStream();
+      voiceChunks = [];
+      voiceRecorder = null;
+    });
+
+    voiceRecorder.start();
+    voiceStartedAt = Date.now();
+    updateVoiceTimer(index);
+    voiceTimerId = setInterval(() => {
+      updateVoiceTimer(index);
+      if (Date.now() - voiceStartedAt >= VOICE_MAX_MS && voiceRecorder?.state === 'recording') {
+        voiceRecorder.stop();
+      }
+    }, 200);
+
+    $('voiceRecordBtn' + index).classList.add('recording');
+    $('voiceRecordBtn' + index).innerHTML = '<span>■</span> Stop';
+  } catch (err) {
+    stopVoiceTimer();
+    stopVoiceStream();
+    voiceRecorder = null;
+    activeVoiceIndex = -1;
+    voiceStartedAt = 0;
+    clearVoiceSample(index);
+
+    if (err?.name === 'NotAllowedError') {
+      error('Microphone access was not allowed. You can continue without voice samples.');
+    } else {
+      error('Could not start the microphone. You can continue without voice samples.');
+    }
+  }
+}
+
+for (let index = 0; index < VOICE_SAMPLE_COUNT; index++) {
+  $('voiceRecordBtn' + index).addEventListener('click', () => startVoiceRecording(index));
+  $('deleteVoiceBtn' + index).addEventListener('click', () => clearVoiceSample(index));
+}
+
+async function blobToBase64(blob) {
+  if (!blob) return '';
+  return await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const value = String(reader.result || '');
+      resolve(value.includes(',') ? value.split(',')[1] : value);
+    };
+    reader.onerror = () => reject(new Error('Could not read the voice sample.'));
+    reader.readAsDataURL(blob);
+  });
+}
+
 $('volunteerForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   clearError();
@@ -160,6 +366,17 @@ $('volunteerForm').addEventListener('submit', async (e) => {
 
   try {
     const imageData = await fileToBase64(selectedFile);
+    const voicePayload = [];
+    for (let index = 0; index < VOICE_SAMPLE_COUNT; index++) {
+      const sample = voiceSamples[index];
+      if (!sample.blob) continue;
+      voicePayload.push({
+        index,
+        durationMs:Math.min(VOICE_MAX_MS, Math.max(0, Math.round(sample.durationMs))),
+        mime:sample.mime || sample.blob.type || 'audio/webm',
+        audioData:await blobToBase64(sample.blob)
+      });
+    }
 
     await api('/.netlify/functions/photo-submit', {
       id:sessionId,
@@ -172,7 +389,14 @@ $('volunteerForm').addEventListener('submit', async (e) => {
       imageData,
       width:selectedDimensions.width,
       height:selectedDimensions.height,
-      source:selectedSource
+      source:selectedSource,
+      voiceSamples:voicePayload,
+      voiceDelivery:{
+        consentPhraseWords:14,
+        speakingRateFactor:voicePayload[0]?.durationMs
+          ? Math.min(1.20,Math.max(0.80,5500/voicePayload[0].durationMs))
+          : 1
+      }
     });
 
     if (previewUrl) {
@@ -181,6 +405,7 @@ $('volunteerForm').addEventListener('submit', async (e) => {
     }
     clearFileInputs();
     selectedFile = null;
+    resetAllVoiceSamples();
 
     $('volunteerForm').classList.add('hidden');
     $('volunteerDone').classList.remove('hidden');
@@ -189,9 +414,18 @@ $('volunteerForm').addEventListener('submit', async (e) => {
     document.body.classList.remove('volunteerSubmitting');
     error(err.message);
     button.disabled = false;
-    button.textContent = 'Consent & Start Live Search';
+    button.textContent = 'Consent & Start Analysis';
   }
 });
 
 markJoined();
 syncGate();
+
+window.addEventListener('pagehide', () => {
+  stopVoiceTimer();
+  stopVoiceStream();
+  voiceSamples.forEach(sample => {
+    if (sample.url) URL.revokeObjectURL(sample.url);
+  });
+  if (previewUrl) URL.revokeObjectURL(previewUrl);
+});

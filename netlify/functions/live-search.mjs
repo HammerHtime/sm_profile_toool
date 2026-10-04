@@ -39,10 +39,13 @@ function redact(text = "") {
   let out = String(text);
   const emails = [...out.matchAll(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi)].map(m => m[0]);
   const phones = [...out.matchAll(/(?:\+?1[-.\s]?)?(?:\(?\d{3}\)?[-.\s]?)\d{3}[-.\s]?\d{4}/g)].map(m => m[0]);
-  const addresses = [...out.matchAll(/\b\d{1,6}[A-Za-z]?\s+(?:[A-Za-z0-9.'-]+\s+){0,4}(?:Street|St|Road|Rd|Avenue|Ave|Drive|Dr|Boulevard|Blvd|Lane|Ln|Court|Ct|Crescent|Cres|Way)\b/gi)].map(m => m[0]);
 
+  // Mask contact strings before scanning addresses so the tail of a phone
+  // number cannot be mistaken for a street number.
   for (const v of emails) out = out.replaceAll(v, maskEmail(v));
   for (const v of phones) out = out.replaceAll(v, maskPhone(v));
+
+  const addresses = [...out.matchAll(/\b\d{1,6}[A-Za-z]?\s+(?:[A-Za-z0-9.'-]+\s+){0,4}(?:Street|St|Road|Rd|Avenue|Ave|Drive|Dr|Boulevard|Blvd|Lane|Ln|Court|Ct|Crescent|Cres|Way)\b/gi)].map(m => m[0]);
   for (const v of addresses) out = out.replaceAll(v, maskAddress(v));
 
   return {
@@ -192,7 +195,8 @@ async function searchWeb(apiKey, q) {
       "content-type":"application/json",
       "x-subscription-token":apiKey
     },
-    body:JSON.stringify({ q, country:"CA", search_lang:"en", count:20 })
+    body:JSON.stringify({ q, country:"CA", search_lang:"en", count:20 }),
+    signal:AbortSignal.timeout(8000)
   });
 
   const data = await response.json().catch(() => ({}));
@@ -207,13 +211,6 @@ async function searchWeb(apiKey, q) {
 
 export default async (req) => {
   const apiKey = process.env.BRAVE_SEARCH_API_KEY;
-
-  if (req.method === "GET") {
-    return respond({
-      configured: !!apiKey,
-      provider: "Brave Search API"
-    });
-  }
 
   if (req.method !== "POST") return respond({ error:"POST required" }, 405);
 
@@ -269,10 +266,35 @@ export default async (req) => {
   const byUrl = new Map();
   const contactClues = { emails:[], phones:[], addresses:[] };
 
-  for (const query of queries) {
-    const results = await searchWeb(apiKey, query.q);
-    for (const raw of results) {
+  const queryBatches = await Promise.all(queries.map(async (query) => {
+    try {
+      return { query, results:await searchWeb(apiKey, query.q), error:null };
+    } catch (error) {
+      console.error("live-search pass failed", query.group, error);
+      return { query, results:[], error:error?.message || "Search pass failed" };
+    }
+  }));
+
+  const completedPasses = queryBatches.filter(batch => !batch.error);
+  const failedPasses = queryBatches.filter(batch => batch.error);
+
+  if (!completedPasses.length) {
+    return respond({
+      error:"The public search provider did not complete any search passes.",
+      detail:"Try again in a moment. Synthetic Demo remains available as a presentation fallback."
+    }, 502);
+  }
+
+  for (const batch of completedPasses) {
+    const query = batch.query;
+    for (const raw of batch.results) {
       if (!raw?.url) continue;
+      try {
+        const parsedUrl = new URL(raw.url);
+        if (!["http:","https:"].includes(parsedUrl.protocol)) continue;
+      } catch {
+        continue;
+      }
       const match = matchResult(raw, person);
       if (match.confidence === "discard") continue;
 
@@ -284,10 +306,8 @@ export default async (req) => {
 
       const platform = platformFor(raw.url);
       const item = {
-        title:title.text || platform,
         url:raw.url,
         domain:(()=>{ try { return new URL(raw.url).hostname.replace(/^www\./,""); } catch { return ""; } })(),
-        snippet:snippet.text,
         platform,
         confidence:match.confidence,
         reasons:match.reasons,
@@ -333,7 +353,9 @@ export default async (req) => {
 
   const coverageNames = ["LinkedIn","Instagram","Facebook","TikTok","Threads","Reddit","X / Twitter","YouTube","Strava","GitHub","Medium","Substack"];
   const sourceCoverage = {
-    searched:queries.length,
+    searched:completedPasses.length,
+    attempted:queries.length,
+    failed:failedPasses.length,
     matched:new Set(sources.map(s=>s.queryGroup)).size,
     sources:coverageNames.map(name=>({name,matched:platforms.has(name)}))
   };
@@ -365,6 +387,23 @@ export default async (req) => {
     activity:[],
     themes:[],
     searchedAt:new Date().toISOString(),
+    searchHealth:{
+      attempted:queries.length,
+      completed:completedPasses.length,
+      failed:failedPasses.length
+    },
     provider:"Brave Search API"
   });
+};
+
+
+export const config = {
+  path:"/api/live-search",
+  method:"POST",
+  rateLimit:{
+    action:"rate_limit",
+    aggregateBy:["ip","domain"],
+    windowSize:60,
+    windowLimit:6
+  }
 };

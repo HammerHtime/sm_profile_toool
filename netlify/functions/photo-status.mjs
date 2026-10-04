@@ -1,12 +1,22 @@
 import { cleanText, deleteSession, expired, getSession, jsonResponse, safeEqual } from "./photo-session-lib.mjs";
 
 export default async (req) => {
-  if (req.method !== "GET") return jsonResponse({ error: "Method not allowed" }, 405);
+  if (!["POST","GET"].includes(req.method)) return jsonResponse({ error: "Method not allowed" }, 405);
 
   try {
-    const url = new URL(req.url);
-    const id = cleanText(url.searchParams.get("id"), 80);
-    const presenterToken = cleanText(url.searchParams.get("token"), 120);
+    let id = "";
+    let presenterToken = "";
+
+    if (req.method === "POST") {
+      const body = await req.json();
+      id = cleanText(body.id, 80);
+      presenterToken = cleanText(body.presenterToken, 120);
+    } else {
+      // GET remains temporarily compatible with older presenter tabs.
+      const url = new URL(req.url);
+      id = cleanText(url.searchParams.get("id"), 80);
+      presenterToken = cleanText(url.searchParams.get("token"), 120);
+    }
     const record = await getSession(id);
 
     if (!record) return jsonResponse({ error: "Session not found" }, 404);
@@ -28,6 +38,22 @@ export default async (req) => {
         usernameMasked: record.submission.usernameMasked
       } : null,
       image: record.submission?.image || null,
+      voiceSamples: Array.isArray(record.submission?.voiceSamples)
+        ? record.submission.voiceSamples.map(sample => ({
+            index:sample.index,
+            durationMs:sample.durationMs,
+            mime:sample.mime,
+            bytes:sample.bytes,
+            available:!!sample.available,
+            temporary:true,
+            cloned:false
+          }))
+        : [],
+      voiceDelivery: record.submission?.voiceDelivery || {
+        speakingRateFactor:1,
+        identityReproduction:false,
+        generatedVoice:"generic"
+      },
       findings: record.findings || null,
       correlation: record.correlation || null
     });

@@ -25,8 +25,7 @@ export default async (req) => {
 
     const origin = new URL(req.url).origin;
     const joinUrl = new URL("/volunteer.html", origin);
-    joinUrl.searchParams.set("session", id);
-    joinUrl.searchParams.set("token", joinToken);
+    joinUrl.hash = new URLSearchParams({ session:id, token:joinToken }).toString();
 
     const qrDataUrl = await QRCode.toDataURL(joinUrl.toString(), {
       width: 720,
@@ -44,5 +43,17 @@ export default async (req) => {
   } catch (error) {
     console.error("photo-create failed", error);
     return jsonResponse({ error: "Could not create the live photo session.", detail: error?.message || "Unknown error" }, 500);
+  }
+};
+
+
+export const config = {
+  path:"/api/photo-create",
+  method:"POST",
+  rateLimit:{
+    action:"rate_limit",
+    aggregateBy:["ip","domain"],
+    windowSize:60,
+    windowLimit:10
   }
 };

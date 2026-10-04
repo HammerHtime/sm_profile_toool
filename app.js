@@ -1,7 +1,21 @@
 (() => {
+  try {
+    const resetKey = "pfLastHardReset";
+    const last = Number(localStorage.getItem(resetKey) || 0);
+    const now = Date.now();
+    if (!last || now - last >= 24 * 60 * 60 * 1000) {
+      sessionStorage.clear();
+      localStorage.removeItem("pfPhotoPresenter");
+      localStorage.setItem(resetKey, String(now));
+    }
+  } catch {}
+
+
   "use strict";
 
   const $ = (id) => document.getElementById(id);
+  const MIN_LIVE_SEARCH_MS = 14000;
+  const wait = (ms) => new Promise(resolve => setTimeout(resolve,ms));
   const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (ch) => ({
     "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
   })[ch]);
@@ -31,6 +45,8 @@
   ];
 
   const PLATFORMS = [
+    {name:"iPhone Privacy",icon:"●",brand:"#e7edf3",desc:"Location, precise location, contacts, photos, camera, microphone, tracking and app permissions",found:true,device:"ios"},
+    {name:"Android Privacy",icon:"◆",brand:"#72d572",desc:"Permission manager, location, precise location, camera, microphone, contacts, photos and app access",found:true,device:"android"},
     {name:"Instagram",icon:"◎",brand:"#ff3d9a",desc:"Account visibility, tags, mentions, contacts, activity and location",found:true},
     {name:"Facebook",icon:"f",brand:"#1877f2",desc:"Audience, profile discovery, tagging, friends, location and off-Facebook data",found:true},
     {name:"TikTok",icon:"♪",brand:"#25f4ee",desc:"Private account, suggestions, contacts, downloads, messages and location",found:true},
@@ -183,6 +199,34 @@
       ["People Nearby","Keep nearby discovery off unless actively using it.","People Nearby"],
       ["Why this matters","Phone-number visibility and nearby discovery can connect an otherwise pseudonymous Telegram account to a real-world identity.","EXPLAIN"]
     ],
+    "Twitch":[
+      ["Open Twitch","Tap your profile image and open Settings.","Settings"],
+      ["Security and Privacy","Open Security and Privacy.","Security and Privacy"],
+      ["Block unwanted users","Review blocked users and use blocking when needed.","Blocked users"],
+      ["Whispers","Review who can send Whispers and use safety controls for unwanted contact.","Whispers"],
+      ["Activity sharing","Review whether your activity, connections or linked accounts reveal more than intended.","Activity"],
+      ["Connections","Review connected accounts and revoke services you no longer use.","Connections"],
+      ["Why this matters","Public streams, chat history, linked accounts and activity patterns can connect a gaming identity to a broader public profile.","EXPLAIN"]
+    ],
+    "GitHub":[
+      ["Open GitHub","Open your profile, then Settings.","Settings"],
+      ["Public profile","Review the name, bio, company, location and website fields shown publicly.","Public profile"],
+      ["Public email","Make sure your public profile email is hidden unless you intentionally want it visible.","Public email"],
+      ["Email privacy","In Emails, keep your email private and use GitHub's no-reply address for commits when appropriate.","Email privacy"],
+      ["Public repositories","Review repositories, issue comments, pull requests and commit history that are visible publicly.","Public repositories"],
+      ["Contribution activity","Review whether public contribution activity reveals work patterns, projects or organizations.","Contributions"],
+      ["Connected applications","Remove OAuth apps or integrations you no longer use.","Applications"],
+      ["Why this matters","GitHub can connect a username to an email address, employer, technical interests, project history and years of timestamped activity.","EXPLAIN"]
+    ],
+    "Pinterest":[
+      ["Open Pinterest","Open your profile, then Settings.","Settings"],
+      ["Profile visibility","Review whether your profile can appear in search engines.","Search privacy"],
+      ["Boards","Review each board and make sensitive boards secret where appropriate.","Boards"],
+      ["Personalization","Review personalization and activity-based recommendations.","Personalization"],
+      ["Connected accounts","Review linked social or sign-in accounts and remove connections you no longer need.","Connected accounts"],
+      ["Contacts and discovery","Review contact syncing or discovery features if enabled.","Discoverability"],
+      ["Why this matters","Public boards can reveal interests, purchases, travel plans, home projects and other patterns that become useful identity clues.","EXPLAIN"]
+    ],
     "Strava":[
       ["Open Strava","Open Settings.","Settings"],
       ["Privacy Controls","Open Privacy Controls.","Privacy Controls"],
@@ -263,19 +307,56 @@
     ]
   };
 
+  const iosPrivacy = [
+    ["Open Settings","Open Settings on the iPhone.","Settings"],
+    ["Privacy & Security","Scroll to Privacy & Security.","Privacy & Security"],
+    ["Location Services","Open Location Services to review every app with location access.","Location Services"],
+    ["Review app access","For each app, choose Never, Ask Next Time, While Using, or Always based on what the app actually needs.","Location Services"],
+    ["Precise Location","Turn off Precise Location for apps that only need a general area.","Precise Location"],
+    ["Tracking","Return to Privacy & Security and open Tracking. Limit cross-app tracking where appropriate.","Tracking"],
+    ["Contacts","Review which apps can access your contacts.","Contacts"],
+    ["Photos","Review photo-library access. Use limited access when an app does not need the full library.","Photos"],
+    ["Camera","Review which apps can use the camera.","Camera"],
+    ["Microphone","Review which apps can use the microphone.","Microphone"],
+    ["Local Network","Review which apps can discover devices on your local network.","Local Network"],
+    ["Safety Check","For personal-safety situations, review Apple's Safety Check tools for sharing and account access.","Safety Check"],
+    ["Why this matters","Device permissions can reveal location, contacts, photos and nearby devices even when your social profile itself is private.","EXPLAIN"]
+  ];
+
+  const androidPrivacy = [
+    ["Open Settings","Open Settings on the Android device.","Settings"],
+    ["Security & privacy","Open Security & privacy. Menu wording can vary by manufacturer.","Security & privacy"],
+    ["Privacy controls","Open Privacy or Permission manager.","Privacy controls"],
+    ["Location","Review which apps can access location and whether they can use it all the time or only while in use.","Location"],
+    ["Precise location","Where supported, turn off precise location for apps that only need an approximate area.","Precise location"],
+    ["Camera","Review camera permission by app.","Camera"],
+    ["Microphone","Review microphone permission by app.","Microphone"],
+    ["Photos and videos","Review which apps can access photos and videos. Use selected-photo access where available.","Photos and videos"],
+    ["Contacts","Review contacts permission and remove access from apps that do not need your address book.","Contacts"],
+    ["Unused apps","Review permission auto-reset or pause-app-activity features for apps you no longer use.","Unused apps"],
+    ["Privacy dashboard","Use Privacy dashboard to see recent access to sensitive permissions.","Privacy dashboard"],
+    ["Why this matters","Android permission history can show which apps are accessing location, camera and microphone, helping reduce unnecessary exposure.","EXPLAIN"]
+  ];
+
   const iosParent = [
     ["Open Settings","On the parent's iPhone, open Settings.","Settings"],
     ["Open Family","Tap Family.","Family"],
     ["Select your child","Tap the child's name in the Family group.","Child"],
-    ["Open Screen Time","Tap Screen Time. In iOS 27, this opens the updated parental-control experience.","Screen Time"],
-    ["Apps & Websites","Review which apps and websites the child can access. This is also where Ask to Buy and Ask to Browse protections can apply.","Apps & Websites"],
-    ["Allowed Contacts","Review who the child can communicate with in Messages, FaceTime and Phone, including approval for new contacts where supported.","Allowed Contacts"],
+    ["Open Screen Time","Tap Screen Time to open the child's current parental-control settings.","Screen Time"],
+    ["Apps & Websites","Review which apps and websites the child can access.","Apps & Websites"],
+    ["Ask to Buy","Inside Apps & Websites restrictions, require approval for eligible new app purchases and downloads.","Ask to Buy"],
+    ["Ask to Browse","Review website filtering and Ask to Browse so new websites can require parent approval.","Ask to Browse"],
+    ["Allowed Contacts","Choose who the child can communicate with in supported Phone, Messages and FaceTime experiences, including approval for new contacts.","Allowed Contacts"],
+    ["Always Allowed","Choose essential apps and contacts that remain available even when other Screen Time limits are active.","Always Allowed"],
     ["Time Allowances","Set daily time budgets for categories such as entertainment, games and social media.","Time Allowances"],
     ["Screen Time Schedules","Create school, after-school, evening or weekend routines for when apps can be used.","Screen Time Schedules"],
-    ["Content & Privacy Restrictions","Manage age ratings, apps, content and whether the child can change sensitive device settings.","Content & Privacy Restrictions"],
+    ["Content & Privacy Restrictions","Open Content & Privacy Restrictions to manage age ratings, built-in features and sensitive settings.","Content & Privacy Restrictions"],
+    ["App Store purchases","Review installing apps, deleting apps and in-app purchase restrictions.","iTunes & App Store Purchases"],
+    ["Age-appropriate content","Review App Store, Media, Web & Games restrictions and age ratings.","App Store, Media, Web & Games"],
+    ["Allow changes to settings","Review whether the child can change Accounts, Contacts, Photos, Location Services and other protected settings.","Allow Changes to Settings"],
     ["Communication Safety","Open Communication Safety and review the protection for the child account.","Communication Safety"],
     ["What Communication Safety does","On supported Apple services, on-device detection can warn and blur sensitive photos or videos before they are viewed or sent. Apple does not receive the image merely because sensitive content was detected.","EXPLAIN"],
-    ["Extra protection for younger children","With a Screen Time passcode, children under 13 can require a parent or guardian to enter the passcode before viewing detected sensitive content. This is not a system that simply forwards the child's image to the parent.","EXPLAIN"],
+    ["Extra protection for younger children","With a Screen Time passcode, younger child accounts can require parent or guardian approval before viewing certain detected sensitive content. This is not a system that simply forwards the child's image to the parent.","EXPLAIN"],
     ["Open Privacy & Security","On the child's iPhone, return to Settings and open Privacy & Security.","Privacy & Security"],
     ["Location Services","Open Location Services and review which apps can use the child's location.","Location Services"],
     ["Precise Location","For apps that only need a general area, turn off Precise Location where appropriate.","Precise Location"],
@@ -285,28 +366,27 @@
   ];
 
   const androidParent = [
-    ["Install / open Family Link","Parent opens Google Family Link and confirms the child's supervised Google Account.","Family Link"],
+    ["Open Family Link","Open Google Family Link on the parent's device.","Family Link"],
     ["Select the child","Choose the child's profile.","Child profile"],
-    ["Controls","Open Controls.","Controls"],
-    ["Daily limit","Set the total daily device limit.","Daily limit"],
-    ["Downtime","Set bedtime / school-night downtime.","Downtime"],
-    ["App limits","Set individual limits or block specific apps.","App limits"],
-    ["Google Play controls","Open Content restrictions → Google Play.","Google Play"],
-    ["App approvals","Require parent approval for app downloads or purchases.","App approvals"],
-    ["Purchase approvals","Choose which purchases need approval.","Purchases"],
-    ["Chrome","Open Content restrictions → Google Chrome.","Chrome"],
-    ["Website controls","Try to block explicit sites or allow only approved sites for younger children.","Websites"],
-    ["Google Search","Enable SafeSearch controls where supervision supports them.","SafeSearch"],
-    ["YouTube","Choose a supervised YouTube experience / content setting.","YouTube"],
-    ["Contacts","Review communication / contacts controls available for the child's device and apps.","Contacts"],
-    ["Location","Open Location in Family Link.","Location"],
-    ["Device location","Choose whether the parent can see the child's supervised device location.","Device location"],
-    ["App permissions","Review location, camera, microphone, contacts, photos/files permissions app by app.","App permissions"],
-    ["Precise location","On Android app permissions, disable precise location where an approximate location is enough.","Precise location"],
-    ["Unknown apps / sideloading","Keep installation from unknown sources off unless you intentionally need it.","Unknown apps"],
-    ["Account changes","Keep the supervised account linked and protect parent settings.","Account supervision"],
-    ["Notifications","Choose which Family Link notifications the parent should receive, including app requests and account changes.","Parent alerts"],
-    ["Why it matters","Family Link combines device limits, app approval, web/content controls, location and permission review in one parent dashboard.","EXPLAIN"]
+    ["Screen time","Open Screen time to review limits and schedules.","Screen time"],
+    ["Daily limit","Open Time limits and set the daily device limit.","Daily limit"],
+    ["Downtime / schedule","Set school-night or bedtime downtime and any schedule that fits the family.","Downtime"],
+    ["App limits","Under Screen time → Time limits → App limits, set individual app limits, block apps or allow unlimited-time apps.","App limits"],
+    ["Google Play controls","Open Controls and review Google Play restrictions.","Google Play"],
+    ["App and download approvals","Require approval for eligible app downloads where appropriate.","App approvals"],
+    ["Purchase approvals","Choose which Google Play purchases or downloads require parent approval.","Purchases"],
+    ["Chrome and Web","Open Controls → Google Chrome and Web.","Chrome"],
+    ["Website controls","Choose Allow all sites, Try to block explicit sites, or Only allow approved sites, and review approved/blocked sites.","Websites"],
+    ["Google Search","Review SafeSearch and Search settings available for the supervised account.","SafeSearch"],
+    ["YouTube","Review the supervised YouTube experience and content settings for the child.","YouTube"],
+    ["Contacts, calls & text","Open Controls → Contacts, calls & text. Review parent-managed contacts and who the child may call or text on supported apps/devices.","Contacts"],
+    ["Location sharing","Open Family Link's Location tab and review whether the parent's device can see the child's supported Android device location.","Device location"],
+    ["Location settings","Review Location settings and Location Accuracy when appropriate.","Precise location"],
+    ["App permissions","Review sensitive app permissions such as location, camera, microphone, contacts, photos and videos. Where supported, set permission changes to require the parent.","App permissions"],
+    ["Unknown apps / sideloading","Keep installation from unknown sources off unless there is a specific reason to allow it.","Unknown apps"],
+    ["Account privacy settings","Open Controls → Account settings → Privacy settings and review the child's Google activity and account privacy choices.","Account supervision"],
+    ["Family Link notifications","Review notifications for app requests, website requests, activity-control changes and location changes.","Parent alerts"],
+    ["Why it matters","Family Link combines screen-time limits, app approval, web and search controls, approved contacts, location and app-permission review in one parent dashboard. Exact options vary by Android version and device.","EXPLAIN"]
   ];
 
   function syntheticReport() {
@@ -400,30 +480,33 @@ async function checkLiveSearchReady() {
     if (!status || !liveSearchBtn) return;
 
     try {
-      const res = await fetch("/.netlify/functions/live-search", { method:"GET", cache:"no-store" });
+      const res = await fetch("/.netlify/functions/health", { cache:"no-store" });
       const data = await res.json().catch(() => ({}));
 
-      if (res.ok && data.configured) {
+      if (res.ok && data.liveSearchConfigured) {
         status.classList.add("liveConfigured");
         status.classList.remove("liveUnconfigured");
         status.innerHTML = '<span class="statusDot"></span><strong>Live Search ready.</strong> Real public/indexed searches are configured. Synthetic Demo remains available as a clearly labelled fallback.';
         liveSearchBtn.dataset.configured = "true";
+        setConsentState();
       } else {
         status.classList.add("liveUnconfigured");
         status.classList.remove("liveConfigured");
         status.innerHTML = '<span class="statusDot"></span><strong>Live Search needs configuration.</strong> Add <b>BRAVE_SEARCH_API_KEY</b> in Netlify environment variables. Synthetic Demo and the privacy walkthroughs still work.';
         liveSearchBtn.dataset.configured = "false";
+        setConsentState();
       }
     } catch (e) {
       status.classList.add("liveUnconfigured");
       status.innerHTML = '<span class="statusDot"></span><strong>Live Search readiness could not be confirmed.</strong> Synthetic Demo and the privacy walkthroughs remain available.';
       liveSearchBtn.dataset.configured = "unknown";
+      setConsentState();
     }
   }
 
 function setConsentState() {
     const ok = !!consent.checked;
-    if (liveSearchBtn) liveSearchBtn.disabled = !ok;
+    if (liveSearchBtn) liveSearchBtn.disabled = !ok || liveSearchBtn.dataset.configured === "false";
     if (syntheticDemoBtn) syntheticDemoBtn.disabled = !ok;
     fileInput.disabled = !ok;
     uploadLabel.classList.toggle("disabled", !ok);
@@ -475,7 +558,10 @@ function setConsentState() {
 
     $("subjectName").textContent = report.subject || "Search Subject";
     $("summaryLine").textContent = mode === "verified"
-      ? "Verified public-source findings, privacy-masked before display."
+      ? ("Verified public-source findings, privacy-masked before display." +
+          (report.searchHealth?.failed
+            ? " " + report.searchHealth.completed + " of " + report.searchHealth.attempted + " search passes completed."
+            : ""))
       : mode === "synthetic"
         ? "Synthetic fallback presentation. No live public search produced these values."
         : "Summary of user-supplied evidence. Not independently verified by this build.";
@@ -549,12 +635,12 @@ function setConsentState() {
               (source.confidence === "strong" ? "STRONG MATCH" : "POSSIBLE MATCH") +
             '</span>' +
           '</div>' +
-          '<strong>' + escapeHtml(source.title || source.domain || "Public result") + '</strong>' +
-          '<p>' + escapeHtml(source.snippet || "Open the source to review this result.") + '</p>' +
+          '<strong>' + escapeHtml((source.platform || "Public web") + " public result") + '</strong>' +
+          '<p>Public/indexed page returned by the search provider. Open the source only when you want to review the underlying page.</p>' +
           '<div class="publicSourceMeta">' +
             '<span>' + escapeHtml(source.domain || "") + '</span>' +
             '<span>' + escapeHtml(reasons || "name match") + '</span>' +
-          '</div>';
+          '</div><div class="publicSourceOpen">OPEN SOURCE ↗</div>';
         publicSourcesGrid.appendChild(card);
       });
     }
@@ -585,6 +671,14 @@ function setConsentState() {
       });
     }
 
+    const zeroFallback = $("zeroResultFallback");
+    if (zeroFallback) {
+      const verifiedHitCount = mode === "verified"
+        ? (report.publicSources || []).length
+        : 1;
+      zeroFallback.classList.toggle("hidden", !(mode === "verified" && verifiedHitCount === 0));
+    }
+
     $("takeaway").textContent = mode === "synthetic"
       ? "Synthetic mode is a visual fallback only. Use it to demonstrate capabilities when a live search returns little or nothing. Do not present these values as findings."
       : "One post is a fragment. Hundreds of verified or supplied fragments can become a profile. Always check the provenance label and source before treating a value as a real finding.";
@@ -600,16 +694,20 @@ function setConsentState() {
       const row = document.createElement("div");
       row.className = "breakdownRow";
       const pct = Math.max(5, Math.round(Number(x[1]) / max * 100));
-      row.innerHTML = "<span>" + x[0] + "</span><strong>" + x[1] + '</strong><div class="breakdownBar"><span style="width:' + pct + '%"></span></div>';
+      row.innerHTML = "<span>" + escapeHtml(x[0]) + "</span><strong>" + escapeHtml(x[1]) + '</strong><div class="breakdownBar"><span style="width:' + pct + '%"></span></div>';
       root.appendChild(row);
     });
   }
 
   function buildPlatformCard(p, parentMode) {
     const b = document.createElement("button");
-    b.className = "platformCard";
+    b.type = "button";
+    b.className = "platformCard" + (p.device ? " devicePrivacyCard" : "");
     b.style.setProperty("--brand", p.brand || "#52d6ff");
-    b.innerHTML = '<div class="platformIcon">' + p.icon + '</div><div class="platformName">' + p.name + '</div><div class="platformDesc">' + p.desc + '</div><div class="platformStatus">' + (parentMode ? "PARENT GUIDE →" : (p.found ? "FOUND + FIX →" : "PRIVACY GUIDE →")) + "</div>";
+    const status = parentMode
+      ? (p.device ? "ENTER PARENT CONTROLS →" : "PARENT GUIDE →")
+      : (p.device ? "ENTER DEVICE →" : (p.found ? "FOUND + FIX →" : "PRIVACY GUIDE →"));
+    b.innerHTML = '<div class="platformIcon">' + p.icon + '</div><div class="platformName">' + p.name + '</div><div class="platformDesc">' + p.desc + '</div><div class="platformStatus">' + status + "</div>";
     b.addEventListener("click", () => openGuide(p, parentMode, b));
     return b;
   }
@@ -630,8 +728,8 @@ function setConsentState() {
   let guidePlatform = null;
 
   function guideFor(p, parentMode) {
-    if (p.device === "ios") return iosParent;
-    if (p.device === "android") return androidParent;
+    if (p.device === "ios") return parentMode ? iosParent : iosPrivacy;
+    if (p.device === "android") return parentMode ? androidParent : androidPrivacy;
     if (parentMode) return parentGuides[p.name] || fallbackGuide(p.name);
     return genericGuide[p.name] || fallbackGuide(p.name);
   }
@@ -675,7 +773,7 @@ function setConsentState() {
 
     const isIOS = p.device === "ios";
     const deviceName = isIOS ? "iPhone" : "Android";
-    const settingsIcon = isIOS ? "⚙" : "⚙";
+    const portalTargetLabel = isIOS ? "Settings" : (parentMode ? "Family Link" : "Settings");
     const appTiles = isIOS
       ? [
           ["✉","Messages"],["◉","Camera"],["▧","Photos"],["⌖","Find My"],
@@ -689,9 +787,9 @@ function setConsentState() {
     portal.innerHTML =
       '<div class="devicePortalBackdrop"></div>' +
       '<div class="devicePortalHud">' +
-        '<div class="devicePortalKicker">PRIVACY CONTROLS</div>' +
+        '<div class="devicePortalKicker">' + (parentMode ? "FAMILY SAFETY CONTROLS" : "PRIVACY CONTROLS") + '</div>' +
         '<h2>Enter the ' + deviceName + '</h2>' +
-        '<p>Click Settings or scroll down to move inside the phone.</p>' +
+        '<p>Click ' + portalTargetLabel + ' or scroll down to move inside the phone.</p>' +
       '</div>' +
       '<div class="devicePortalPhone">' +
         '<div class="portalPhoneNotch"></div>' +
@@ -700,14 +798,14 @@ function setConsentState() {
           '<div class="portalWallpaperGlow"></div>' +
           '<div class="portalAppGrid">' +
             appTiles.map(([icon,label]) =>
-              '<button type="button" class="portalApp ' + (label === "Settings" ? "portalSettingsApp" : "") + '" aria-label="' + label + '">' +
+              '<button type="button" class="portalApp ' + (label === portalTargetLabel ? "portalSettingsApp" : "") + '" aria-label="' + label + '">' +
                 '<span>' + icon + '</span><small>' + label + '</small>' +
               '</button>'
             ).join("") +
           '</div>' +
         '</div>' +
       '</div>' +
-      '<div class="portalInstruction"><span class="portalMouse">↕</span><strong>SCROLL TO ENTER SETTINGS</strong><small>or click the glowing Settings icon</small></div>' +
+      '<div class="portalInstruction"><span class="portalMouse">↕</span><strong>SCROLL TO ENTER ' + portalTargetLabel.toUpperCase() + '</strong><small>or click the glowing ' + portalTargetLabel + ' icon</small></div>' +
       '<div class="portalFlash"></div>';
 
     const phone = portal.querySelector(".devicePortalPhone");
@@ -863,12 +961,16 @@ function setConsentState() {
   }
 
   function iosRowsFor(target) {
-    const screenTimeRows = ["Apps & Websites","Allowed Contacts","Time Allowances","Screen Time Schedules","Content & Privacy Restrictions","Communication Safety"];
-    const privacyRows = ["Location Services","Tracking","Contacts","Calendars","Photos","Bluetooth","Local Network","Microphone","Camera"];
+    const screenTimeRows = ["Apps & Websites","Allowed Contacts","Always Allowed","Time Allowances","Screen Time Schedules","Content & Privacy Restrictions","Communication Safety"];
+    const privacyRows = ["Location Services","Tracking","Contacts","Calendars","Photos","Bluetooth","Local Network","Microphone","Camera","Safety Check"];
 
     if (target === "Family") return ["Airplane Mode","Wi-Fi","Bluetooth","Cellular","Notifications","Sounds & Haptics","Family","Screen Time","General","Privacy & Security"];
     if (target === "Child") return ["Family Checklist","Subscriptions","Purchase Sharing","Location Sharing","Child","Parents / Guardians"];
     if (target === "Screen Time") return ["Personal Information","Purchases","Subscriptions","Location Sharing","Screen Time"];
+    if (["Ask to Buy","Ask to Browse"].includes(target)) return ["Apps & Websites","Restrictions","Ask to Buy","Websites","Ask to Browse","Allowed","Blocked"];
+    if (["iTunes & App Store Purchases","App Store, Media, Web & Games","Allow Changes to Settings"].includes(target)) {
+      return ["Content & Privacy Restrictions","iTunes & App Store Purchases","App Store, Media, Web & Games","Other Features","Allow Changes to Settings"];
+    }
     if (screenTimeRows.includes(target)) return screenTimeRows;
     if (target === "Privacy & Security") return ["General","Accessibility","Action Button","Camera","Control Centre","Apps","Privacy & Security"];
     if (privacyRows.includes(target)) return privacyRows;
@@ -877,23 +979,74 @@ function setConsentState() {
     return ["Family","Screen Time","Privacy & Security","Notifications","General","Apps"];
   }
 
+  function androidRowsFor(target) {
+    const ensureTarget = (rows) => {
+      const out = rows.slice();
+      if (target && target !== "EXPLAIN" && !out.includes(target)) {
+        out.splice(Math.min(2, out.length), 0, target);
+      }
+      return out.slice(0, 9);
+    };
+
+    const personal = guidePlatform?.name === "Android Privacy";
+    if (!personal) {
+      if (target === "Family Link") return ensureTarget(["Google","Security & privacy","Digital Wellbeing","Family Link","Apps","Location"]);
+      if (target === "Child profile") return ensureTarget(["Family","Child profile","Screen time","Controls","Location","Highlights"]);
+      if (["Screen time","Daily limit","Downtime","App limits"].includes(target)) return ensureTarget(["Screen time","Time limits","Daily limit","Downtime","School time","App limits","Bonus time"]);
+      if (["Google Play","App approvals","Purchases"].includes(target)) return ensureTarget(["Controls","Google Play","Purchase & download approvals","App approvals","Content restrictions","Purchases"]);
+      if (["Chrome","Websites"].includes(target)) return ensureTarget(["Google Chrome","Try to block explicit sites","Only allow approved sites","Manage sites","Blocked sites"]);
+      if (target === "SafeSearch") return ensureTarget(["Google Search","SafeSearch","Personal results","Search settings"]);
+      if (target === "YouTube") return ensureTarget(["YouTube","Content settings","YouTube Kids","Search","Watch history","Autoplay"]);
+      if (target === "Contacts") return ensureTarget(["Controls","Contacts, calls & text","Parent-managed contacts","Allowed calls & texts","Contact requests"]);
+      if (["Device location","Precise location"].includes(target)) return ensureTarget(["Location","Device location","Location accuracy","Location permissions","Precise location"]);
+      if (target === "App permissions") return ensureTarget(["App permissions","Location","Camera","Microphone","Contacts","Photos and videos"]);
+      if (target === "Unknown apps") return ensureTarget(["Apps","App limits","Blocked apps","Unknown apps","App permissions"]);
+      if (["Account supervision","Parent alerts"].includes(target)) return ensureTarget(["Account settings","Account supervision","Parent alerts","Privacy settings","Sign-in controls"]);
+      return ensureTarget(["Controls","Daily limit","Downtime","App limits","Content restrictions","Location","Account settings"]);
+    }
+
+    const permissionRows = ["Location","Camera","Microphone","Photos and videos","Contacts","Nearby devices","Notifications"];
+    if (target === "Settings") return ensureTarget(["Network & internet","Connected devices","Apps","Notifications","Battery","Storage","Security & privacy","Location"]);
+    if (target === "Security & privacy") return ensureTarget(["App security","Device unlock","Account security","System & updates","Privacy","More security & privacy"]);
+    if (target === "Privacy controls") return ensureTarget(["Privacy dashboard","Permission manager","Show passwords","Notifications on lock screen","Ads","Health Connect"]);
+    if (permissionRows.includes(target) || target === "Precise location") return ensureTarget(permissionRows);
+    if (target === "Unused apps") return ensureTarget(["Permission manager","Unused apps","Privacy dashboard","Ads"]);
+    if (target === "Privacy dashboard") return ensureTarget(["Location","Camera","Microphone","Other permissions","See other permissions"]);
+    return ensureTarget(["Security & privacy","Privacy dashboard","Permission manager","Location","Apps"]);
+  }
+
   function deviceRowsFor(target) {
     if (guidePlatform?.device === "ios") return iosRowsFor(target);
-    if (guidePlatform?.device === "android") {
-      if (target === "Family Link") return ["Google","Security & privacy","Digital Wellbeing","Family Link","Apps","Location"];
-      return ["Controls","Daily limit","Downtime","App limits","Content restrictions","Location","Account settings"];
-    }
+    if (guidePlatform?.device === "android") return androidRowsFor(target);
     return null;
   }
 
   function phoneHeaderFor(target) {
     if (guidePlatform?.device === "ios") {
       const screenTimeTargets = ["Apps & Websites","Allowed Contacts","Time Allowances","Screen Time Schedules","Content & Privacy Restrictions","Communication Safety"];
-      const privacyTargets = ["Location Services","Tracking","Contacts","Calendars","Photos","Bluetooth","Local Network","Microphone","Camera","Precise Location"];
+      const privacyTargets = ["Location Services","Tracking","Contacts","Calendars","Photos","Bluetooth","Local Network","Microphone","Camera","Precise Location","Safety Check"];
       if (screenTimeTargets.includes(target)) return "Screen Time";
       if (privacyTargets.includes(target)) return target === "Precise Location" ? "Location Services" : "Privacy & Security";
       if (target === "Child" || target === "Screen Time") return "Family";
       return "Settings";
+    }
+    if (guidePlatform?.device === "android") {
+      if (guidePlatform?.name === "Android / Family Link") {
+        if (["Screen time","Daily limit","Downtime","App limits"].includes(target)) return "Screen time";
+        if (["Google Play","App approvals","Purchases"].includes(target)) return "Google Play";
+        if (["Chrome","Websites"].includes(target)) return "Google Chrome";
+        if (target === "SafeSearch") return "Google Search";
+        if (target === "YouTube") return "YouTube";
+        if (target === "Contacts") return "Contacts, calls & text";
+        if (["Device location","Precise location"].includes(target)) return "Location";
+        if (target === "App permissions") return "App permissions";
+        if (target === "Unknown apps") return "Apps";
+        if (["Account supervision","Parent alerts"].includes(target)) return "Account settings";
+        return "Family Link";
+      }
+      if (["Location","Camera","Microphone","Photos and videos","Contacts","Precise location"].includes(target)) return "Permission manager";
+      if (["Privacy controls","Unused apps","Privacy dashboard"].includes(target)) return "Privacy";
+      return target === "Security & privacy" ? "Settings" : "Security & privacy";
     }
     return guidePlatform?.name || "Privacy Guide";
   }
@@ -912,15 +1065,11 @@ function setConsentState() {
     }
 
     const deviceRows = deviceRowsFor(target);
-    const rows = deviceRows || ["Account","Privacy","Safety","Discoverability","Location","Messages","Content controls"];
-    if (!deviceRows && target && target !== "EXPLAIN") {
-      const i = Math.abs(hashCode(target)) % rows.length;
-      rows[i] = target;
-    }
+    const rows = deviceRows || platformRowsFor(guidePlatform?.name, target);
     if (deviceRows && target && target !== "EXPLAIN" && !rows.includes(target)) rows.push(target);
 
     const phoneIcon = guidePlatform?.device ? "⚙" : guidePlatform.icon;
-    const phoneHeader = guidePlatform?.device ? phoneHeaderFor(target) : guidePlatform.name;
+    const phoneHeader = guidePlatform?.device ? phoneHeaderFor(target) : platformHeaderFor(guidePlatform?.name, target);
 
     let html = '<div class="phoneScreen">' +
       '<div class="phoneTitle"><span class="phoneTitleIcon">' + phoneIcon + '</span><span>' + phoneHeader + '</span></div>' +
@@ -1076,6 +1225,8 @@ function setConsentState() {
   }
 
   function officialHelp(name, device) {
+    if (device === "ios" && name === "iPhone Privacy") return "https://support.apple.com/guide/iphone/control-access-to-information-in-apps-iph251e92810/ios";
+    if (device === "android" && name === "Android Privacy") return "https://support.google.com/android/answer/9431959";
     if (device === "ios") return "https://support.apple.com/families";
     if (device === "android") return "https://families.google/familylink/";
     const map = {
@@ -1090,7 +1241,10 @@ function setConsentState() {
       "X / Twitter":"https://help.x.com/",
       "WhatsApp":"https://faq.whatsapp.com/",
       "Telegram":"https://telegram.org/faq",
-      "Strava":"https://support.strava.com/"
+      "Twitch":"https://help.twitch.tv/",
+      "Strava":"https://support.strava.com/",
+      "GitHub":"https://docs.github.com/en/account-and-profile/setting-up-and-managing-your-personal-account-on-github/managing-user-account-settings",
+      "Pinterest":"https://help.pinterest.com/"
     };
     return map[name] || "https://www.google.com/search?q=" + encodeURIComponent(name + " privacy settings");
   }
@@ -1118,6 +1272,7 @@ function setConsentState() {
       scanPanel.classList.remove("hidden");
       liveSearchBtn.disabled = true;
 
+      const searchStartedAt = Date.now();
       const statuses = [
         ["Searching the public internet…","Checking open web results without using age as a hard filter."],
         ["Checking public profiles…","Looking for name, city, username and platform matches."],
@@ -1135,7 +1290,7 @@ function setConsentState() {
       }, 900);
 
       try {
-        const res = await fetch("/.netlify/functions/live-search", {
+        const res = await fetch("/api/live-search", {
           method:"POST",
           headers:{"Content-Type":"application/json"},
           body:JSON.stringify({
@@ -1152,9 +1307,15 @@ function setConsentState() {
 
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
+          if (res.status === 429) throw new Error("Too many live searches were started in a short period. Wait about one minute, then try again.");
           throw new Error((data.error || "Live search failed.") + (data.detail ? " " + data.detail : ""));
         }
 
+        const minimumSearchMs = 3200;
+        const waitMs = minimumSearchMs - (Date.now() - searchStartedAt);
+        if (waitMs > 0) await new Promise(resolve => setTimeout(resolve, waitMs));
+        const remaining = MIN_LIVE_SEARCH_MS - (Date.now() - searchStartedAt);
+        if (remaining > 0) await wait(remaining);
         renderReport(data);
       } catch (e) {
         alert(e.message);
@@ -1163,6 +1324,13 @@ function setConsentState() {
         scanPanel.classList.add("hidden");
         setConsentState();
       }
+    });
+  }
+
+  const zeroSyntheticBtn = $("zeroSyntheticBtn");
+  if (zeroSyntheticBtn) {
+    zeroSyntheticBtn.addEventListener("click", () => {
+      if (syntheticDemoBtn && consent.checked) syntheticDemoBtn.click();
     });
   }
 
@@ -1212,7 +1380,7 @@ function setConsentState() {
         const res = await fetch("/.netlify/functions/summarize", {
           method:"POST",
           headers:{"Content-Type":"application/json"},
-          body:JSON.stringify(evidence),
+          body:JSON.stringify({ consent:true, evidence }),
           cache:"no-store"
         });
         if (!res.ok) throw new Error("summarizer");

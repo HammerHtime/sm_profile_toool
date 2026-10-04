@@ -41,15 +41,42 @@
       </div>
       <p class="fineprint">Use a photo of yourself that you are comfortable using in this live demonstration. Maximum 4 MB.</p>
 
-      <div class="mobileStep"><b>3</b><span>Consent</span></div>
+      <div class="mobileStep"><b>3</b><span>Voice consent <small>optional demo feature</small></span></div>
+      <section class="voiceSamplePanel" aria-labelledby="voiceSampleTitle">
+        <div class="voiceSampleHeader">
+          <div>
+            <strong id="voiceSampleTitle">Record one short consent phrase</strong>
+            <small>Say: “Here is my photo, and I consent to it being used for this demonstration.”</small>
+          </div>
+          <span class="voicePrivacyBadge">TEMPORARY DEMO AUDIO</span>
+        </div>
+
+        <article class="voicePromptCard" data-voice-index="0">
+          <div class="voicePromptNumber">●</div>
+          <p>That original sentence can be replayed by the presenter. The demo then creates three harmless synthetic sentences using a generic AI voice adjusted only to your approximate speaking pace.</p>
+          <div class="voiceRecorder">
+            <button type="button" id="voiceRecordBtn0" class="voiceRecordBtn"><span>●</span> Record consent phrase</button>
+            <div class="voiceTimer" id="voiceTimer0">0:00</div>
+            <div class="voiceWave" id="voiceWave0" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+          </div>
+          <div id="voicePreviewWrap0" class="voicePreviewWrap hidden">
+            <audio id="voicePreview0" controls preload="metadata"></audio>
+            <button type="button" id="deleteVoiceBtn0" class="changePhotoBtn">Delete recording</button>
+          </div>
+        </article>
+
+        <p class="fineprint">The original recording exists only in the temporary demo session and is deleted with the session. The three generated examples do not reproduce your vocal identity.</p>
+      </section>
+
+      <div class="mobileStep"><b>4</b><span>Consent</span></div>
       <label class="consentBox mobileConsent">
         <span class="consent">
           <input id="vConsent" type="checkbox" required />
-          <span><strong>I consent to this live privacy demonstration.</strong><small>I confirm this is my photo or I have permission to use it. I understand the presenter will see summarized or masked findings, not my raw photo. If I am under 18, my parent or guardian is present and consents.</small></span>
+          <span><strong>I consent to this live privacy demonstration.</strong><small>I confirm this is my photo or I have permission to use it. I understand the presenter will see summarized or masked findings, not my raw photo. If I record the optional voice consent phrase, I consent to that original recording being temporarily sent to this demo session so the presenter can replay it. I understand the demo may use the recording duration to adjust the speaking pace of generic AI-generated example sentences, but it will not reproduce my vocal identity. The recording is removed when the demo session is erased. If I provide a public username, that handle may be sent to the configured public-search provider to check public/indexed webpages. If I am under 18, my parent or guardian is present and consents.</small></span>
         </span>
       </label>
 
-      <button id="submitVolunteer" class="primary mobileSubmit" disabled>Consent & Start Live Search</button>
+      <button type="submit" id="submitVolunteer" class="primary mobileSubmit" disabled>Consent & Start Analysis</button>
       <div id="volunteerError" class="error hidden"></div>
     </form>
 

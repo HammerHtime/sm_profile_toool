@@ -50,14 +50,14 @@
           <input type="checkbox" id="consent" />
           <span>
             <strong>I have permission to search this person.</strong>
-            <small>I confirm this is my information, or I have the subject's explicit consent to run this demonstration.</small>
+            <small>I confirm this is my information, or I have the subject's explicit consent to run this demonstration. Live Search sends the entered identity clues to the configured public-search provider to find public/indexed webpages.</small>
           </span>
         </label>
       </div>
 
       <div class="actions">
-        <button id="liveSearchBtn" class="primary liveSearchBtn" disabled>Live Search</button>
-        <button id="syntheticDemoBtn" class="secondaryBtn syntheticDemoBtn" disabled>Synthetic Demo</button>
+        <button type="button" id="liveSearchBtn" class="primary liveSearchBtn" disabled>Live Search</button>
+        <button type="button" id="syntheticDemoBtn" class="secondaryBtn syntheticDemoBtn" disabled>Synthetic Demo</button>
         <label class="uploadBtn disabled" id="uploadLabel" aria-disabled="true">Analyze evidence JSON<input id="fileInput" type="file" accept="application/json" hidden disabled /></label>
         <a class="photoDemoLaunch" href="presenter.html"><span class="photoDemoLaunchIcon">◎</span><span><strong>Photo Demo</strong><small>Launch live QR experience</small></span></a>
       </div>
@@ -73,6 +73,13 @@
     </section>
 
     <section id="results" class="hidden">\n      <section id="dataModeBanner" class="dataModeBanner hidden" role="status"></section>
+      <section id="zeroResultFallback" class="zeroResultFallback hidden">
+        <div>
+          <strong>No verified public matches were returned.</strong>
+          <span>That can happen with common names, private profiles, weak indexing or very small public footprints.</span>
+        </div>
+        <button type="button" id="zeroSyntheticBtn" class="secondaryBtn syntheticDemoBtn">Run Synthetic Demo</button>
+      </section>
       <section class="scoreCard panel">
         <div>
           <div class="eyebrow">PUBLIC FOOTPRINT</div>
@@ -109,11 +116,11 @@
           <div>
             <div class="eyebrow">SOURCE COVERAGE</div>
             <h3>How broad was the public search?</h3>
-            <p class="fineprint">The demo distinguishes sources that were checked from sources that actually produced matching public material. Private messages, closed groups, private servers and non-public accounts are excluded.</p>
+            <p class="fineprint">The live search runs several targeted public-web search passes, then shows which platform/source categories actually produced matching material. Private messages, closed groups, private servers and non-public accounts are excluded.</p>
           </div>
           <div class="coverageNumbers">
-            <div><strong id="sourceSearched">0</strong><span>sources checked</span></div>
-            <div><strong id="sourceMatched">0</strong><span>with matches</span></div>
+            <div><strong id="sourceSearched">0</strong><span>search passes</span></div>
+            <div><strong id="sourceMatched">0</strong><span>passes with matches</span></div>
           </div>
         </div>
         <div class="sourceCoverageGrid" id="sourceCoverageGrid"></div>
@@ -125,7 +132,7 @@
           <div>
             <div class="eyebrow">LIVE PUBLIC SOURCES</div>
             <h3>Exactly what was returned</h3>
-            <p class="fineprint">Every card below links to the public page that produced the finding. Strong match means the returned page matched multiple supplied identifiers. Possible match means it needs human confirmation.</p>
+            <p class="fineprint">Every card links to the public page that produced the finding, but the presentation hides the raw page title and snippet. Strong match means the page matched multiple supplied identifiers. Possible match means it needs human confirmation.</p>
           </div>
           <div class="privacyChip">SOURCE LINKS INCLUDED</div>
         </div>
@@ -218,7 +225,7 @@ SAFETY</small></div>
       <section class="panel message">
         <h3>Why this matters</h3>
         <p id="takeaway"></p>
-        <p class="privacyNote">Complete home addresses, telephone numbers, personal email addresses, exact school names, family identities, image URLs, and precise locations are intentionally excluded. Only limited masked fragments are shown for recognition.</p>
+        <p class="privacyNote">Complete home addresses, telephone numbers, personal email addresses, raw search snippets, exact school names, family identities, image URLs, and precise locations are intentionally excluded from the presentation view. Limited masked fragments and source links are used for recognition and verification.</p>
       </section>
 
       <section class="panel erasePanel">
@@ -227,7 +234,7 @@ SAFETY</small></div>
           <h3>Erase this demo</h3>
           <p>Deletes the app's active report, masked results, map state, form values, and browser-stored demo data. The tool does not maintain a database of searches.</p>
         </div>
-        <button id="eraseBtn" class="danger">Erase Demo Data</button>
+        <button type="button" id="eraseBtn" class="danger">Erase Demo Data</button>
       </section>
     </section>
 
@@ -238,20 +245,20 @@ SAFETY</small></div>
   </main>
 
 
-  <div class="coachModal hidden" id="coachModal" role="dialog" aria-modal="true" aria-labelledby="coachTitle">
+  <div class="coachModal hidden" id="coachModal" role="dialog" aria-modal="true" aria-labelledby="coachBrand">
     <div class="coachBackdrop" data-close-coach="true"></div>
     <section class="coachDeck">
       <div class="coachTopbar">
-        <button class="iconBtn" id="coachClose" aria-label="Close privacy guide">×</button>
+        <button type="button" class="iconBtn" id="coachClose" aria-label="Close privacy guide">×</button>
         <div class="coachBrand" id="coachBrand">Privacy Coach</div>
         <div class="coachCounter" id="coachCounter">1 / 4</div>
       </div>
       <div class="coachProgress" id="coachProgress"></div>
       <div class="coachSlide" id="coachSlide"></div>
       <div class="coachNav">
-        <button class="secondaryBtn" id="coachPrev">Back</button>
+        <button type="button" class="secondaryBtn" id="coachPrev">Back</button>
         <a class="officialLink" id="coachOfficial" href="#" target="_blank" rel="noopener noreferrer">Official help ↗</a>
-        <button class="primary coachNext" id="coachNext">Next</button>
+        <button type="button" class="primary coachNext" id="coachNext">Next</button>
       </div>
     </section>
   </div>

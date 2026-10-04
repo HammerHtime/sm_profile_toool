@@ -1,11 +1,19 @@
 const $ = (id) => document.getElementById(id);
+const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (ch) => ({
+  "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+})[ch]);
 let session=null,pollTimer=null,revealIndex=0,latestStatus=null,searchRunning=false,searchComplete=false;
+let activeVoiceAudio=null,activeVoiceAudioUrl='',activeVoiceButton=null;
+const preloadedVoiceSamples=new Map();
 const startView=$('startView'),sessionView=$('sessionView'),revealDeck=$('revealDeck');
 
 async function request(path,options={}){
   const r=await fetch(path,{...options,headers:{'content-type':'application/json',...(options.headers||{})},cache:'no-store'});
   const data=await r.json().catch(()=>({}));
-  if(!r.ok) throw new Error((data.error||('Request failed ('+r.status+')')) + (data.detail ? ' — ' + data.detail : ''));
+  if(!r.ok){
+    if(r.status===429) throw new Error('Too many QR sessions were created in a short period. Wait about one minute, then try again.');
+    throw new Error((data.error||('Request failed ('+r.status+')')) + (data.detail ? ' — ' + data.detail : ''));
+  }
   return data;
 }
 function setSessionUi(active){startView.classList.toggle('hidden',active);sessionView.classList.toggle('hidden',!active);}
@@ -35,23 +43,59 @@ async function checkPresenterHealth(){
     button.disabled=false;
   }catch(err){
     health.className='presenterHealth failed';
-    health.innerHTML='<span></span><strong>QR system not ready</strong><small>'+String(err.message||'Health check failed')+'</small>';
+    health.innerHTML='<span></span><strong>QR system not ready</strong><small>'+escapeHtml(err.message||'Health check failed')+'</small>';
     button.disabled=true;
   }
+}
+
+
+async function restorePresenterSession(){
+  const raw=sessionStorage.getItem('pfPhotoPresenter');
+  if(!raw)return;
+
+  let saved;
+  try{saved=JSON.parse(raw)}catch{
+    resetVoicePlaybackUi();
+    clearPreloadedVoiceSamples();
+    sessionStorage.removeItem('pfPhotoPresenter');
+    return;
+  }
+
+  if(!saved?.id||!saved?.presenterToken||!saved?.expiresAt||Date.parse(saved.expiresAt)<=Date.now()){
+    sessionStorage.removeItem('pfPhotoPresenter');
+    return;
+  }
+
+  session=saved;
+  if(saved.qrDataUrl)$('qrImage').src=saved.qrDataUrl;
+  if(saved.joinUrl)$('copyLink').dataset.url=saved.joinUrl;
+  $('joinCode').textContent='Session '+saved.id.slice(0,6).toUpperCase();
+  setSessionUi(true);
+  startPolling();
 }
 
 async function createSession(){
   $('startSession').disabled=true;
   try{
-    const data=await request('/.netlify/functions/photo-create',{method:'POST',body:'{}'});
+    const data=await request('/api/photo-create',{method:'POST',body:'{}'});
     session=data;
-    sessionStorage.setItem('pfPhotoPresenter',JSON.stringify({id:data.id,presenterToken:data.presenterToken,expiresAt:data.expiresAt}));
+    sessionStorage.setItem('pfPhotoPresenter',JSON.stringify({
+      id:data.id,
+      presenterToken:data.presenterToken,
+      expiresAt:data.expiresAt,
+      joinUrl:data.joinUrl,
+      qrDataUrl:data.qrDataUrl
+    }));
     $('qrImage').src=data.qrDataUrl;
     $('joinCode').textContent='Session '+data.id.slice(0,6).toUpperCase();
     $('copyLink').dataset.url=data.joinUrl;
     setSessionUi(true);startPolling();
-  }catch(e){alert(e.message)}
-  finally{$('startSession').disabled=false;}
+  }catch(e){
+    alert(e.message);
+    await checkPresenterHealth();
+  } finally {
+    if (!$('presenterHealth')?.classList.contains('failed')) $('startSession').disabled=false;
+  }
 }
 
 function setProgress(status){
@@ -68,7 +112,7 @@ function setProgress(status){
 function formatBytes(n){n=Number(n)||0;if(n<1024)return n+' B';if(n<1048576)return(n/1024).toFixed(1)+' KB';return(n/1048576).toFixed(1)+' MB';}
 function findingCard(title,value,copy,tone=''){
   const d=document.createElement('article');d.className='photoFindingCard '+tone;
-  d.innerHTML='<div class="provenanceMini verified">VERIFIED FROM PHOTO</div><div class="findingLabel">'+title+'</div><strong>'+value+'</strong><p>'+copy+'</p>';return d;
+  d.innerHTML='<div class="provenanceMini verified">VERIFIED FROM PHOTO</div><div class="findingLabel">'+escapeHtml(title)+'</div><strong>'+escapeHtml(value)+'</strong><p>'+escapeHtml(copy)+'</p>';return d;
 }
 function mapUrl(z){
   const lat=Number(z.lat),lon=Number(z.lon),r=Number(z.radiusKm)||50,dlat=Math.max(r*1.25,60)/111.32,cos=Math.max(Math.cos(lat*Math.PI/180),.2),dlon=Math.max(r*1.25,60)/(111.32*cos);
@@ -81,7 +125,7 @@ function addPhotoCore(stage,compact=false){
 }
 function addNode(stage,o){
   const n=document.createElement('div');n.className='crumbNode '+(o.tone||'')+(o.dashed?' next':'');n.style.left=o.x+'%';n.style.top=o.y+'%';
-  n.innerHTML='<div class="crumbIcon">'+o.icon+'</div><strong>'+o.title+'</strong><span>'+o.detail+'</span>';stage.appendChild(n);
+  n.innerHTML='<div class="crumbIcon">'+escapeHtml(o.icon)+'</div><strong>'+escapeHtml(o.title)+'</strong><span>'+escapeHtml(o.detail)+'</span>';stage.appendChild(n);
 }
 function metadataMap(data){
   const st=$('breadcrumbStageMetadata');if(!st)return;st.replaceChildren();addPhotoCore(st);
@@ -131,17 +175,18 @@ function correlationMap(data){
   const domainCopy=domains.length?' Sources included: '+domains.join(', ')+'.':'';
   $('correlationDisclosure').innerHTML=
     '<strong>Breadcrumb logic, not facial identification.</strong> '+
-    (c.basis||'Public correlations appear only when a real source match is returned.')+
-    domainCopy;
+    escapeHtml(c.basis||'Public correlations appear only when a real source match is returned.')+
+    escapeHtml(domainCopy);
 }
 function impact(data){
   const f=data.findings||{},embedded=[f.gpsEmbedded,f.captureDateEmbedded,f.cameraMetadataEmbedded].filter(Boolean).length;
   const publicMatches=Number(data.correlation?.totalMatches)||0;
   const vals=[[embedded,'embedded signals'],[f.gpsEmbedded?'50 km':'—','location privacy zone'],[publicMatches,'verified public matches'],[data.participant?.usernameMasked?1:0,'supplied public handle']];
-  $('impactStats').innerHTML=vals.map(v=>'<div class="impactStat"><strong>'+v[0]+'</strong><span>'+v[1]+'</span></div>').join('');
+  $('impactStats').innerHTML=vals.map(v=>'<div class="impactStat"><strong>'+escapeHtml(v[0])+'</strong><span>'+escapeHtml(v[1])+'</span></div>').join('');
 }
 
 function sleep(ms){return new Promise(resolve=>setTimeout(resolve,ms));}
+const MIN_PHOTO_SEARCH_MS=14000;
 
 function countValue(value){
   if(typeof value==='number' && Number.isFinite(value)) return Math.max(0,Math.round(value));
@@ -208,12 +253,22 @@ function normalizePublicNodes(data){
 }
 
 function verifiedMetadataNodes(data){
-  const f=data.findings||{},img=data.image||{};
+  const f=data.findings||{},img=data.image||{},voiceSamples=Array.isArray(data.voiceSamples)?data.voiceSamples:[];
   const nodes=[];
   if(f.gpsEmbedded) nodes.push({name:'GPS',count:1,subtitle:'embedded location signal',icon:'⌖',kind:'metadata'});
   if(f.captureDateEmbedded) nodes.push({name:'Capture time',count:1,subtitle:f.capturedAtYear?('year '+f.capturedAtYear):'original date found',icon:'◷',kind:'metadata'});
   if(f.cameraMetadataEmbedded) nodes.push({name:'Camera / device',count:1,subtitle:f.cameraSummary||'device metadata',icon:'▣',kind:'metadata'});
   if(img.bytes) nodes.push({name:'File',count:1,subtitle:(img.width||'?')+' × '+(img.height||'?')+' · '+formatBytes(img.bytes),icon:'#',kind:'metadata'});
+  if(voiceSamples.length) {
+    const totalSeconds=Math.max(1,Math.round(voiceSamples.reduce((sum,s)=>sum+(Number(s.durationMs)||0),0)/1000));
+    nodes.push({
+      name:'Voice samples',
+      count:voiceSamples.length,
+      subtitle:totalSeconds+' sec of original volunteer audio',
+      icon:'🎙',
+      kind:'participant'
+    });
+  }
   return nodes;
 }
 
@@ -229,7 +284,7 @@ function addSearchConnection(x,y,kind='metadata'){
   const line=document.createElementNS('http://www.w3.org/2000/svg','line');
   line.setAttribute('x1','500');line.setAttribute('y1','310');
   line.setAttribute('x2',String(x*10));line.setAttribute('y2',String(y*6.2));
-  line.classList.add('searchConnectionLine',kind==='public'?'public':'metadata');
+  line.classList.add('searchConnectionLine',kind==='public'?'public':kind==='participant'?'participant':'metadata');
   svg.appendChild(line);
 }
 
@@ -240,15 +295,15 @@ function addSearchNode(node,index,total){
   addSearchConnection(pos.x,pos.y,node.kind);
 
   const el=document.createElement('div');
-  el.className='searchNode '+(node.kind==='public'?'publicNode':'metadataNode');
+  el.className='searchNode '+(node.kind==='public'?'publicNode':node.kind==='participant'?'participantNode':'metadataNode');
   el.style.left=pos.x+'%';
   el.style.top=pos.y+'%';
   el.innerHTML=
-    '<div class="searchNodeIcon">'+node.icon+'</div>'+
-    '<strong class="searchNodeCount">'+node.count+'</strong>'+
-    '<span class="searchNodeName">'+node.name+'</span>'+
-    '<small>'+node.subtitle+'</small>'+
-    '<em>VERIFIED</em>';
+    '<div class="searchNodeIcon">'+escapeHtml(node.icon)+'</div>'+
+    '<strong class="searchNodeCount">'+escapeHtml(node.count)+'</strong>'+
+    '<span class="searchNodeName">'+escapeHtml(node.name)+'</span>'+
+    '<small>'+escapeHtml(node.subtitle)+'</small>'+
+    '<em>'+(node.kind==='participant'?'SUPPLIED':'VERIFIED')+'</em>';
   stage.appendChild(el);
   requestAnimationFrame(()=>el.classList.add('visible'));
 }
@@ -287,11 +342,13 @@ function updateSearchMetrics(metaNodes,publicNodes){
 
 async function startAutoSearch(data){
   if(searchRunning)return;
+  const searchStartedAt=Date.now();
   searchRunning=true;
   searchComplete=false;
   latestStatus=data;
 
   renderSubmitted(data);
+  preloadVoiceSamples(data);
 
   const presenterGrid=document.querySelector('.presenterGrid');
   if(presenterGrid)presenterGrid.classList.add('hidden');
@@ -304,7 +361,7 @@ async function startAutoSearch(data){
   const img=data.image||{};
   $('searchCoreMeta').textContent=(img.width&&img.height)?(img.width+' × '+img.height):'verified upload';
   $('searchStageTitle').textContent='Searching privacy signals…';
-  $('searchStageSubtitle').textContent='Verified findings appear around the photo as they are confirmed.';
+  $('searchStageSubtitle').textContent='Verified findings and participant-supplied signals appear as they are confirmed.';
   setSearchProgress(4,'Starting');
   setChecklist(0);
   setPulse('Photo received. Initializing analysis…');
@@ -361,6 +418,13 @@ async function startAutoSearch(data){
   setChecklist(5);setSearchProgress(97,'Compiling results');setPulse('Compiling the final privacy picture…');
   await sleep(850);
 
+  const remainingSearchTime=MIN_PHOTO_SEARCH_MS-(Date.now()-searchStartedAt);
+  if(remainingSearchTime>0){
+    setSearchProgress(98,'Finalizing');
+    setPulse('Finalizing verified results…');
+    await sleep(remainingSearchTime);
+  }
+
   setSearchProgress(100,'Complete');
   document.querySelectorAll('.searchCheck').forEach(x=>{x.classList.remove('active');x.classList.add('done');});
   $('searchStageTitle').textContent='Search complete';
@@ -377,10 +441,204 @@ async function startAutoSearch(data){
   searchRunning=false;
 }
 
+
+function resetVoicePlaybackUi(){
+  if(activeVoiceAudio){
+    try{activeVoiceAudio.pause();}catch{}
+    activeVoiceAudio=null;
+  }
+  if(activeVoiceAudioUrl){
+    URL.revokeObjectURL(activeVoiceAudioUrl);
+    activeVoiceAudioUrl='';
+  }
+  if(activeVoiceButton){
+    const index=Number(activeVoiceButton.dataset.index);
+    activeVoiceButton.classList.remove('playing');
+    activeVoiceButton.querySelector('.voicePlayGlyph').textContent='▶';
+    const strong=activeVoiceButton.querySelector('strong');
+    if(strong) strong.textContent='Play Sample '+(index+1);
+    activeVoiceButton=null;
+  }
+}
+
+async function preloadVoiceSamples(data){
+  if(!session)return;
+  const samples=Array.isArray(data.voiceSamples)?data.voiceSamples:[];
+  const jobs=samples.filter(s=>s.available).map(async sample=>{
+    const index=Number(sample.index);
+    if(preloadedVoiceSamples.has(index))return;
+    try{
+      const response=await fetch('/.netlify/functions/photo-audio',{
+        method:'POST',
+        headers:{'content-type':'application/json'},
+        body:JSON.stringify({
+          id:session.id,
+          presenterToken:session.presenterToken,
+          index
+        }),
+        cache:'no-store'
+      });
+      if(!response.ok)return;
+      const blob=await response.blob();
+      const url=URL.createObjectURL(blob);
+      preloadedVoiceSamples.set(index,{blob,url});
+      if(index===0){
+        const button=$('playOriginalConsent');
+        if(button){
+          button.disabled=false;
+          button.classList.add('available');
+        }
+      }
+    }catch{}
+  });
+  await Promise.allSettled(jobs);
+}
+
+function clearPreloadedVoiceSamples(){
+  for(const item of preloadedVoiceSamples.values()){
+    if(item?.url) URL.revokeObjectURL(item.url);
+  }
+  preloadedVoiceSamples.clear();
+}
+
+function renderVoiceRisk(data){
+  const samples=Array.isArray(data.voiceSamples)?data.voiceSamples:[];
+  const delivery=data.voiceDelivery||{};
+  const status=$('voiceSampleStatus');
+  const copy=$('voiceSampleCopy');
+  if(!status||!copy)return;
+
+  const original=samples.find(sample=>Number(sample.index)===0&&sample.available);
+  if(original){
+    const seconds=Math.max(1,Math.round((Number(original.durationMs)||0)/1000));
+    status.textContent='Attendee supplied a '+seconds+'-second verbal-consent sample.';
+    copy.textContent='The original clip can be compared against three new harmless sentences generated with a generic AI voice adjusted only to the attendee’s approximate speaking pace.';
+  }else{
+    status.textContent='No volunteer voice sample was recorded.';
+    copy.textContent='Generated voice examples remain disabled because no verbal-consent sample was supplied.';
+  }
+
+  const originalButton=$('playOriginalConsent');
+  if(originalButton){
+    const ready=!!original&&preloadedVoiceSamples.has(0);
+    originalButton.disabled=!ready;
+    originalButton.classList.toggle('available',ready);
+  }
+
+  const generatedReady=!!original;
+  for(let index=0;index<3;index++){
+    const button=$('playGeneratedVoice'+index);
+    if(!button)continue;
+    button.disabled=!generatedReady;
+    button.classList.toggle('available',generatedReady);
+  }
+}
+
+async function playOriginalVoiceSample(index){
+  if(!session)return;
+  const button=$('playVoiceSample'+index);
+  if(!button||button.disabled)return;
+
+  resetVoicePlaybackUi();
+
+  try{
+    button.classList.add('playing');
+    button.querySelector('.voicePlayGlyph').textContent='■';
+    const strong=button.querySelector('strong');
+    if(strong) strong.textContent='Loading Sample '+(index+1)+'…';
+    activeVoiceButton=button;
+
+    const cached=preloadedVoiceSamples.get(index);
+    let blobUrl=cached?.url||'';
+
+    if(!blobUrl){
+      const response=await fetch('/.netlify/functions/photo-audio',{
+        method:'POST',
+        headers:{'content-type':'application/json'},
+        body:JSON.stringify({
+          id:session.id,
+          presenterToken:session.presenterToken,
+          index
+        }),
+        cache:'no-store'
+      });
+
+      if(!response.ok){
+        const data=await response.json().catch(()=>({}));
+        throw new Error(data.error||'Could not load the voice sample.');
+      }
+
+      const blob=await response.blob();
+      blobUrl=URL.createObjectURL(blob);
+      preloadedVoiceSamples.set(index,{blob,url:blobUrl});
+    }
+
+    activeVoiceAudioUrl='';
+    activeVoiceAudio=new Audio(blobUrl);
+
+    if(strong) strong.textContent='Playing Sample '+(index+1);
+    activeVoiceAudio.onended=resetVoicePlaybackUi;
+    activeVoiceAudio.onerror=()=>{
+      resetVoicePlaybackUi();
+      alert('The voice sample could not be played.');
+    };
+    await activeVoiceAudio.play();
+  }catch(err){
+    resetVoicePlaybackUi();
+    alert(err.message||'Could not play the voice sample.');
+  }
+}
+
+const GENERATED_VOICE_LINES=[
+  "Hello there. I enjoy travelling and discovering new places.",
+  "Today is a great day to learn something new.",
+  "I like good food, live sports, and spending time with friends."
+];
+
+function playGeneratedVoiceSample(index){
+  const line=GENERATED_VOICE_LINES[index];
+  if(!line||!latestStatus)return;
+  if(!('speechSynthesis' in window)||typeof SpeechSynthesisUtterance==='undefined'){
+    alert('This browser does not provide speech synthesis for the AI voice demonstration.');
+    return;
+  }
+
+  speechSynthesis.cancel();
+  const utterance=new SpeechSynthesisUtterance(line);
+  const rate=Number(latestStatus.voiceDelivery?.speakingRateFactor)||1;
+  utterance.rate=Math.min(1.20,Math.max(0.80,rate));
+  utterance.pitch=1;
+  utterance.volume=1;
+
+  const voices=speechSynthesis.getVoices();
+  const generic=voices.find(v=>/^en(-|_)/i.test(v.lang||''))||voices[0];
+  if(generic)utterance.voice=generic;
+
+  const button=$('playGeneratedVoice'+index);
+  if(button){
+    button.classList.add('playing');
+    button.querySelector('.voicePlayGlyph').textContent='■';
+    const strong=button.querySelector('strong');
+    if(strong)strong.textContent='Playing Generated Sample '+(index+1);
+  }
+
+  const reset=()=>{
+    if(button){
+      button.classList.remove('playing');
+      button.querySelector('.voicePlayGlyph').textContent='▶';
+      const strong=button.querySelector('strong');
+      if(strong)strong.textContent='Generated Sample '+(index+1);
+    }
+  };
+  utterance.onend=reset;
+  utterance.onerror=reset;
+  speechSynthesis.speak(utterance);
+}
+
 function renderSubmitted(data){
   latestStatus=data;$('participantName').textContent=data.participant?.firstName||'Volunteer';
   const grid=$('photoFindingCards');grid.replaceChildren();const img=data.image||{},f=data.findings||{};
-  metadataMap(data);correlationMap(data);impact(data);
+  metadataMap(data);correlationMap(data);impact(data);renderVoiceRisk(data);
   grid.append(
     findingCard('Embedded GPS',f.gpsEmbedded?'FOUND':'NOT FOUND',f.gpsEmbedded?'The original file contained GPS coordinates. They were reduced before display.':'No embedded GPS coordinates were detected.',f.gpsEmbedded?'risk':'safe'),
     findingCard('Capture date',f.captureDateEmbedded?('YEAR '+(f.capturedAtYear||'FOUND')):'NOT FOUND',f.captureDateEmbedded?'The file contained original capture-time metadata.':'No readable original capture date was detected.',f.captureDateEmbedded?'warn':'safe'),
@@ -409,7 +667,10 @@ function showReveal(i){
 async function poll(){
   if(!session)return;
   try{
-    const d=await request('/.netlify/functions/photo-status?id='+encodeURIComponent(session.id)+'&token='+encodeURIComponent(session.presenterToken));
+    const d=await request('/.netlify/functions/photo-status',{
+      method:'POST',
+      body:JSON.stringify({id:session.id,presenterToken:session.presenterToken})
+    });
     setProgress(d.status);
     if(d.status==='submitted'&&latestStatus?.submittedAt!==d.submittedAt)startAutoSearch(d);
   }catch(e){if(/expired|not found/i.test(e.message)){clearInterval(pollTimer);$('liveTitle').textContent='Session expired';$('liveMessage').textContent='Create a new QR code for another volunteer.';}}
@@ -419,13 +680,26 @@ async function erase(){
   if(!session)return;$('erasePhotoDemo').disabled=true;
   try{
     await request('/.netlify/functions/photo-erase',{method:'POST',body:JSON.stringify({id:session.id,presenterToken:session.presenterToken})});
-    clearInterval(pollTimer);sessionStorage.removeItem('pfPhotoPresenter');session=null;latestStatus=null;searchRunning=false;searchComplete=false;revealDeck.classList.add('hidden');$('liveSearchStage').classList.add('hidden');$('qrImage').removeAttribute('src');
-    $('erasePhotoNotice').classList.remove('hidden');$('liveTitle').textContent='Demo data erased';$('liveMessage').textContent='The temporary session record has been deleted. The raw photo was never persisted.';$('erasePhotoDemo').textContent='Deleted ✓';
+    clearInterval(pollTimer);
+    sessionStorage.removeItem('pfPhotoPresenter');
+    session=null;latestStatus=null;searchRunning=false;searchComplete=false;
+    revealDeck.classList.add('hidden');
+    $('liveSearchStage').classList.add('hidden');
+    $('qrImage').removeAttribute('src');
+    $('copyLink').dataset.url='';
+    $('erasePhotoDemo').disabled=false;
+    $('erasePhotoDemo').textContent='Erase session';
+    setSessionUi(false);
+    await checkPresenterHealth();
   }catch(e){alert(e.message);$('erasePhotoDemo').disabled=false;}
 }
 $('startSession').addEventListener('click',createSession);
 $('copyLink').addEventListener('click',async()=>{const u=$('copyLink').dataset.url;if(!u)return;await navigator.clipboard.writeText(u);$('copyLink').textContent='Copied ✓';setTimeout(()=>$('copyLink').textContent='Copy volunteer link',1200);});
 $('erasePhotoDemo').addEventListener('click',erase);
+$('playOriginalConsent')?.addEventListener('click',()=>playOriginalVoiceSample(0));
+for(let index=0;index<3;index++){
+  $('playGeneratedVoice'+index)?.addEventListener('click',()=>playGeneratedVoiceSample(index));
+}
 document.addEventListener('keydown',(e)=>{
   const nextKeys=['ArrowRight','PageDown',' ','Enter'];
   const backKeys=['ArrowLeft','PageUp'];
@@ -451,3 +725,9 @@ document.addEventListener('keydown',(e)=>{
 });
 
 checkPresenterHealth();
+restorePresenterSession();
+
+window.addEventListener('pagehide',()=>{
+  resetVoicePlaybackUi();
+  clearPreloadedVoiceSamples();
+});

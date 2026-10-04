@@ -1,9 +1,12 @@
 import exifr from "exifr";
-import { cleanText, deleteSession, expired, getSession, jsonResponse, putSession, safeEqual } from "./photo-session-lib.mjs";
+import { cleanText, deleteSession, expired, getSession, jsonResponse, putSession, safeEqual, store, voiceAudioKey } from "./photo-session-lib.mjs";
 
 const MAX_BYTES = 4 * 1024 * 1024;
 const allowed = new Set(["image/jpeg","image/jpg","image/png","image/webp","image/heic","image/heif"]);
 const BRAVE_ENDPOINT = "https://api.search.brave.com/res/v1/web/search";
+const MAX_VOICE_BYTES = 150 * 1024;
+const MAX_VOICE_MS = 10000;
+const allowedAudio = new Set(["audio/webm","audio/webm;codecs=opus","audio/mp4","audio/mpeg","audio/ogg","audio/ogg;codecs=opus"]);
 
 function maskHandle(v = "") {
   const s = cleanText(v, 80);
@@ -145,6 +148,7 @@ export default async (req) => {
       return jsonResponse({ error: "Session expired" }, 410);
     }
     if (!safeEqual(joinToken, record.joinTokenHash)) return jsonResponse({ error: "Invalid session link" }, 403);
+    if (record.status === "submitted") return jsonResponse({ error: "This session has already been submitted." }, 409);
     if (body.consent !== true) return jsonResponse({ error: "Consent is required" }, 400);
 
     const firstName = cleanText(body.firstName, 40);
@@ -175,11 +179,64 @@ export default async (req) => {
     record.status = "submitted";
     record.consent = true;
     record.submittedAt = new Date().toISOString();
+    const requestedVoiceSamples = Array.isArray(body.voiceSamples) ? body.voiceSamples.slice(0,1) : [];
+    const voiceSamples = [];
+
+    for (const item of requestedVoiceSamples) {
+      const index = Number(item?.index);
+      const durationMs = Math.min(MAX_VOICE_MS, Math.max(0, Number(item?.durationMs) || 0));
+      const audioMime = cleanText(item?.mime || "", 80).toLowerCase();
+      const audioData = typeof item?.audioData === "string" ? item.audioData : "";
+
+      if (index !== 0) continue;
+      if (!durationMs || !audioData) continue;
+      if (!allowedAudio.has(audioMime)) return jsonResponse({ error:"Unsupported voice audio type" },400);
+
+      const audioBytes = Buffer.from(audioData,"base64");
+      if (!audioBytes.length || audioBytes.length > MAX_VOICE_BYTES) {
+        return jsonResponse({ error:"Each voice sample must be 150 KB or smaller" },413);
+      }
+
+      voiceSamples.push({
+        index,
+        durationMs:Math.round(durationMs),
+        mime:audioMime,
+        bytes:audioBytes.length,
+        audioData
+      });
+      audioBytes.fill(0);
+    }
+
+    const storedVoiceMetadata = [];
+    const audioStore = store();
+    for (const sample of voiceSamples) {
+      await audioStore.set(voiceAudioKey(id,sample.index),sample.audioData);
+      storedVoiceMetadata.push({
+        index:sample.index,
+        durationMs:sample.durationMs,
+        mime:sample.mime,
+        bytes:sample.bytes,
+        available:true,
+        temporary:true,
+        cloned:false
+      });
+      sample.audioData = "";
+    }
+
+    const voiceDeliveryInput = body.voiceDelivery && typeof body.voiceDelivery === "object" ? body.voiceDelivery : {};
+    const speakingRateFactor = Math.min(1.20,Math.max(0.80,Number(voiceDeliveryInput.speakingRateFactor)||1));
+
     record.submission = {
       firstName,
       city,
       usernameMasked: maskHandle(username),
-      image: { mime, bytes: bytes.length, width, height }
+      image: { mime, bytes: bytes.length, width, height },
+      voiceSamples: storedVoiceMetadata,
+      voiceDelivery:{
+        speakingRateFactor:Number(speakingRateFactor.toFixed(2)),
+        identityReproduction:false,
+        generatedVoice:"generic"
+      }
     };
     record.findings = {
       gpsEmbedded: !!zone,
