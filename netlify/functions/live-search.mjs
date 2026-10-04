@@ -211,13 +211,6 @@ async function searchWeb(apiKey, q) {
 export default async (req) => {
   const apiKey = process.env.BRAVE_SEARCH_API_KEY;
 
-  if (req.method === "GET") {
-    return respond({
-      configured: !!apiKey,
-      provider: "Brave Search API"
-    });
-  }
-
   if (req.method !== "POST") return respond({ error:"POST required" }, 405);
 
   if (!apiKey) {
@@ -379,6 +372,7 @@ export default async (req) => {
 
 export const config = {
   path:"/api/live-search",
+  method:"POST",
   rateLimit:{
     action:"rate_limit",
     aggregateBy:["ip","domain"],
