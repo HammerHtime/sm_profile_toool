@@ -87,6 +87,8 @@ if(!app.includes('target==="Notifications"') || !app.includes("phoneNotification
 else pass("Every app guide includes a notification privacy screen");
 if(!app.includes('detail.kind === "location"')) fail("Location permission detail screen is missing");
 else pass("Location permission choices render inside the phone");
+if(!app.includes("APP DEFAULT SETTING") || !app.includes("RECOMMENDED PRIVACY SETTING") || !app.includes("function appDefaultSettingFor(")) fail("Default/recommended privacy comparison is missing");
+else pass("App default and recommended privacy tiles render");
 if(!app.includes("function platformHeaderFor(")) fail("Social privacy walkthrough header renderer is missing");
 else pass("Social privacy walkthrough header renderer exists");
 if(!app.includes("phoneSceneNativeIncoming")) fail("Native-style phone screen transition is missing");
