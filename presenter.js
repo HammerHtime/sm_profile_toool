@@ -40,18 +40,53 @@ async function checkPresenterHealth(){
   }
 }
 
+
+async function restorePresenterSession(){
+  const raw=sessionStorage.getItem('pfPhotoPresenter');
+  if(!raw)return;
+
+  let saved;
+  try{saved=JSON.parse(raw)}catch{
+    sessionStorage.removeItem('pfPhotoPresenter');
+    return;
+  }
+
+  if(!saved?.id||!saved?.presenterToken||!saved?.expiresAt||Date.parse(saved.expiresAt)<=Date.now()){
+    sessionStorage.removeItem('pfPhotoPresenter');
+    return;
+  }
+
+  session=saved;
+  if(saved.qrDataUrl)$('qrImage').src=saved.qrDataUrl;
+  if(saved.joinUrl)$('copyLink').dataset.url=saved.joinUrl;
+  $('joinCode').textContent='Session '+saved.id.slice(0,6).toUpperCase();
+  setSessionUi(true);
+  startPolling();
+}
+
 async function createSession(){
   $('startSession').disabled=true;
   try{
     const data=await request('/.netlify/functions/photo-create',{method:'POST',body:'{}'});
     session=data;
-    sessionStorage.setItem('pfPhotoPresenter',JSON.stringify({id:data.id,presenterToken:data.presenterToken,expiresAt:data.expiresAt}));
+    sessionStorage.setItem('pfPhotoPresenter',JSON.stringify({
+      id:data.id,
+      presenterToken:data.presenterToken,
+      expiresAt:data.expiresAt,
+      joinUrl:data.joinUrl,
+      qrDataUrl:data.qrDataUrl
+    }));
     $('qrImage').src=data.qrDataUrl;
     $('joinCode').textContent='Session '+data.id.slice(0,6).toUpperCase();
     $('copyLink').dataset.url=data.joinUrl;
     setSessionUi(true);startPolling();
-  }catch(e){alert(e.message)}
-  finally{$('startSession').disabled=false;}
+  }catch(e){
+    alert(e.message);
+    await checkPresenterHealth();
+restorePresenterSession();
+  } finally {
+    if (!$('presenterHealth')?.classList.contains('failed')) $('startSession').disabled=false;
+  }
 }
 
 function setProgress(status){
@@ -419,8 +454,17 @@ async function erase(){
   if(!session)return;$('erasePhotoDemo').disabled=true;
   try{
     await request('/.netlify/functions/photo-erase',{method:'POST',body:JSON.stringify({id:session.id,presenterToken:session.presenterToken})});
-    clearInterval(pollTimer);sessionStorage.removeItem('pfPhotoPresenter');session=null;latestStatus=null;searchRunning=false;searchComplete=false;revealDeck.classList.add('hidden');$('liveSearchStage').classList.add('hidden');$('qrImage').removeAttribute('src');
-    $('erasePhotoNotice').classList.remove('hidden');$('liveTitle').textContent='Demo data erased';$('liveMessage').textContent='The temporary session record has been deleted. The raw photo was never persisted.';$('erasePhotoDemo').textContent='Deleted ✓';
+    clearInterval(pollTimer);
+    sessionStorage.removeItem('pfPhotoPresenter');
+    session=null;latestStatus=null;searchRunning=false;searchComplete=false;
+    revealDeck.classList.add('hidden');
+    $('liveSearchStage').classList.add('hidden');
+    $('qrImage').removeAttribute('src');
+    $('copyLink').dataset.url='';
+    $('erasePhotoDemo').disabled=false;
+    $('erasePhotoDemo').textContent='Erase session';
+    setSessionUi(false);
+    await checkPresenterHealth();
   }catch(e){alert(e.message);$('erasePhotoDemo').disabled=false;}
 }
 $('startSession').addEventListener('click',createSession);
