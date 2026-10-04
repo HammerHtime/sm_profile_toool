@@ -446,7 +446,10 @@ function showReveal(i){
 async function poll(){
   if(!session)return;
   try{
-    const d=await request('/.netlify/functions/photo-status?id='+encodeURIComponent(session.id)+'&token='+encodeURIComponent(session.presenterToken));
+    const d=await request('/.netlify/functions/photo-status',{
+      method:'POST',
+      body:JSON.stringify({id:session.id,presenterToken:session.presenterToken})
+    });
     setProgress(d.status);
     if(d.status==='submitted'&&latestStatus?.submittedAt!==d.submittedAt)startAutoSearch(d);
   }catch(e){if(/expired|not found/i.test(e.message)){clearInterval(pollTimer);$('liveTitle').textContent='Session expired';$('liveMessage').textContent='Create a new QR code for another volunteer.';}}
