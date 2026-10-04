@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Photo Demo | Presenter</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="photo-demo.css" />
+</head>
+<body class="photoDemoBody">
+  <main class="photoShell presenterShell">
+    <header class="photoTopbar">
+      <a href="index.html" class="backLink">← Public Footprint</a>
+      <div class="livePill"><span></span> LIVE PHOTO DEMO</div>
+    </header>
+
+    <section id="startView" class="photoHero">
+      <div class="eyebrow">CONSENT-BASED LIVE DEMONSTRATION</div>
+      <h1>What can one photo reveal?</h1>
+      <p class="lead">A volunteer scans a one-time QR code, provides their own photo and consent, and the demo analyzes privacy clues without identifying them from their face.</p>
+      <button id="startSession" class="primary hugeBtn">Create volunteer QR code</button>
+      <p class="fineprint">Sessions expire after 15 minutes. Raw uploaded photos are processed transiently and are not stored.</p>
+    </section>
+
+    <section id="sessionView" class="hidden">
+      <div class="presenterGrid">
+        <section class="panel qrPanel">
+          <div class="stepPill">STEP 1</div>
+          <h2>Scan to join</h2>
+          <div class="qrFrame"><img id="qrImage" alt="QR code for volunteer demo" /></div>
+          <div id="joinCode" class="joinCode"></div>
+          <button id="copyLink" class="secondaryBtn">Copy volunteer link</button>
+          <p class="fineprint">The QR code contains only a temporary session ID and one-time participation token.</p>
+        </section>
+
+        <section class="panel liveStatusPanel">
+          <div class="statusOrb waiting" id="statusOrb"></div>
+          <div class="eyebrow">LIVE STATUS</div>
+          <h2 id="liveTitle">Waiting for volunteer…</h2>
+          <p id="liveMessage" class="lead compact">Ask a volunteer to scan the QR code with their phone.</p>
+          <div class="statusSteps">
+            <div class="statusStep active" data-stage="waiting"><b>1</b><span>QR scanned</span></div>
+            <div class="statusStep" data-stage="consent"><b>2</b><span>Consent confirmed</span></div>
+            <div class="statusStep" data-stage="photo"><b>3</b><span>Photo received</span></div>
+            <div class="statusStep" data-stage="ready"><b>4</b><span>Privacy findings ready</span></div>
+          </div>
+          <div class="expiry" id="expiryText"></div>
+        </section>
+      </div>
+
+      <section id="revealDeck" class="hidden revealDeck">
+        <section class="panel revealSlide" data-reveal="0">
+          <div class="eyebrow">VOLUNTEER CONNECTED</div>
+          <h2><span id="participantName">Volunteer</span> consented to the live demo.</h2>
+          <div class="consentConfirmed">✓ Consent confirmed on volunteer device</div>
+          <p class="lead compact">The volunteer supplied this information directly. The system did not identify them from their face.</p>
+        </section>
+
+        <section class="panel revealSlide breadcrumbSlide hidden" data-reveal="1">
+          <div class="eyebrow">STARTING POINT</div>
+          <h2>One photo.</h2>
+          <div class="breadcrumbStage stagePhotoOnly" aria-label="One photo privacy exposure animation">
+            <div class="photoCore">
+              <div class="photoCoreGlow"></div>
+              <div class="photoCardVisual">
+                <div class="scanBeam"></div>
+                <div class="photoGlyph">▧</div>
+                <strong>PHOTO RECEIVED</strong>
+                <small>No facial identification</small>
+              </div>
+            </div>
+          </div>
+          <p class="impactCaption">What can a single image reveal before anyone reads the caption?</p>
+        </section>
+
+        <section class="panel revealSlide breadcrumbSlide hidden" data-reveal="2">
+          <div class="eyebrow">SIGNALS INSIDE THE FILE</div>
+          <h2>The photo starts talking.</h2>
+          <div id="breadcrumbStageMetadata" class="breadcrumbStage" aria-label="Image metadata privacy exposure map"></div>
+          <p class="impactCaption">Each branch represents a privacy clue that can exist inside or alongside the image.</p>
+        </section>
+
+        <section class="panel revealSlide hidden" data-reveal="3">
+          <div class="eyebrow">PHOTO EXPOSURE</div>
+          <h2>What was embedded in the image?</h2>
+          <div id="photoFindingCards" class="photoFindingGrid"></div>
+        </section>
+
+        <section id="locationReveal" class="panel revealSlide hidden" data-reveal="4">
+          <div class="eyebrow">LOCATION PRIVACY</div>
+          <h2 id="locationHeadline">No exact location will be shown.</h2>
+          <div id="photoMapWrap" class="photoMapWrap"></div>
+          <p id="locationCopy" class="lead compact"></p>
+        </section>
+
+        <section class="panel revealSlide breadcrumbSlide hidden" data-reveal="5">
+          <div class="eyebrow">DIGITAL BREADCRUMBS</div>
+          <h2>One clue can lead to another.</h2>
+          <div id="breadcrumbStageCorrelation" class="breadcrumbStage correlationStage" aria-label="Public footprint breadcrumb map"></div>
+          <div id="correlationDisclosure" class="correlationDisclosure"></div>
+        </section>
+
+        <section class="panel revealSlide impactSlide hidden" data-reveal="6">
+          <div class="impactKicker">ONE IMAGE → A DIGITAL BREADCRUMB TRAIL</div>
+          <h2 id="impactHeadline">A photo can share far more than the picture.</h2>
+          <div id="impactStats" class="impactStats"></div>
+          <div class="teachingPoints impactTeaching">
+            <div><strong>Metadata</strong><span>Capture time, device information and GPS can be embedded in the original file.</span></div>
+            <div><strong>Visual clues</strong><span>Signs, logos, landmarks, uniforms, vehicles and event branding can reveal context.</span></div>
+            <div><strong>Public correlation</strong><span>Exact or near-duplicate images can create paths to public webpages and accounts without using facial identification.</span></div>
+            <div><strong>Control the trail</strong><span>Privacy, camera, location and sharing settings can reduce what future images expose.</span></div>
+          </div>
+        </section>
+      </section>
+
+      <section class="presenterFooter panel">
+        <div>
+          <strong>Presentation remote ready</strong>
+          <div class="fineprint">Right arrow, Space, Enter or Page Down advances. Left arrow or Page Up goes back.</div>
+        </div>
+        <button id="erasePhotoDemo" class="danger">Erase Demo Data</button>
+      </section>
+      <div id="erasePhotoNotice" class="eraseNotice hidden"><div class="eraseCheck">✓</div><div><strong>Live demo erased.</strong><br><span>The temporary session record has been deleted.</span></div></div>
+    </section>
+  </main>
+  <script src="presenter.js"></script>
+</body>
+</html>
