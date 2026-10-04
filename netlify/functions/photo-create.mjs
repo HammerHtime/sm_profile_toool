@@ -49,6 +49,7 @@ export default async (req) => {
 
 export const config = {
   path:"/api/photo-create",
+  method:"POST",
   rateLimit:{
     action:"rate_limit",
     aggregateBy:["ip","domain"],
