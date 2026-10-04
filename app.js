@@ -519,17 +519,44 @@
   }
 
   function phoneHtml(title, target, explanation) {
+    if (explanation) {
+      return '<div class="phoneMock phoneTeaching" style="--brand:' + (guidePlatform.brand || "#52d6ff") + '">' +
+        '<div class="phoneNotch"></div>' +
+        '<div class="phoneStatus"><span>9:41</span><span>● ● ●</span></div>' +
+        '<div class="phoneScreen phoneTeachingScreen">' +
+          '<div class="phoneTitle"><span class="phoneTitleIcon">' + guidePlatform.icon + '</span><span>' + guidePlatform.name + '</span></div>' +
+          '<div class="settingSuccess">' +
+            '<div class="settingSuccessIcon">✓</div>' +
+            '<div class="settingSuccessKicker">SETTING REVIEWED</div>' +
+            '<strong>' + title + '</strong>' +
+            '<span>Pause here and explain what this control changes.</span>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    }
+
     const rows = ["Account","Privacy","Safety","Discoverability","Location","Messages","Content controls"];
     if (target && target !== "EXPLAIN") {
       const i = Math.abs(hashCode(target)) % rows.length;
       rows[i] = target;
     }
-    let html = '<div class="phoneMock" style="--brand:' + (guidePlatform.brand || "#52d6ff") + '"><div class="phoneNotch"></div><div class="phoneStatus"><span>9:41</span><span>● ● ●</span></div><div class="phoneScreen"><div class="phoneTitle"><span class="phoneTitleIcon">' + guidePlatform.icon + "</span><span>" + guidePlatform.name + '</span></div><div class="phoneRows">';
+
+    let html = '<div class="phoneMock" style="--brand:' + (guidePlatform.brand || "#52d6ff") + '">' +
+      '<div class="phoneNotch"></div>' +
+      '<div class="phoneStatus"><span>9:41</span><span>● ● ●</span></div>' +
+      '<div class="phoneScreen">' +
+        '<div class="phoneTitle"><span class="phoneTitleIcon">' + guidePlatform.icon + '</span><span>' + guidePlatform.name + '</span></div>' +
+        '<div class="phoneCurrentScreen">' + title + '</div>' +
+        '<div class="phoneRows">';
+
     rows.forEach((r) => {
       const isTarget = target !== "EXPLAIN" && r === target;
-      html += '<div class="phoneRow' + (isTarget ? " target" : "") + '"><span>' + r + "</span>" + (isTarget ? '<span class="toggle on"></span>' : "<span>›</span>") + "</div>";
+      html += '<div class="phoneRow' + (isTarget ? " target" : "") + '"><span>' + r + '</span>' +
+        (isTarget ? '<span class="toggle on"></span>' : '<span>›</span>') +
+        '</div>';
     });
-    html += "</div></div></div>";
+
+    html += '</div></div></div>';
     return html;
   }
 
@@ -539,10 +566,14 @@
     return h;
   }
 
-  function renderGuideSlide() {
+  let coachTransitionLocked = false;
+
+  function renderGuideSlide(direction = 0) {
     if (!currentGuide) return;
     const step = currentGuide[guideIndex];
     const title = step[0], body = step[1], target = step[2];
+    const slide = $("coachSlide");
+
     $("coachBrand").textContent = guidePlatform.name + (guidePlatform.device ? " Parent Guide" : " Privacy Guide");
     $("coachCounter").textContent = (guideIndex + 1) + " / " + currentGuide.length;
     $("coachOfficial").href = officialHelp(guidePlatform.name, guidePlatform.device);
@@ -553,7 +584,7 @@
       ? ["What this control changes","What exposure or risk it reduces","What the child/user will notice","Any trade-off or limitation to understand"]
       : ["Follow this exact path on the device","The highlighted row is the next tap","Use the presentation clicker to advance one action at a time"];
 
-    $("coachSlide").innerHTML =
+    slide.innerHTML =
       '<div class="coachVisual">' + phoneHtml(title,target,isExplain) + '</div>' +
       '<div class="coachCopy">' +
       '<div class="eyebrow">' + (isExplain ? "WHY THIS SETTING MATTERS" : "STEP " + (guideIndex + 1)) + '</div>' +
@@ -565,6 +596,54 @@
 
     $("coachPrev").disabled = guideIndex === 0;
     $("coachNext").textContent = guideIndex === currentGuide.length - 1 ? "Finish guide" : "Next";
+
+    if (direction !== 0) {
+      slide.classList.remove("coachEnterForward","coachEnterBack");
+      void slide.offsetWidth;
+      slide.classList.add(direction > 0 ? "coachEnterForward" : "coachEnterBack");
+      setTimeout(() => slide.classList.remove("coachEnterForward","coachEnterBack"), 430);
+    }
+  }
+
+  function navigateGuide(delta) {
+    if (!currentGuide || coachTransitionLocked) return;
+
+    if (delta > 0 && guideIndex >= currentGuide.length - 1) {
+      const deck = document.querySelector(".coachDeck");
+      if (deck) deck.classList.add("coachZoomOut");
+      coachTransitionLocked = true;
+      setTimeout(() => {
+        if (deck) deck.classList.remove("coachZoomOut");
+        closeGuide();
+        coachTransitionLocked = false;
+      }, 320);
+      return;
+    }
+
+    const next = Math.max(0, Math.min(currentGuide.length - 1, guideIndex + delta));
+    if (next === guideIndex) return;
+
+    coachTransitionLocked = true;
+    const slide = $("coachSlide");
+    const target = slide.querySelector(".phoneRow.target");
+
+    if (target && delta > 0) {
+      target.classList.add("tapActivated");
+      const ripple = document.createElement("span");
+      ripple.className = "tapRipple";
+      target.appendChild(ripple);
+    }
+
+    setTimeout(() => {
+      slide.classList.add(delta > 0 ? "coachExitForward" : "coachExitBack");
+    }, target && delta > 0 ? 135 : 0);
+
+    setTimeout(() => {
+      slide.classList.remove("coachExitForward","coachExitBack");
+      guideIndex = next;
+      renderGuideSlide(delta);
+      coachTransitionLocked = false;
+    }, target && delta > 0 ? 360 : 245);
   }
 
   function officialHelp(name, device) {
@@ -636,17 +715,8 @@
 
   $("coachClose").addEventListener("click", closeGuide);
   document.querySelector("[data-close-coach]").addEventListener("click", closeGuide);
-  $("coachPrev").addEventListener("click", () => {
-    if (!currentGuide) return;
-    guideIndex = Math.max(0, guideIndex - 1);
-    renderGuideSlide();
-  });
-  $("coachNext").addEventListener("click", () => {
-    if (!currentGuide) return;
-    if (guideIndex >= currentGuide.length - 1) { closeGuide(); return; }
-    guideIndex++;
-    renderGuideSlide();
-  });
+  $("coachPrev").addEventListener("click", () => navigateGuide(-1));
+  $("coachNext").addEventListener("click", () => navigateGuide(1));
 
   window.addEventListener("keydown", (e) => {
     if (!currentGuide) return;
