@@ -1,4 +1,4 @@
 {
-  "release": "public-footprint-rc2-smoke-v13",
-  "purpose": "OpenAI connected-story synthesis and Google Vision reverse-image web detection"
+  "release": "public-footprint-rc2-smoke-v14",
+  "purpose": "Broad Google geocoding for story locations and privacy-preserving photo regions"
 }
