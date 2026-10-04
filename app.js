@@ -618,12 +618,12 @@ function setConsentState() {
               (source.confidence === "strong" ? "STRONG MATCH" : "POSSIBLE MATCH") +
             '</span>' +
           '</div>' +
-          '<strong>' + escapeHtml(source.title || source.domain || "Public result") + '</strong>' +
-          '<p>' + escapeHtml(source.snippet || "Open the source to review this result.") + '</p>' +
+          '<strong>' + escapeHtml((source.platform || "Public web") + " public result") + '</strong>' +
+          '<p>Public/indexed page returned by the search provider. Open the source only when you want to review the underlying page.</p>' +
           '<div class="publicSourceMeta">' +
             '<span>' + escapeHtml(source.domain || "") + '</span>' +
             '<span>' + escapeHtml(reasons || "name match") + '</span>' +
-          '</div>';
+          '</div><div class="publicSourceOpen">OPEN SOURCE ↗</div>';
         publicSourcesGrid.appendChild(card);
       });
     }
