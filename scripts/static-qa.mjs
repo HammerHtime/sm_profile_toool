@@ -131,6 +131,22 @@ const linkedInHandle=liveModule.maskedHandle("https://www.linkedin.com/in/andrew
 if(!linkedInHandle?.startsWith("@")) fail("LinkedIn account path did not produce a masked handle");
 else pass("Recognized social account paths still produce masked handles");
 
+const psychotherapistCollision=liveModule.matchResult({
+  title:"Andrew Hammond, Registered Psychotherapist (Qualifying)",
+  description:"Spencerville, Ontario. Clinical counselling practice. Former military, paramedic and police officer. Masters of Divinity.",
+  url:"https://www.psychologytoday.com/ca/therapists/andrew-hammond-spencerville-on/1828152"
+}, testPerson);
+if(psychotherapistCollision.confidence!=="discard") fail("Psychotherapist same-name profile was not rejected");
+else pass("Psychotherapist same-name profile is rejected");
+
+if(!read("netlify/functions/live-search.mjs").includes(".filter(([,count])=>count >= 2)")) fail("Recurring themes can still be created from a single source");
+else pass("Recurring themes require repetition across multiple eligible sources");
+
+if(presenter.includes("speechSynthesis") || presenter.includes("SpeechSynthesisUtterance")) fail("Presenter still uses robotic browser speech synthesis");
+else pass("Presenter no longer uses browser speech synthesis");
+if(!presenter.includes("photo-generated-voice")) fail("Presenter natural AI voice endpoint is missing");
+else pass("Presenter uses server-generated natural AI speech");
+
 const functionNames=new Set(fs.readdirSync(path.join(root,"netlify/functions"))
   .filter(n=>n.endsWith(".mjs")).map(n=>n.replace(/\.mjs$/,"")));
 for(const jsPath of ["app.js","presenter.js","volunteer.js"]){
