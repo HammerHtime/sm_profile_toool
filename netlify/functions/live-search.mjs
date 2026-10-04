@@ -293,12 +293,19 @@ function imageMatchesPerson(result, person) {
   const hay = normalize([result?.title,result?.url,result?.source].filter(Boolean).join(" "));
   if (!hay) return false;
   const full = normalize(person.fullName);
+  const city = normalize(person.city);
   const handle = normalize(String(person.username || "").replace(/^@/,""));
   const nameParts = full.split(/\s+/).filter(Boolean);
   const fullNameMatch = full && hay.includes(full);
   const partsMatch = nameParts.length >= 2 && nameParts.every(part=>hay.includes(part));
   const handleMatch = handle && hay.includes(handle);
-  return !!(fullNameMatch || partsMatch || handleMatch);
+  const cityMatch = city && hay.includes(city);
+
+  // Exact handles can stand on their own. Name-only image matches must respect the
+  // supplied city so unrelated same-name people do not appear in the presentation.
+  if (handleMatch) return true;
+  if (city && !cityMatch) return false;
+  return !!(fullNameMatch || partsMatch);
 }
 
 const providerWait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
