@@ -473,6 +473,11 @@ async function preloadVoiceSamples(data){
       const blob=await response.blob();
       const url=URL.createObjectURL(blob);
       preloadedVoiceSamples.set(index,{blob,url});
+      const button=$('playVoiceSample'+index);
+      if(button){
+        button.disabled=false;
+        button.classList.add('available');
+      }
     }catch{}
   });
   await Promise.allSettled(jobs);
@@ -505,8 +510,13 @@ function renderVoiceRisk(data){
     const button=$('playVoiceSample'+index);
     if(!button)continue;
     const available=samples.some(sample=>Number(sample.index)===index&&sample.available);
-    button.disabled=!available;
-    button.classList.toggle('available',available);
+    const ready=available&&preloadedVoiceSamples.has(index);
+    button.disabled=!ready;
+    button.classList.toggle('available',ready);
+    const strong=button.querySelector('strong');
+    if(strong) strong.textContent=available
+      ? (ready?'Play Sample '+(index+1):'Preparing Sample '+(index+1)+'…')
+      : 'Sample '+(index+1)+' not recorded';
   }
 }
 
