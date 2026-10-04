@@ -388,3 +388,82 @@ button{border:0;cursor:pointer}
   line-height:1.45;
   font-weight:500
 }
+
+
+/* Live public-source cards */
+.publicSourcesGrid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:14px;
+  margin-top:18px
+}
+.publicSourceCard{
+  display:block;
+  text-decoration:none;
+  color:inherit;
+  border:1px solid var(--line);
+  border-radius:18px;
+  padding:17px;
+  background:linear-gradient(145deg,#0a1d2b,#07131d);
+  transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease
+}
+.publicSourceCard:hover{
+  transform:translateY(-2px);
+  border-color:rgba(82,214,255,.34);
+  box-shadow:0 0 34px rgba(82,214,255,.08)
+}
+.publicSourceCard.strongMatch{border-color:rgba(85,227,156,.23)}
+.publicSourceCard.possibleMatch{border-color:rgba(255,209,102,.20)}
+.publicSourceTop{
+  display:flex;
+  justify-content:space-between;
+  gap:12px;
+  align-items:center;
+  margin-bottom:10px
+}
+.publicSourcePlatform{
+  color:#9ee8ff;
+  font-size:.68rem;
+  font-weight:950;
+  letter-spacing:.08em;
+  text-transform:uppercase
+}
+.matchConfidence{
+  padding:5px 8px;
+  border-radius:999px;
+  font-size:.52rem;
+  letter-spacing:.08em;
+  font-weight:950
+}
+.matchConfidence.strong{
+  color:#8ff0bd;
+  border:1px solid rgba(85,227,156,.28);
+  background:rgba(85,227,156,.06)
+}
+.matchConfidence.possible{
+  color:#ffe39a;
+  border:1px solid rgba(255,209,102,.28);
+  background:rgba(255,209,102,.06)
+}
+.publicSourceCard>strong{
+  display:block;
+  font-size:.98rem;
+  line-height:1.35
+}
+.publicSourceCard p{
+  margin:8px 0 12px;
+  color:#9db2c1;
+  font-size:.79rem;
+  line-height:1.52
+}
+.publicSourceMeta{
+  display:flex;
+  justify-content:space-between;
+  gap:12px;
+  color:#6f8797;
+  font-size:.64rem
+}
+@media(max-width:760px){
+  .publicSourcesGrid{grid-template-columns:1fr}
+  .publicSourceMeta{flex-direction:column}
+}
