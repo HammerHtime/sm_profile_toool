@@ -9,7 +9,7 @@ export default async (req) => {
     const presenterToken = cleanText(body.presenterToken,120);
     const index = Number(body.index);
 
-    if (!Number.isInteger(index) || index < 0 || index > 2) {
+    if (index !== 0) {
       return jsonResponse({ error:"Invalid voice sample" },400);
     }
 
