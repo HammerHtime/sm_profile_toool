@@ -1899,3 +1899,24 @@ body.reportDeckActive{overflow:hidden}
     max-width:100%
   }
 }
+
+
+/* AI-connected story layer */
+.profileStoryPanel{position:relative;overflow:hidden}
+.profileStoryPanel:before{content:"";position:absolute;inset:-40% auto auto -10%;width:320px;height:320px;border-radius:50%;background:radial-gradient(circle,rgba(82,214,255,.12),transparent 68%);pointer-events:none}
+.intelligenceOverview{max-width:850px;margin:.45rem 0 0;color:#c6d5df;font-size:1.05rem;line-height:1.65}
+.storyPointGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:20px}
+.storyPointCard{min-height:160px;padding:18px;border:1px solid rgba(255,255,255,.09);border-radius:18px;background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.018))}
+.storyPointCard strong{display:block;color:#f4fbff;font-size:1rem;margin-bottom:9px}
+.storyPointCard p{margin:0;color:#aebfca;line-height:1.55}
+.storyPointMeta{display:flex;justify-content:space-between;gap:12px;margin-top:16px;padding-top:12px;border-top:1px solid rgba(255,255,255,.07);font-size:.68rem;letter-spacing:.08em;color:#7fd9ff}
+.storyPointMeta span:last-child{color:#8297a6;text-align:right}
+.intelligenceTimelineWrap{margin-top:24px;padding-top:20px;border-top:1px solid rgba(255,255,255,.08)}
+.intelligenceTimeline{display:grid;gap:10px;margin-top:12px}
+.intelligenceTimelineItem{display:grid;grid-template-columns:130px 1fr;gap:16px;align-items:start;padding:14px 16px;border-radius:14px;background:rgba(7,19,29,.56);border:1px solid rgba(255,255,255,.07)}
+.timelinePeriod{font-weight:800;color:#7fe0ff;letter-spacing:.03em}
+.intelligenceTimelineItem p{margin:0 0 6px;color:#d5e2e9;line-height:1.5}
+.timelineConfidence{font-size:.66rem;letter-spacing:.08em;color:#91a5b3}
+.intelligenceCaveat{margin-top:16px!important}
+@media(max-width:980px){.storyPointGrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:680px){.storyPointGrid{grid-template-columns:1fr}.intelligenceTimelineItem{grid-template-columns:1fr;gap:6px}}
