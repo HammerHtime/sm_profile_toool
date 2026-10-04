@@ -49,6 +49,11 @@ export default async (req) => {
             cloned:false
           }))
         : [],
+      voiceDelivery: record.submission?.voiceDelivery || {
+        speakingRateFactor:1,
+        identityReproduction:false,
+        generatedVoice:"generic"
+      },
       findings: record.findings || null,
       correlation: record.correlation || null
     });
