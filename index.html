@@ -97,184 +97,280 @@
       </div>
     </section>
 
-    <section id="results" class="hidden">
-      <section id="dataModeBanner" class="dataModeBanner hidden" role="status"></section>
-      <section id="zeroResultFallback" class="zeroResultFallback hidden">
-        <div>
-          <strong>No verified public matches were returned.</strong>
-          <span>That can happen with common names, private profiles, weak indexing or very small public footprints.</span>
+    <section id="results" class="hidden reportDeck">
+      <header class="reportDeckTopbar">
+        <div class="reportDeckIdentity">
+          <span class="reportDeckMark">PF</span>
+          <div><strong>Public Footprint</strong><small id="reportDeckSubject">Presentation results</small></div>
         </div>
-        <button type="button" id="zeroSyntheticBtn" class="secondaryBtn syntheticDemoBtn">Run Synthetic Demo</button>
-      </section>
-      <section class="scoreCard panel">
-        <div>
-          <div class="eyebrow">PUBLIC FOOTPRINT</div>
-          <h2 id="subjectName">Demo Subject</h2>
-          <p id="summaryLine">Publicly discoverable information spans multiple categories.</p>
-        </div>
-        <div class="scoreWrap">
-          <div class="score" id="score">0</div>
-          <div class="scoreLabel" id="scoreLabel">LOW</div>
-        </div>
-      </section>
+        <nav class="reportStageRail" id="reportStageRail" aria-label="Presentation sections">
+          <button type="button" data-report-target="0">Snapshot</button>
+          <button type="button" data-report-target="1">Sources</button>
+          <button type="button" data-report-target="2">Meaning</button>
+          <button type="button" data-report-target="3">Exposure</button>
+          <button type="button" data-report-target="4">App privacy</button>
+          <button type="button" data-report-target="5">Phone privacy</button>
+          <button type="button" data-report-target="6">Parent apps</button>
+          <button type="button" data-report-target="7">Child devices</button>
+          <button type="button" data-report-target="8">Takeaway</button>
+        </nav>
+        <button type="button" id="closeReportDeck" class="reportExit">Exit results</button>
+      </header>
 
-      <section class="stats" id="stats"></section>
-
-      <section class="panel findings">
-        <h3>What the system found</h3>
-        <div id="findingRows"></div>
-      </section>
-
-      <section class="panel accountMatchesPanel hidden" id="accountMatchesPanel">
-        <div class="coverageHeader">
-          <div>
-            <div class="eyebrow">MATCHED ACCOUNTS</div>
-            <h3>Recognizable account names, without giving them away</h3>
-            <p class="fineprint">Only the beginning and end of each public handle/name are shown. The middle portion is masked before results reach this screen.</p>
+      <div class="reportStageViewport" id="reportStageViewport">
+        <section class="reportStage" data-report-stage="0">
+          <div class="reportStageIntro">
+            <div><span>01</span><div><strong>Snapshot</strong><small>What the search found at a glance</small></div></div>
           </div>
-          <div class="privacyChip">MIDDLE 50%+ MASKED</div>
-        </div>
-        <div class="accountMatchesGrid" id="accountMatchesGrid"></div>
-      </section>
-
-      <section class="panel sourceCoveragePanel hidden" id="sourceCoveragePanel">
-        <div class="coverageHeader">
-          <div>
-            <div class="eyebrow">SOURCE COVERAGE</div>
-            <h3>How broad was the public search?</h3>
-            <p class="fineprint">The live search runs several targeted public-web search passes, then shows which platform/source categories actually produced matching material. Private messages, closed groups, private servers and non-public accounts are excluded.</p>
-          </div>
-          <div class="coverageNumbers">
-            <div><strong id="sourceSearched">0</strong><span>search passes</span></div>
-            <div><strong id="sourceMatched">0</strong><span>passes with matches</span></div>
-          </div>
-        </div>
-        <div class="sourceCoverageGrid" id="sourceCoverageGrid"></div>
-      </section>
-
-
-      <section class="panel publicSourcesPanel hidden" id="publicSourcesPanel">
-        <div class="coverageHeader">
-          <div>
-            <div class="eyebrow">LIVE PUBLIC SOURCES</div>
-            <h3>Exactly what was returned</h3>
-            <p class="fineprint">Results are grouped by platform or source so repeated findings do not overwhelm the presentation. Expand a group to review the individual public links. Strong match means a page matched multiple supplied identifiers. Possible match means it needs human confirmation.</p>
-          </div>
-          <div class="privacyChip">SOURCE LINKS INCLUDED</div>
-        </div>
-        <div class="publicSourcesGrid" id="publicSourcesGrid"></div>
-      </section>
-
-      <section class="panel publicVoicePanel hidden" id="publicVoicePanel">
-        <div class="coverageHeader">
-          <div>
-            <div class="eyebrow">PUBLIC EXCERPTS & RECURRING TERMS</div>
-            <h3>What appeared around the matching public pages?</h3>
-            <p class="fineprint">Short search-result excerpts are masked and truncated. Recurring terms are frequency-based only, not sensitive-trait inference.</p>
-          </div>
-          <div class="privacyChip">SHORT • MASKED • SOURCED</div>
-        </div>
-        <div id="resultQuoteGrid" class="resultQuoteGrid"></div>
-        <div id="resultWordCloud" class="resultWordCloud"></div>
-      </section>
-
-      <section class="panel profileSignalsPanel hidden" id="profileSignalsPanel">
-        <div class="coverageHeader">
-          <div>
-            <div class="eyebrow">AI PROFILE SYNTHESIS</div>
-            <h3>What could someone learn from all of this?</h3>
-            <p class="fineprint">The goal is to show how ordinary public fragments combine into a much richer profile. Sensitive-trait inference is deliberately disabled.</p>
-          </div>
-          <div class="privacyChip">SUMMARY ONLY</div>
-        </div>
-        <div class="profileSignalsGrid" id="profileSignalsGrid"></div>
-      </section>
-
-      <section class="panel exposureDetailPanel hidden" id="exposureDetailPanel">
-        <div class="coverageHeader">
-          <div>
-            <div class="eyebrow">WHAT WAS ACTUALLY SHARED?</div>
-            <h3>Content-level exposure</h3>
-            <p class="fineprint">Instead of displaying the private detail itself, the report counts and classifies what public material revealed. Image categories are descriptive only; the demo does not identify people from faces.</p>
-          </div>
-          <div class="activityHero"><strong id="activityTotal">0</strong><span>public posts, comments & mentions</span></div>
-        </div>
-        <div class="exposureColumns">
-          <section class="detailCard">
-            <h4><span id="imageTotal">0</span> public images — what they showed</h4>
-            <div class="breakdownList" id="imageBreakdown"></div>
+          <section id="dataModeBanner" class="dataModeBanner hidden" role="status"></section>
+          <section id="zeroResultFallback" class="zeroResultFallback hidden">
+            <div>
+              <strong>No verified public matches were returned.</strong>
+              <span>That can happen with common names, private profiles, weak indexing or very small public footprints.</span>
+            </div>
+            <button type="button" id="zeroSyntheticBtn" class="secondaryBtn syntheticDemoBtn">Run Synthetic Demo</button>
           </section>
-          <section class="detailCard">
-            <h4>Public activity discovered</h4>
-            <div class="breakdownList" id="activityTypes"></div>
-          </section>
-        </div>
-        <section class="detailCard themeCard">
-          <div class="detailTitleRow">
-            <h4>Non-sensitive themes repeatedly shared or discussed</h4>
-            <span class="badge">SENSITIVE TRAIT INFERENCE OFF</span>
+          <div class="snapshotGrid">
+            <section class="scoreCard panel">
+              <div>
+                <div class="eyebrow">PUBLIC FOOTPRINT</div>
+                <h2 id="subjectName">Demo Subject</h2>
+                <p id="summaryLine">Publicly discoverable information spans multiple categories.</p>
+              </div>
+              <div class="scoreWrap">
+                <div class="score" id="score">0</div>
+                <div class="scoreLabel" id="scoreLabel">LOW</div>
+              </div>
+            </section>
+            <section class="stats" id="stats"></section>
           </div>
-          <div class="themeGrid" id="themeBreakdown"></div>
-          <p class="fineprint detailNote">The educational profile can summarize ordinary interests, routines and topics. It intentionally does not infer or score political beliefs, religion, health, sexual orientation, race, or other sensitive personal traits.</p>
+          <section class="panel findings deckCompactPanel">
+            <div class="coverageHeader">
+              <div><div class="eyebrow">KEY FINDINGS</div><h3>What matters most</h3></div>
+              <div class="privacyChip">SUMMARY</div>
+            </div>
+            <div id="findingRows"></div>
+          </section>
         </section>
-      </section>
 
-      <section class="panel mapPanel hidden" id="mapPanel">
-        <div class="mapHeader">
-          <div>
-            <h3>Approximate image-location exposure</h3>
-            <p class="fineprint">Precise GPS coordinates are reduced server-side. The display uses only a coarse 50 km privacy zone with no exact pin.</p>
+        <section class="reportStage hidden" data-report-stage="1">
+          <div class="reportStageIntro">
+            <div><span>02</span><div><strong>Sources</strong><small>Where the public footprint came from</small></div></div>
           </div>
-          <div class="badge">50 KM RADIUS</div>
-        </div>
-        <div class="mapGrid" id="mapGrid"></div>
-      </section>
+          <div class="stageTwoColumn">
+            <section class="panel accountMatchesPanel hidden" id="accountMatchesPanel">
+              <div class="coverageHeader">
+                <div>
+                  <div class="eyebrow">MATCHED ACCOUNTS</div>
+                  <h3>Recognizable accounts</h3>
+                  <p class="fineprint">Handles are partially masked before display.</p>
+                </div>
+                <div class="privacyChip">MASKED</div>
+              </div>
+              <div class="accountMatchesGrid" id="accountMatchesGrid"></div>
+            </section>
 
-
-      <section class="panel privacyCoachPanel">
-        <div class="coachHead">
-          <div>
-            <div class="eyebrow">PHASE 3 · FIX THE EXPOSURE</div>
-            <h3>Zoom inside each platform</h3>
-            <p class="fineprint">Click an app. The presentation zooms into a phone-style settings walkthrough. One clicker press equals one tap on the phone. There is no fixed slide limit: each platform uses as many screens as the real setup needs, and every setting ends with an explanation of what it controls, why it matters, what changes, and any trade-off.</p>
+            <section class="panel sourceCoveragePanel hidden" id="sourceCoveragePanel">
+              <div class="coverageHeader">
+                <div>
+                  <div class="eyebrow">SOURCE COVERAGE</div>
+                  <h3>How broad was the search?</h3>
+                  <p class="fineprint">Public/indexed sources only. Private messages and closed accounts are excluded.</p>
+                </div>
+                <div class="coverageNumbers">
+                  <div><strong id="sourceSearched">0</strong><span>passes</span></div>
+                  <div><strong id="sourceMatched">0</strong><span>matched</span></div>
+                </div>
+              </div>
+              <div class="sourceCoverageGrid" id="sourceCoverageGrid"></div>
+            </section>
           </div>
-          <div class="privacyChip">CLICKER READY</div>
-        </div>
-        <div class="hubLegend"><span><i class="legendDot found"></i> commonly found in public searches</span><span><i class="legendDot"></i> privacy controls worth reviewing</span></div>
-        <div class="platformGrid platformWall" id="platformGrid"></div>
-      </section>
 
-      <section class="panel parentSafetyPanel" id="parentSafetyPanel">
-        <div class="parentHero">
-          <div>
-            <div class="eyebrow">PHASE 4 · PARENT MODE</div>
-            <h3>Protect the child, not just the account.</h3>
-            <p>Platform supervision is only half the job. This section walks parents through the controls inside social apps, then goes much deeper into iPhone Screen Time and Android Family Link. These deep dives are intentionally long and step-by-step, with no artificial slide cap.</p>
+          <section class="panel publicSourcesPanel hidden deckSourcePanel" id="publicSourcesPanel">
+            <div class="coverageHeader">
+              <div>
+                <div class="eyebrow">LIVE PUBLIC SOURCES</div>
+                <h3>Grouped by platform, not a wall of duplicate cards</h3>
+                <p class="fineprint">Expand a platform only when you want the individual source links. Strong match means multiple supplied identifiers matched.</p>
+              </div>
+              <div class="privacyChip">SOURCE LINKS INCLUDED</div>
+            </div>
+            <div class="publicSourcesGrid" id="publicSourcesGrid"></div>
+          </section>
+        </section>
+
+        <section class="reportStage hidden" data-report-stage="2">
+          <div class="reportStageIntro">
+            <div><span>03</span><div><strong>What it means</strong><small>Turn fragments into a human-readable picture</small></div></div>
           </div>
-          <div class="parentShield" aria-hidden="true"><span>◆</span><small>FAMILY
+          <section class="panel publicVoicePanel hidden" id="publicVoicePanel">
+            <div class="coverageHeader">
+              <div>
+                <div class="eyebrow">PUBLIC EXCERPTS & RECURRING TERMS</div>
+                <h3>What appeared around the matching pages?</h3>
+                <p class="fineprint">Masked excerpts and recurring terms only. Sensitive-trait inference stays off.</p>
+              </div>
+              <div class="privacyChip">MASKED • SOURCED</div>
+            </div>
+            <div id="resultQuoteGrid" class="resultQuoteGrid"></div>
+            <div id="resultWordCloud" class="resultWordCloud"></div>
+          </section>
+
+          <section class="panel profileSignalsPanel hidden" id="profileSignalsPanel">
+            <div class="coverageHeader">
+              <div>
+                <div class="eyebrow">PROFILE SYNTHESIS</div>
+                <h3>What could someone learn from all of this?</h3>
+                <p class="fineprint">Ordinary public fragments can combine into a richer profile even when each item seems harmless alone.</p>
+              </div>
+              <div class="privacyChip">SUMMARY ONLY</div>
+            </div>
+            <div class="profileSignalsGrid" id="profileSignalsGrid"></div>
+          </section>
+        </section>
+
+        <section class="reportStage hidden" data-report-stage="3">
+          <div class="reportStageIntro">
+            <div><span>04</span><div><strong>Exposure</strong><small>Images, activity, themes and location clues</small></div></div>
+          </div>
+          <section class="panel exposureDetailPanel hidden" id="exposureDetailPanel">
+            <div class="coverageHeader">
+              <div>
+                <div class="eyebrow">WHAT WAS ACTUALLY SHARED?</div>
+                <h3>Content-level exposure</h3>
+                <p class="fineprint">Counts and classifications are shown instead of exposing the private detail itself.</p>
+              </div>
+              <div class="activityHero"><strong id="activityTotal">0</strong><span>public excerpts</span></div>
+            </div>
+            <div class="exposureColumns">
+              <section class="detailCard">
+                <h4><span id="imageTotal">0</span> public images</h4>
+                <div class="breakdownList" id="imageBreakdown"></div>
+              </section>
+              <section class="detailCard">
+                <h4>Public activity discovered</h4>
+                <div class="breakdownList" id="activityTypes"></div>
+              </section>
+            </div>
+            <section class="detailCard themeCard">
+              <div class="detailTitleRow">
+                <h4>Recurring non-sensitive themes</h4>
+                <span class="badge">SENSITIVE INFERENCE OFF</span>
+              </div>
+              <div class="themeGrid" id="themeBreakdown"></div>
+            </section>
+          </section>
+
+          <section class="panel mapPanel hidden" id="mapPanel">
+            <div class="mapHeader">
+              <div>
+                <h3>Approximate image-location exposure</h3>
+                <p class="fineprint">Exact GPS is reduced server-side to a broad 50 km privacy zone.</p>
+              </div>
+              <div class="badge">50 KM RADIUS</div>
+            </div>
+            <div class="mapGrid" id="mapGrid"></div>
+          </section>
+        </section>
+
+        <section class="reportStage hidden" data-report-stage="4">
+          <div class="reportStageIntro">
+            <div><span>05</span><div><strong>App privacy</strong><small>Choose an app and fix the exposure</small></div></div>
+          </div>
+          <section class="panel privacyCoachPanel stageHubPanel">
+            <div class="coachHead">
+              <div>
+                <div class="eyebrow">PRIVACY SETTINGS</div>
+                <h3>Social apps</h3>
+                <p class="fineprint">Choose one platform. It opens as a focused phone-style walkthrough instead of continuing down the page.</p>
+              </div>
+              <div class="privacyChip">CLICKER READY</div>
+            </div>
+            <div class="hubLegend"><span><i class="legendDot found"></i> found in this search</span><span><i class="legendDot"></i> worth reviewing</span></div>
+            <div class="platformGrid platformWall deckPlatformWall" id="platformGrid"></div>
+          </section>
+        </section>
+
+        <section class="reportStage hidden" data-report-stage="5">
+          <div class="reportStageIntro">
+            <div><span>06</span><div><strong>Phone privacy</strong><small>Lock down the device itself</small></div></div>
+          </div>
+          <section class="panel stageHubPanel devicePrivacyPanel">
+            <div class="coachHead">
+              <div>
+                <div class="eyebrow">DEVICE PRIVACY</div>
+                <h3>iPhone and Android</h3>
+                <p class="fineprint">Location, camera, microphone, contacts, photos and app permissions live here.</p>
+              </div>
+              <div class="privacyChip">DEVICE SETTINGS</div>
+            </div>
+            <div class="deviceParentGrid devicePrivacyGrid" id="devicePrivacyGrid"></div>
+          </section>
+        </section>
+
+        <section class="reportStage hidden" data-report-stage="6">
+          <div class="reportStageIntro">
+            <div><span>07</span><div><strong>Parent controls</strong><small>Safety controls inside the social apps</small></div></div>
+          </div>
+          <section class="panel parentSafetyPanel stageHubPanel" id="parentSafetyPanel">
+            <div class="parentHero">
+              <div>
+                <div class="eyebrow">PARENT MODE</div>
+                <h3>Protect the child inside each app.</h3>
+                <p>Choose a platform to walk through its teen, family or supervision controls.</p>
+              </div>
+              <div class="parentShield" aria-hidden="true"><span>◆</span><small>FAMILY
 SAFETY</small></div>
-        </div>
-        <div class="parentSectionLabel"><span>Social platforms with teen / family safety controls</span><small>Tap any platform to zoom in</small></div>
-        <div class="platformGrid parentPlatformGrid" id="parentPlatformGrid"></div>
-        <div class="parentSectionLabel deviceLabel"><span>Device parental controls · deep dive</span><small>These are the big sections</small></div>
-        <div class="deviceParentGrid" id="deviceParentGrid"></div>
-        <div class="parentAccuracyNote"><strong>Important:</strong> controls vary by age, region, app version and device OS. The walkthroughs are written for current 2026 guidance and link to the platform’s official help page on every deck.</div>
-      </section>
+            </div>
+            <div class="platformGrid parentPlatformGrid deckParentGrid" id="parentPlatformGrid"></div>
+          </section>
+        </section>
 
-      <section class="panel message">
-        <h3>Why this matters</h3>
-        <p id="takeaway"></p>
-        <p class="privacyNote">Complete home addresses, telephone numbers, personal email addresses, raw search snippets, exact school names, family identities, image URLs, and precise locations are intentionally excluded from the presentation view. Limited masked fragments and source links are used for recognition and verification.</p>
-      </section>
+        <section class="reportStage hidden" data-report-stage="7">
+          <div class="reportStageIntro">
+            <div><span>08</span><div><strong>Child device controls</strong><small>Go deeper than the individual apps</small></div></div>
+          </div>
+          <section class="panel stageHubPanel childDevicePanel">
+            <div class="coachHead">
+              <div>
+                <div class="eyebrow">DEVICE PARENTAL CONTROLS</div>
+                <h3>Screen Time and Family Link</h3>
+                <p class="fineprint">Separate deep dives for Apple and Android so this no longer gets buried under the app controls.</p>
+              </div>
+              <div class="privacyChip">DEEP DIVE</div>
+            </div>
+            <div class="deviceParentGrid" id="deviceParentGrid"></div>
+            <div class="parentAccuracyNote"><strong>Important:</strong> controls vary by age, region, app version and device OS. Every walkthrough links to the platform's official help page.</div>
+          </section>
+        </section>
 
-      <section class="panel erasePanel">
-        <div class="eraseCopy">
-          <div class="stepPill dangerStep">END DEMO</div>
-          <h3>Erase this demo</h3>
-          <p>Deletes the app's active report, masked results, map state, form values, and browser-stored demo data. The tool does not maintain a database of searches.</p>
-        </div>
-        <button type="button" id="eraseBtn" class="danger">Erase Demo Data</button>
-      </section>
+        <section class="reportStage hidden" data-report-stage="8">
+          <div class="reportStageIntro">
+            <div><span>09</span><div><strong>Takeaway</strong><small>End with the lesson, then clear the demo</small></div></div>
+          </div>
+          <section class="panel message takeawayStage">
+            <div class="eyebrow">WHY THIS MATTERS</div>
+            <h3>The lesson is the combination, not any one clue.</h3>
+            <p id="takeaway"></p>
+            <p class="privacyNote">Complete home addresses, telephone numbers, personal email addresses, raw search snippets, exact school names, family identities, image URLs, and precise locations are intentionally excluded from the presentation view.</p>
+          </section>
+
+          <section class="panel erasePanel">
+            <div class="eraseCopy">
+              <div class="stepPill dangerStep">END DEMO</div>
+              <h3>Erase this demo</h3>
+              <p>Deletes the active report, masked results, map state, form values and browser-stored demo data.</p>
+            </div>
+            <button type="button" id="eraseBtn" class="danger">Erase Demo Data</button>
+          </section>
+        </section>
+      </div>
+
+      <footer class="reportDeckControls">
+        <button type="button" id="reportPrev" class="secondaryBtn">← Back</button>
+        <div class="reportDeckProgress"><strong id="reportStageCounter">1 / 9</strong><span id="reportStageName">Snapshot</span></div>
+        <button type="button" id="reportNext" class="primary">Next →</button>
+      </footer>
     </section>
 
     <section class="eraseNotice hidden" id="eraseNotice" role="status" aria-live="polite">
