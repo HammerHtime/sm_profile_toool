@@ -1,4 +1,4 @@
 {
-  "release": "public-footprint-rc2-smoke-v5",
-  "purpose": "Force production redeploy after Brave credential update"
+  "release": "public-footprint-rc2-smoke-v6",
+  "purpose": "Production redeploy with verified Brave Search API credential"
 }
