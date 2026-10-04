@@ -49,6 +49,44 @@ function platformFor(url = "") {
   return "Public web";
 }
 
+function safePublicExcerpt(value = "", max = 112) {
+  let text = cleanText(String(value || "").replace(/\s+/g," "), 220);
+  text = text.replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi,"[email masked]");
+  text = text.replace(/(?:\+?1[-.\s]?)?(?:\(?\d{3}\)?[-.\s]?)\d{3}[-.\s]?\d{4}/g,"[phone masked]");
+  text = text.replace(/\b\d{1,6}[A-Za-z]?\s+(?:[A-Za-z0-9.'-]+\s+){0,4}(?:Street|St|Road|Rd|Avenue|Ave|Drive|Dr|Boulevard|Blvd|Lane|Ln|Court|Ct|Crescent|Cres|Way)\b/gi,"[address masked]");
+  if (text.length <= max) return text;
+  const cut=text.slice(0,max).replace(/\s+\S*$/,"").trim();
+  return (cut||text.slice(0,max)).trim()+"…";
+}
+
+function braveThumb(result = {}) {
+  const src=result.thumbnail?.src || result.profile?.img || "";
+  return typeof src==="string" && /^https:\/\/imgs\.search\.brave\.com\//i.test(src) ? src : "";
+}
+
+const PUBLIC_THEME_STOP = new Set([
+  "the","and","for","with","from","that","this","your","you","are","was","were","has","have","had","but","not","all","can",
+  "about","into","more","than","their","they","them","his","her","who","what","when","where","how","www","http","https",
+  "com","org","net","profile","public","page","pages","official","search","facebook","instagram","linkedin","tiktok","twitter",
+  "reddit","youtube","threads","github","strava"
+]);
+
+function correlationThemes(items, handle, firstName, city) {
+  const excluded=new Set([handle,firstName,city].filter(Boolean).flatMap(v=>normalize(v).split(/\s+/)).filter(Boolean));
+  const counts=new Map();
+  for(const item of items){
+    const text=normalize([item.title,item.description].filter(Boolean).join(" "));
+    for(const token of text.split(/\s+/)){
+      if(!token||token.length<4||token.length>24||PUBLIC_THEME_STOP.has(token)||excluded.has(token)||/^\d+$/.test(token))continue;
+      counts.set(token,(counts.get(token)||0)+1);
+    }
+  }
+  return [...counts.entries()]
+    .sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0]))
+    .slice(0,10)
+    .map(([term,count])=>({term,count}));
+}
+
 async function braveSearch(apiKey, q) {
   const response = await fetch(BRAVE_ENDPOINT, {
     method:"POST",
@@ -76,7 +114,8 @@ async function publicHandleCorrelation(username, firstName, city) {
       basis:"No public username supplied",
       totalMatches:0,
       platforms:[],
-      sourceDomains:[]
+      sourceDomains:[],
+      presentation:{photos:[],quotes:[],themes:[]}
     };
   }
 
@@ -87,7 +126,8 @@ async function publicHandleCorrelation(username, firstName, city) {
       basis:"Public username supplied, but live public correlation is not configured",
       totalMatches:0,
       platforms:[],
-      sourceDomains:[]
+      sourceDomains:[],
+      presentation:{photos:[],quotes:[],themes:[]}
     };
   }
 
@@ -112,13 +152,36 @@ async function publicHandleCorrelation(username, firstName, city) {
     if (!domain) continue;
 
     if (!seen.has(result.url)) {
-      seen.set(result.url,{ platform:platformFor(result.url), domain });
+      seen.set(result.url,{
+        platform:platformFor(result.url),
+        domain,
+        title:safePublicExcerpt(result.title || "",96),
+        description:safePublicExcerpt(result.description || "",112),
+        thumbnail:braveThumb(result)
+      });
     }
   }
 
   const matches = [...seen.values()];
   const counts = new Map();
   matches.forEach(m => counts.set(m.platform,(counts.get(m.platform)||0)+1));
+
+  const presentationPhotos=matches
+    .filter(match=>match.thumbnail)
+    .slice(0,8)
+    .map(match=>({
+      src:match.thumbnail,
+      platform:match.platform,
+      domain:match.domain
+    }));
+  const presentationQuotes=matches
+    .filter(match=>match.description)
+    .slice(0,6)
+    .map(match=>({
+      platform:match.platform,
+      text:match.description
+    }));
+  const presentationThemes=correlationThemes(matches,handle,firstName,city);
 
   return {
     attempted:true,
@@ -129,7 +192,12 @@ async function publicHandleCorrelation(username, firstName, city) {
       .map(([name,count]) => ({ name,count,label:"public pages matching supplied handle" }))
       .sort((a,b)=>b.count-a.count)
       .slice(0,10),
-    sourceDomains:[...new Set(matches.map(m=>m.domain))].slice(0,12)
+    sourceDomains:[...new Set(matches.map(m=>m.domain))].slice(0,12),
+    presentation:{
+      photos:presentationPhotos,
+      quotes:presentationQuotes,
+      themes:presentationThemes
+    }
   };
 }
 
@@ -258,7 +326,8 @@ export default async (req) => {
         basis:"Public correlation failed. No public matches were displayed.",
         totalMatches:0,
         platforms:[],
-        sourceDomains:[]
+        sourceDomains:[],
+        presentation:{photos:[],quotes:[],themes:[]}
       };
     }
 
