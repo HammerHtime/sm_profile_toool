@@ -79,6 +79,12 @@ else pass("Synthetic provenance banner exists");
 
 if(!app.includes("APPLE_LOGO_SVG") || !app.includes("ANDROID_LOGO_SVG")) fail("Apple/Android device logos are missing");
 else pass("Apple and Android device logos are present");
+if(!app.includes("const DEVICE_SETTING_DETAILS = {") || !app.includes("function deviceSettingDetailFor(")) fail("Device privacy detail screens are missing");
+else pass("iPhone and Android privacy guides use real setting detail screens");
+if(!app.includes("function expandDevicePrivacyGuide(") || !app.includes("Tap Back until you return to")) fail("Device privacy guides are not click-by-click");
+else pass("iPhone and Android privacy guides return to parent menus between settings");
+if(!app.includes("DEVICE DEFAULT / NORMAL BEHAVIOUR")) fail("Device default behaviour tile is missing");
+else pass("Device privacy slides show default behaviour and recommended setting");
 if(!app.includes("function platformRowsFor(")) fail("Social privacy walkthrough row renderer is missing");
 else pass("Social privacy walkthrough row renderer exists");
 if(!app.includes("const APP_SETTING_DETAILS = {") || !app.includes("function settingDetailFor(")) fail("App privacy detail-screen model is missing");
