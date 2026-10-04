@@ -950,66 +950,38 @@ function setConsentState() {
   }
 
   function androidRowsFor(target) {
+    const ensureTarget = (rows) => {
+      const out = rows.slice();
+      if (target && target !== "EXPLAIN" && !out.includes(target)) {
+        out.splice(Math.min(2, out.length), 0, target);
+      }
+      return out.slice(0, 9);
+    };
+
     const personal = guidePlatform?.name === "Android Privacy";
     if (!personal) {
-      if (target === "Family Link") return ["Google","Security & privacy","Digital Wellbeing","Family Link","Apps","Location"];
-      return ["Controls","Daily limit","Downtime","App limits","Content restrictions","Location","Account settings"];
+      if (target === "Family Link") return ensureTarget(["Google","Security & privacy","Digital Wellbeing","Family Link","Apps","Location"]);
+      if (target === "Child profile") return ensureTarget(["Family","Child profile","Controls","Highlights","Location","Devices"]);
+      if (["Google Play","App approvals","Purchases"].includes(target)) return ensureTarget(["Google Play","Purchases & download approvals","App approvals","Content restrictions","Purchase approvals"]);
+      if (["Chrome","Websites"].includes(target)) return ensureTarget(["Google Chrome","Try to block explicit sites","Only allow approved sites","Manage sites","Blocked sites"]);
+      if (target === "SafeSearch") return ensureTarget(["Google Search","SafeSearch","Personal results","Search settings"]);
+      if (target === "YouTube") return ensureTarget(["YouTube","Content settings","YouTube Kids","Search","Watch history","Autoplay"]);
+      if (target === "Contacts") return ensureTarget(["Contacts, calls & text","Contacts","Calls","Text messages","Approved contacts"]);
+      if (["Device location","Precise location"].includes(target)) return ensureTarget(["Location","Device location","Location accuracy","Location permissions","Precise location"]);
+      if (target === "App permissions") return ensureTarget(["App permissions","Location","Camera","Microphone","Contacts","Photos and videos"]);
+      if (target === "Unknown apps") return ensureTarget(["Apps","App limits","Blocked apps","Unknown apps","App permissions"]);
+      if (["Account supervision","Parent alerts"].includes(target)) return ensureTarget(["Account settings","Account supervision","Parent alerts","Privacy settings","Sign-in controls"]);
+      return ensureTarget(["Controls","Daily limit","Downtime","App limits","Content restrictions","Location","Account settings"]);
     }
 
     const permissionRows = ["Location","Camera","Microphone","Photos and videos","Contacts","Nearby devices","Notifications"];
-    if (target === "Settings") return ["Network & internet","Connected devices","Apps","Notifications","Battery","Storage","Security & privacy","Location"];
-    if (target === "Security & privacy") return ["App security","Device unlock","Account security","System & updates","Privacy","More security & privacy"];
-    if (target === "Privacy controls") return ["Privacy dashboard","Permission manager","Show passwords","Notifications on lock screen","Ads","Health Connect"];
-    if (permissionRows.includes(target) || target === "Precise location") return permissionRows;
-    if (target === "Unused apps") return ["Permission manager","Unused apps","Privacy dashboard","Ads"];
-    if (target === "Privacy dashboard") return ["Location","Camera","Microphone","Other permissions","See other permissions"];
-    return ["Security & privacy","Privacy dashboard","Permission manager","Location","Apps"];
-  }
-
-  function platformRowsFor(name, target) {
-    const rowsByPlatform = {
-      "Instagram":["Account privacy","Close Friends","Tags and mentions","Comments","Sharing and remixes","Messages and story replies","Hidden Words","Blocked","Contact syncing"],
-      "Facebook":["Privacy Checkup","Audience and visibility","How people find and contact you","Profile and tagging","Blocking","Location","Apps and websites","Off-Facebook activity"],
-      "TikTok":["Privacy","Private account","Suggest your account to others","Sync contacts","Downloads","Comments","Mentions and tags","Direct messages","Location Services"],
-      "LinkedIn":["Visibility","Public profile visibility","Email discovery","Phone discovery","Email visibility","Data privacy","Advertising data","Sign in & security"],
-      "Reddit":["Account settings","Profile","Chat and messaging","Followers","Personalization","Safety & Privacy","Blocked accounts","Public activity"],
-      "Snapchat":["Contact Me","View My Story","Quick Add","My Location","Snap Map","Blocked","Activity Indicator","Ads preferences"],
-      "Discord":["Content & Social","Privacy & Safety","Server DMs","Message requests","Friend requests","Activity privacy","Blocked users","Authorized Apps"],
-      "YouTube":["Privacy","Subscriptions","Playlists","History","Comments","Connected apps","Notifications","Playback"],
-      "X / Twitter":["Privacy and safety","Audience, media and tagging","Protect posts","Discoverability and contacts","Direct Messages","Location information","Mute and block","Content you see"],
-      "WhatsApp":["Privacy","Last seen & online","Profile photo","About","Status","Groups","Live location","Calls","Blocked contacts"],
-      "Telegram":["Privacy and Security","Phone Number","Last Seen & Online","Profile Photos","Forwarded Messages","Calls","Groups & Channels","People Nearby","Blocked Users"],
-      "Twitch":["Security and Privacy","Whispers","Blocked users","Activity","Connections","Notifications","Channel and Videos","Moderation"],
-      "Strava":["Privacy Controls","Profile Page","Activities","Map Visibility","Group Activities","Flyby","Blocked Athletes","Data Permissions"],
-      "GitHub":["Public profile","Emails","Email privacy","Repositories","Contributions","Applications","Sessions","Security log"],
-      "Pinterest":["Profile visibility","Search privacy","Boards","Personalization","Connected accounts","Social permissions","Notifications","Privacy and data"]
-    };
-
-    const base = (rowsByPlatform[name] || ["Account","Privacy","Safety","Discoverability","Location","Messages","Content controls"]).slice();
-    if (target && target !== "EXPLAIN" && !base.includes(target)) {
-      const insertion = Math.min(2, base.length);
-      base.splice(insertion, 0, target);
-    }
-    return base.slice(0, 9);
-  }
-
-  function platformHeaderFor(name, target) {
-    if (name === "Instagram") return ["Profile","Menu"].includes(target) ? "Instagram" : "Settings and activity";
-    if (name === "Facebook") return target === "Privacy Checkup" ? "Privacy Checkup" : "Settings & privacy";
-    if (name === "TikTok") return target === "Privacy" || ["Private account","Suggest account","Sync contacts","Downloads","Direct messages","Location"].includes(target) ? "Privacy" : "Settings and privacy";
-    if (name === "LinkedIn") return ["Public profile","Public profile visibility","Email discovery","Phone discovery","Email visibility"].includes(target) ? "Visibility" : "Settings";
-    if (name === "Reddit") return "Settings";
-    if (name === "Snapchat") return "Privacy Controls";
-    if (name === "Discord") return "Content & Social";
-    if (name === "YouTube") return "Settings";
-    if (name === "X / Twitter") return "Privacy and safety";
-    if (name === "WhatsApp") return "Privacy";
-    if (name === "Telegram") return "Privacy and Security";
-    if (name === "Twitch") return "Security and Privacy";
-    if (name === "Strava") return "Privacy Controls";
-    if (name === "GitHub") return "Settings";
-    if (name === "Pinterest") return "Privacy and data";
-    return name || "Privacy Guide";
+    if (target === "Settings") return ensureTarget(["Network & internet","Connected devices","Apps","Notifications","Battery","Storage","Security & privacy","Location"]);
+    if (target === "Security & privacy") return ensureTarget(["App security","Device unlock","Account security","System & updates","Privacy","More security & privacy"]);
+    if (target === "Privacy controls") return ensureTarget(["Privacy dashboard","Permission manager","Show passwords","Notifications on lock screen","Ads","Health Connect"]);
+    if (permissionRows.includes(target) || target === "Precise location") return ensureTarget(permissionRows);
+    if (target === "Unused apps") return ensureTarget(["Permission manager","Unused apps","Privacy dashboard","Ads"]);
+    if (target === "Privacy dashboard") return ensureTarget(["Location","Camera","Microphone","Other permissions","See other permissions"]);
+    return ensureTarget(["Security & privacy","Privacy dashboard","Permission manager","Location","Apps"]);
   }
 
   function deviceRowsFor(target) {
@@ -1028,7 +1000,18 @@ function setConsentState() {
       return "Settings";
     }
     if (guidePlatform?.device === "android") {
-      if (guidePlatform?.name === "Android / Family Link") return "Family Link";
+      if (guidePlatform?.name === "Android / Family Link") {
+        if (["Google Play","App approvals","Purchases"].includes(target)) return "Google Play";
+        if (["Chrome","Websites"].includes(target)) return "Google Chrome";
+        if (target === "SafeSearch") return "Google Search";
+        if (target === "YouTube") return "YouTube";
+        if (target === "Contacts") return "Contacts, calls & text";
+        if (["Device location","Precise location"].includes(target)) return "Location";
+        if (target === "App permissions") return "App permissions";
+        if (target === "Unknown apps") return "Apps";
+        if (["Account supervision","Parent alerts"].includes(target)) return "Account settings";
+        return "Family Link";
+      }
       if (["Location","Camera","Microphone","Photos and videos","Contacts","Precise location"].includes(target)) return "Permission manager";
       if (["Privacy controls","Unused apps","Privacy dashboard"].includes(target)) return "Privacy";
       return target === "Security & privacy" ? "Settings" : "Security & privacy";
