@@ -466,7 +466,7 @@ async function checkLiveSearchReady() {
     if (!status || !liveSearchBtn) return;
 
     try {
-      const res = await fetch("/.netlify/functions/live-search", { method:"GET", cache:"no-store" });
+      const res = await fetch("/api/live-search", { method:"GET", cache:"no-store" });
       const data = await res.json().catch(() => ({}));
 
       if (res.ok && data.configured) {
@@ -1272,7 +1272,7 @@ function setConsentState() {
       }, 900);
 
       try {
-        const res = await fetch("/.netlify/functions/live-search", {
+        const res = await fetch("/api/live-search", {
           method:"POST",
           headers:{"Content-Type":"application/json"},
           body:JSON.stringify({
