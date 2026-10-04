@@ -38,7 +38,17 @@ export default async (req) => {
         usernameMasked: record.submission.usernameMasked
       } : null,
       image: record.submission?.image || null,
-      voiceSample: record.submission?.voiceSample || { recorded:false, durationMs:0, localOnly:true, rawAudioPersisted:false },
+      voiceSamples: Array.isArray(record.submission?.voiceSamples)
+        ? record.submission.voiceSamples.map(sample => ({
+            index:sample.index,
+            durationMs:sample.durationMs,
+            mime:sample.mime,
+            bytes:sample.bytes,
+            available:!!sample.available,
+            temporary:true,
+            cloned:false
+          }))
+        : [],
       findings: record.findings || null,
       correlation: record.correlation || null
     });
