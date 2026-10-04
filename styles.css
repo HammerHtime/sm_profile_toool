@@ -2481,3 +2481,31 @@ body.privacyGuideDirect [data-report-stage="4"] .reportStageIntro strong{
 @media(max-width:760px){
   .privacyGuideLaunch{width:100%;justify-content:flex-start}
 }
+
+
+/* RC27 Apple and Android logos */
+.brandLogoSvg{
+  display:block;
+  width:1.45em;
+  height:1.45em;
+  max-width:100%;
+  max-height:100%;
+}
+.platformIcon .brandLogoSvg{
+  width:28px;
+  height:28px;
+}
+.appPortalIcon .brandLogoSvg{
+  width:46px;
+  height:46px;
+}
+.phoneAppLogo .brandLogoSvg,
+.phoneTitleIcon .brandLogoSvg,
+.coachAppBadge .brandLogoSvg{
+  width:20px;
+  height:20px;
+}
+.devicePrivacyGrid .platformIcon,
+.deviceParentGrid .platformIcon{
+  overflow:hidden;
+}
