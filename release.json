@@ -1,4 +1,4 @@
 {
-  "release": "public-footprint-rc2-smoke-v28",
-  "purpose": "Repair standalone privacy hub viewport, restore clickability and scrolling, and include iPhone/Android device guides on the same screen"
+  "release": "public-footprint-rc2-smoke-v29",
+  "purpose": "Rebuild iPhone and Android privacy walkthroughs with click-by-click navigation, actual permission option screens, platform logos, default behaviour, why-it-matters, and recommended settings"
 }
