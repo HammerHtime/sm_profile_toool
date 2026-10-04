@@ -1,6 +1,20 @@
 import { randomUUID } from "node:crypto";
 import { store } from "./photo-session-lib.mjs";
 
+function getBraveApiKey() {
+  return process.env.BRAVE_SEARCH_API_KEY ||
+    process.env.BRAVE_API_KEY ||
+    process.env.BRAVE_SEARCH_KEY ||
+    "";
+}
+
+function braveKeySource() {
+  if (process.env.BRAVE_SEARCH_API_KEY) return "BRAVE_SEARCH_API_KEY";
+  if (process.env.BRAVE_API_KEY) return "BRAVE_API_KEY";
+  if (process.env.BRAVE_SEARCH_KEY) return "BRAVE_SEARCH_KEY";
+  return null;
+}
+
 function respond(body, status = 200) {
   return Response.json(body, {
     status,
@@ -18,7 +32,8 @@ export default async (req) => {
     ok:true,
     timestamp:new Date().toISOString(),
     functionsRuntime:"request-response",
-    liveSearchConfigured:!!process.env.BRAVE_SEARCH_API_KEY,
+    liveSearchConfigured:!!getBraveApiKey(),
+    braveKeySource:braveKeySource(),
     blobs:{ ok:false }
   };
 
