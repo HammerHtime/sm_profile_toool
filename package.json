@@ -1,0 +1,11 @@
+{
+  "name": "sm-profile-toool",
+  "private": true,
+  "version": "2.1.0",
+  "type": "module",
+  "dependencies": {
+    "@netlify/blobs": "^11.1.3",
+    "exifr": "^7.1.3",
+    "qrcode": "^1.5.4"
+  }
+}
