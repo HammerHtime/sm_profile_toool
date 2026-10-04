@@ -797,6 +797,7 @@
       const age = $("age").value.trim();
       const city = $("city").value.trim();
       const username = $("username").value.trim();
+      const clues = $("clues") ? $("clues").value.trim() : "";
 
       if (!firstName || !lastName) {
         alert("Enter a first and last name before running the live search.");
@@ -834,7 +835,8 @@
             lastName,
             age,
             city,
-            username
+            username,
+            clues
           }),
           cache:"no-store"
         });
@@ -886,7 +888,7 @@
   eraseBtn.addEventListener("click", () => {
     results.classList.add("hidden");
     scanPanel.classList.add("hidden");
-    ["firstName","lastName","age","city","username"].forEach((id) => $(id).value = "");
+    ["firstName","lastName","age","city","username","clues"].forEach((id) => { if ($(id)) $(id).value = ""; });
     consent.checked = false;
     fileInput.value = "";
     setConsentState();
