@@ -26,7 +26,7 @@ jobs:
     timeout-minutes: 8
     env:
       SITE_URL: https://sm-profile-tool.netlify.app
-      RELEASE_MARKER: public-footprint-rc2-smoke-v17
+      RELEASE_MARKER: public-footprint-rc2-smoke-v18
     steps:
       - name: Wait for this release to reach Netlify
         shell: bash
@@ -165,6 +165,14 @@ jobs:
           if(data.webDetection?.error) throw new Error("Google Vision Web Detection failed: "+data.webDetection.error);
           console.log("Photo create, Vision web detection, submit, status and privacy guard passed.");
           NODE
+
+          voice_payload="$(ID="$id" PRESENTER="$presenter" node -e 'process.stdout.write(JSON.stringify({id:process.env.ID,presenterToken:process.env.PRESENTER,index:0}))')"
+          voice_tmp="$(mktemp)"
+          voice_status="$(curl -sS --max-time 45 -o "$voice_tmp" -w '%{http_code}' -H 'content-type: application/json' -d "$voice_payload" "$SITE_URL/.netlify/functions/photo-generated-voice")"
+          test "$voice_status" = "200"
+          test -s "$voice_tmp"
+          rm -f "$voice_tmp"
+          echo "Natural OpenAI TTS sample passed."
 
           erase_payload="$(ID="$id" PRESENTER="$presenter" node -e 'process.stdout.write(JSON.stringify({id:process.env.ID,presenterToken:process.env.PRESENTER}))')"
           erased="$(curl -fsS --max-time 30 -H 'content-type: application/json' -d "$erase_payload" "$SITE_URL/.netlify/functions/photo-erase")"
