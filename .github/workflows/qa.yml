@@ -26,7 +26,7 @@ jobs:
     timeout-minutes: 8
     env:
       SITE_URL: https://sm-profile-tool.netlify.app
-      RELEASE_MARKER: public-footprint-rc2-smoke-v13
+      RELEASE_MARKER: public-footprint-rc2-smoke-v14
     steps:
       - name: Wait for this release to reach Netlify
         shell: bash
@@ -64,7 +64,8 @@ jobs:
           if (!data.liveSearchConfigured) throw new Error("BRAVE_SEARCH_API_KEY is not visible to production functions");
           if (!data.openAIConfigured) throw new Error("OPENAI_API_KEY is not visible to production functions");
           if (!data.googleVisionConfigured) throw new Error("GOOGLE_VISION_API_KEY is not visible to production functions");
-          console.log("Health OK, Blobs OK, Brave, OpenAI and Google Vision configured.");
+          if (!data.googleGeocodingConfigured) throw new Error("GOOGLE_GEOCODING_API_KEY is not visible to production functions");
+          console.log("Health OK, Blobs OK, Brave, OpenAI, Google Vision and Geocoding configured.");
           NODE
 
       - name: Exercise live search provider with synthetic smoke identity
@@ -72,7 +73,7 @@ jobs:
         run: |
           set -euo pipefail
           tmp_body="$(mktemp)"
-          status="$(curl -sS --max-time 60 -o "$tmp_body" -w '%{http_code}'             -H 'content-type: application/json'             -d '{"consent":true,"firstName":"QzzxPublicFootprint","lastName":"SmokeTest20261004","age":"30","city":"","username":"","clues":""}'             "$SITE_URL/api/live-search")"
+          status="$(curl -sS --max-time 60 -o "$tmp_body" -w '%{http_code}'             -H 'content-type: application/json'             -d '{"consent":true,"firstName":"QzzxPublicFootprint","lastName":"SmokeTest20261004","age":"30","city":"Toronto","username":"","clues":""}'             "$SITE_URL/api/live-search")"
           result="$(cat "$tmp_body")"
           rm -f "$tmp_body"
 
@@ -86,7 +87,9 @@ jobs:
           if (data.dataMode !== "verified") throw new Error("Live search route did not return live public-search mode");
           if (data.provider !== "Brave Search API") throw new Error("Live search did not confirm Brave Search API");
           if (!data.searchHealth || data.searchHealth.completed < 1) throw new Error("No Brave search pass completed");
-          console.log("Live Search API completed with Brave.");
+          if (!data.locationIntelligence?.configured) throw new Error("Google Geocoding was not configured in live search");
+          if (!data.locationIntelligence?.searchAnchor?.label) throw new Error("Google Geocoding did not normalize the Toronto search anchor");
+          console.log("Live Search API completed with Brave and broad Google geocoding.");
           NODE
 
       - name: Exercise OpenAI synthesis with synthetic evidence
