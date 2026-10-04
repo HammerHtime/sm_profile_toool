@@ -186,6 +186,7 @@ function impact(data){
 }
 
 function sleep(ms){return new Promise(resolve=>setTimeout(resolve,ms));}
+const MIN_PHOTO_SEARCH_MS=14000;
 
 function countValue(value){
   if(typeof value==='number' && Number.isFinite(value)) return Math.max(0,Math.round(value));
@@ -341,6 +342,7 @@ function updateSearchMetrics(metaNodes,publicNodes){
 
 async function startAutoSearch(data){
   if(searchRunning)return;
+  const searchStartedAt=Date.now();
   searchRunning=true;
   searchComplete=false;
   latestStatus=data;
@@ -415,6 +417,13 @@ async function startAutoSearch(data){
   await sleep(800);
   setChecklist(5);setSearchProgress(97,'Compiling results');setPulse('Compiling the final privacy picture…');
   await sleep(850);
+
+  const remainingSearchTime=MIN_PHOTO_SEARCH_MS-(Date.now()-searchStartedAt);
+  if(remainingSearchTime>0){
+    setSearchProgress(98,'Finalizing');
+    setPulse('Finalizing verified results…');
+    await sleep(remainingSearchTime);
+  }
 
   setSearchProgress(100,'Complete');
   document.querySelectorAll('.searchCheck').forEach(x=>{x.classList.remove('active');x.classList.add('done');});
