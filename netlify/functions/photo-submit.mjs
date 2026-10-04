@@ -145,6 +145,7 @@ export default async (req) => {
       return jsonResponse({ error: "Session expired" }, 410);
     }
     if (!safeEqual(joinToken, record.joinTokenHash)) return jsonResponse({ error: "Invalid session link" }, 403);
+    if (record.status === "submitted") return jsonResponse({ error: "This session has already been submitted." }, 409);
     if (body.consent !== true) return jsonResponse({ error: "Consent is required" }, 400);
 
     const firstName = cleanText(body.firstName, 40);
