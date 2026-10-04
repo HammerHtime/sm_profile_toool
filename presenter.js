@@ -5,7 +5,7 @@ const startView=$('startView'),sessionView=$('sessionView'),revealDeck=$('reveal
 async function request(path,options={}){
   const r=await fetch(path,{...options,headers:{'content-type':'application/json',...(options.headers||{})},cache:'no-store'});
   const data=await r.json().catch(()=>({}));
-  if(!r.ok) throw new Error(data.error||('Request failed ('+r.status+')'));
+  if(!r.ok) throw new Error((data.error||('Request failed ('+r.status+')')) + (data.detail ? ' — ' + data.detail : ''));
   return data;
 }
 function setSessionUi(active){startView.classList.toggle('hidden',active);sessionView.classList.toggle('hidden',!active);}
