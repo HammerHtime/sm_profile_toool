@@ -18,7 +18,7 @@
       <div class="eyebrow">CONSENT-BASED LIVE DEMONSTRATION</div>
       <h1>What can one photo reveal?</h1>
       <p class="lead">A volunteer scans a one-time QR code, provides their own photo and consent, and the demo analyzes privacy clues without identifying them from their face.</p>
-      <button id="startSession" class="primary hugeBtn" disabled>Create volunteer QR code</button>
+      <button type="button" id="startSession" class="primary hugeBtn" disabled>Create volunteer QR code</button>
       <div id="presenterHealth" class="presenterHealth checking"><span></span><strong>Checking live demo services…</strong></div>
       <p class="fineprint">Sessions expire after 15 minutes. Raw uploaded photos are processed transiently and are not stored by the demo.</p>
     </section>
@@ -30,7 +30,7 @@
           <h2>Scan to join</h2>
           <div class="qrFrame"><img id="qrImage" alt="QR code for volunteer demo" /></div>
           <div id="joinCode" class="joinCode"></div>
-          <button id="copyLink" class="secondaryBtn">Copy volunteer link</button>
+          <button type="button" id="copyLink" class="secondaryBtn">Copy volunteer link</button>
           <p class="fineprint">The QR code contains only a temporary session ID and one-time participation token.</p>
         </section>
 
@@ -175,7 +175,7 @@
           <strong>Automatic search animation</strong>
           <div class="fineprint">Once the photo arrives, the search runs on its own. After it finishes, use → only if you want to enter the detailed findings.</div>
         </div>
-        <button id="erasePhotoDemo" class="danger">Erase Demo Data</button>
+        <button type="button" id="erasePhotoDemo" class="danger">Erase Demo Data</button>
       </section>
       <div id="erasePhotoNotice" class="eraseNotice hidden"><div class="eraseCheck">✓</div><div><strong>Live demo erased.</strong><br><span>The temporary session record has been deleted.</span></div></div>
     </section>
