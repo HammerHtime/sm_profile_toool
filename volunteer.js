@@ -1,5 +1,5 @@
 const $ = (id) => document.getElementById(id);
-const params = new URLSearchParams(location.search);
+const params = new URLSearchParams(location.hash ? location.hash.slice(1) : location.search);
 const sessionId = params.get('session') || '';
 const joinToken = params.get('token') || '';
 
