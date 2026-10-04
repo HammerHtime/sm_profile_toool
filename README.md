@@ -166,3 +166,8 @@ The presenter no longer uses the browser's built-in speech synthesizer. Generate
 ### Theme and identity hardening
 
 Narrative excerpts, recurring themes and ambient thumbnails now use only corroborated strong-identity sources. A single result can no longer create a "recurring theme"; a term must occur across at least two eligible public results. A regression test specifically rejects the unrelated Andrew Hammond psychotherapist profile in Spencerville when the supplied identity clues are Toronto Police and University of Western Ontario.
+
+
+### Device privacy walkthroughs
+
+The iPhone and Android privacy guides now use the same teaching model as the social-app guides: tap-by-tap navigation, return to the parent menu before the next permission, then show the actual permission choices. Each terminal setting screen includes why the setting matters, the device's normal/default permission behaviour, and a recommended privacy-focused setting. iPhone coverage includes Location Services, Precise Location, Tracking, Contacts, Photos, Camera, Microphone, Local Network and Safety Check. Android coverage includes Location, precise/approximate location, Camera, Microphone, Photos and videos, Contacts, unused-app permission reset and Privacy dashboard.
