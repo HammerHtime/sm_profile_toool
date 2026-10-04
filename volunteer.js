@@ -419,6 +419,7 @@ $('volunteerForm').addEventListener('submit', async (e) => {
       joinToken,
       consent:true,
       firstName:$('vFirstName').value.trim(),
+      lastName:$('vLastName').value.trim(),
       city:$('vCity').value.trim(),
       username:$('vUsername').value.trim(),
       mime:selectedFile.type || 'image/jpeg',
