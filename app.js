@@ -389,18 +389,28 @@
   }
 
   function renderReport(report) {
+    const mode = report.synthetic ? "synthetic" : (report.dataMode || "evidence");
     const banner = $("dataModeBanner");
+    const modeLabel = mode === "synthetic" ? "SYNTHETIC" : mode === "verified" ? "VERIFIED" : "EVIDENCE FILE";
+    const modeClass = mode === "synthetic" ? "synthetic" : mode === "verified" ? "verified" : "evidence";
+
     if (banner) {
-      if (report.synthetic) {
-        banner.classList.remove("hidden");
-        banner.innerHTML = "<strong>SYNTHETIC DEMONSTRATION DATA</strong><span>These values are fabricated to demonstrate the presentation experience. They are not findings about the person entered above.</span>";
+      banner.className = "dataModeBanner " + modeClass;
+      if (mode === "synthetic") {
+        banner.innerHTML = "<strong>SYNTHETIC DEMONSTRATION DATA</strong><span>Every number, account, address, image count and activity count on this screen is fabricated for presentation testing. Nothing here was found about the person entered.</span>";
+      } else if (mode === "verified") {
+        banner.innerHTML = "<strong>VERIFIED PUBLIC FINDINGS</strong><span>These findings were returned by configured public-source collectors and passed source verification before display.</span>";
       } else {
-        banner.classList.add("hidden");
-        banner.innerHTML = "";
+        banner.innerHTML = "<strong>USER-SUPPLIED EVIDENCE</strong><span>This report summarizes the JSON file you uploaded. It has not been independently verified by this app as a live public-source search.</span>";
       }
     }
+
     $("subjectName").textContent = report.subject || "Demo Subject";
-    $("summaryLine").textContent = "AI connected public fragments across social platforms, images, comments, news and other indexed sources.";
+    $("summaryLine").textContent = mode === "synthetic"
+      ? "Presentation-only sample output. No live public search was performed."
+      : mode === "verified"
+        ? "Verified public-source findings, privacy-masked before display."
+        : "Summary of user-supplied evidence. Not independently verified by this build.";
     $("score").textContent = report.score || 0;
     $("scoreLabel").textContent = report.level || "LOW";
 
@@ -408,7 +418,7 @@
     (report.stats || []).forEach((s) => {
       const el = document.createElement("div");
       el.className = "stat";
-      el.innerHTML = '<div class="n">' + s.n + '</div><div class="k">' + s.k + "</div>";
+      el.innerHTML = '<div class="provenanceMini ' + modeClass + '">' + modeLabel + '</div><div class="n">' + s.n + '</div><div class="k">' + s.k + "</div>";
       $("stats").appendChild(el);
     });
 
@@ -416,55 +426,78 @@
     (report.findings || []).forEach((f) => {
       const row = document.createElement("div");
       row.className = "findingRow";
-      row.innerHTML = '<div class="cat">' + f[0] + '</div><div class="desc">' + f[1] + '</div><div class="badge">' + f[2] + "</div>";
+      row.innerHTML =
+        '<div class="cat">' + f[0] + '<div class="provenanceMini ' + modeClass + '">' + modeLabel + '</div></div>' +
+        '<div class="desc">' + f[1] + '</div><div class="badge">' + f[2] + "</div>";
       $("findingRows").appendChild(row);
     });
 
     const accountPanel = $("accountMatchesPanel");
-    accountPanel.classList.remove("hidden");
+    accountPanel.classList.toggle("hidden", !(report.accounts || []).length);
     $("accountMatchesGrid").innerHTML = "";
     (report.accounts || []).forEach((a) => {
       const card = document.createElement("div");
       card.className = "accountMatch";
-      card.innerHTML = "<strong>" + a[0] + '</strong><div class="maskedHandle">' + a[1] + "</div>";
+      card.innerHTML = '<div class="provenanceMini ' + modeClass + '">' + modeLabel + '</div><strong>' + a[0] + '</strong><div class="maskedHandle">' + a[1] + "</div>";
       $("accountMatchesGrid").appendChild(card);
     });
 
-    $("sourceCoveragePanel").classList.remove("hidden");
-    $("sourceSearched").textContent = SOURCE_NAMES.length;
-    $("sourceMatched").textContent = report.sourceHits ? report.sourceHits.size : 0;
+    const sourcePanel = $("sourceCoveragePanel");
     $("sourceCoverageGrid").innerHTML = "";
-    SOURCE_NAMES.forEach((name) => {
-      const chip = document.createElement("div");
-      const hit = report.sourceHits && report.sourceHits.has(name);
-      chip.className = "sourceChip" + (hit ? " hit" : "");
-      chip.textContent = (hit ? "✓ " : "○ ") + name;
-      $("sourceCoverageGrid").appendChild(chip);
-    });
+    if (mode === "synthetic") {
+      sourcePanel.classList.remove("hidden");
+      $("sourceSearched").textContent = SOURCE_NAMES.length;
+      $("sourceMatched").textContent = report.sourceHits ? report.sourceHits.size : 0;
+      SOURCE_NAMES.forEach((name) => {
+        const chip = document.createElement("div");
+        const hit = report.sourceHits && report.sourceHits.has(name);
+        chip.className = "sourceChip" + (hit ? " hit" : "");
+        chip.innerHTML = '<span class="sourceModeDot synthetic"></span>' + (hit ? "✓ " : "○ ") + name;
+        $("sourceCoverageGrid").appendChild(chip);
+      });
+    } else if (mode === "verified" && report.sourceCoverage) {
+      sourcePanel.classList.remove("hidden");
+      $("sourceSearched").textContent = report.sourceCoverage.searched || 0;
+      $("sourceMatched").textContent = report.sourceCoverage.matched || 0;
+      (report.sourceCoverage.sources || []).forEach((source) => {
+        const chip = document.createElement("div");
+        chip.className = "sourceChip" + (source.matched ? " hit" : "");
+        chip.innerHTML = '<span class="sourceModeDot verified"></span>' + (source.matched ? "✓ " : "○ ") + source.name;
+        $("sourceCoverageGrid").appendChild(chip);
+      });
+    } else {
+      sourcePanel.classList.add("hidden");
+    }
 
-    $("profileSignalsPanel").classList.remove("hidden");
+    $("profileSignalsPanel").classList.toggle("hidden", !(report.signals || []).length);
     $("profileSignalsGrid").innerHTML = "";
     (report.signals || []).forEach((s) => {
       const card = document.createElement("div");
       card.className = "signalCard";
-      card.innerHTML = '<div class="signalIcon">' + s[0] + "</div><strong>" + s[1] + "</strong><p>" + s[2] + "</p>";
+      card.innerHTML = '<div class="provenanceMini ' + modeClass + '">' + modeLabel + '</div><div class="signalIcon">' + s[0] + "</div><strong>" + s[1] + "</strong><p>" + s[2] + "</p>";
       $("profileSignalsGrid").appendChild(card);
     });
 
-    $("exposureDetailPanel").classList.remove("hidden");
-    $("imageTotal").textContent = (report.stats && report.stats[1]) ? report.stats[1].n : 0;
-    $("activityTotal").textContent = (report.activity || []).reduce((sum, x) => sum + Number(x[1] || 0), 0);
-    renderBreakdown("imageBreakdown", report.imageBreakdown || []);
-    renderBreakdown("activityTypes", report.activity || []);
-    $("themeBreakdown").innerHTML = "";
-    (report.themes || []).forEach((t) => {
-      const el = document.createElement("span");
-      el.className = "themePill";
-      el.textContent = t;
-      $("themeBreakdown").appendChild(el);
-    });
+    const exposurePanel = $("exposureDetailPanel");
+    const hasExposure = (report.imageBreakdown || []).length || (report.activity || []).length || (report.themes || []).length;
+    exposurePanel.classList.toggle("hidden", !hasExposure);
+    if (hasExposure) {
+      $("imageTotal").textContent = (report.stats && report.stats[1]) ? report.stats[1].n : 0;
+      $("activityTotal").textContent = (report.activity || []).reduce((sum, x) => sum + Number(x[1] || 0), 0);
+      renderBreakdown("imageBreakdown", report.imageBreakdown || []);
+      renderBreakdown("activityTypes", report.activity || []);
+      $("themeBreakdown").innerHTML = '<span class="provenanceMini ' + modeClass + '">' + modeLabel + '</span>';
+      (report.themes || []).forEach((t) => {
+        const el = document.createElement("span");
+        el.className = "themePill";
+        el.textContent = t;
+        $("themeBreakdown").appendChild(el);
+      });
+    }
 
-    $("takeaway").textContent = "One post is a fragment. Hundreds of fragments can become a profile. The goal is not fear. It is awareness, better settings and control.";
+    $("takeaway").textContent = mode === "synthetic"
+      ? "This screen demonstrates how the finished presentation will look. It does not represent findings about the person entered."
+      : "One post is a fragment. Hundreds of verified or supplied fragments can become a profile. Always check the provenance label before treating a value as a real finding.";
     results.classList.remove("hidden");
     results.scrollIntoView({behavior:"smooth",block:"start"});
   }
@@ -745,6 +778,8 @@
         });
         if (!res.ok) throw new Error("summarizer");
         const data = await res.json();
+        data.dataMode = "evidence";
+        data.synthetic = false;
         renderReport(data);
       } catch (e) {
         results.classList.add("hidden");
