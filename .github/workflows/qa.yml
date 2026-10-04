@@ -2,7 +2,7 @@ name: Public Footprint QA
 
 on:
   push:
-    branches: [main, qa-rc2]
+    branches: [main, qa-rc2, qa-final]
   pull_request:
     branches: [main]
 
