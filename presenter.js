@@ -473,10 +473,12 @@ async function preloadVoiceSamples(data){
       const blob=await response.blob();
       const url=URL.createObjectURL(blob);
       preloadedVoiceSamples.set(index,{blob,url});
-      const button=$('playVoiceSample'+index);
-      if(button){
-        button.disabled=false;
-        button.classList.add('available');
+      if(index===0){
+        const button=$('playOriginalConsent');
+        if(button){
+          button.disabled=false;
+          button.classList.add('available');
+        }
       }
     }catch{}
   });
