@@ -8,14 +8,20 @@ let selectedFile = null;
 let selectedSource = '';
 let selectedDimensions = { width:0, height:0 };
 let previewUrl = '';
+const VOICE_SAMPLE_COUNT = 3;
+const VOICE_MAX_MS = 10000;
 let voiceRecorder = null;
 let voiceStream = null;
+let activeVoiceIndex = -1;
 let voiceChunks = [];
-let voiceBlob = null;
-let voiceUrl = '';
 let voiceStartedAt = 0;
-let voiceDurationMs = 0;
 let voiceTimerId = null;
+const voiceSamples = Array.from({length:VOICE_SAMPLE_COUNT}, () => ({
+  blob:null,
+  url:'',
+  durationMs:0,
+  mime:''
+}));
 
 function error(message) {
   $('volunteerError').textContent = message;
@@ -176,39 +182,60 @@ function stopVoiceTimer() {
   voiceTimerId = null;
 }
 
-function updateVoiceTimer() {
-  const elapsed = voiceStartedAt ? Date.now() - voiceStartedAt : voiceDurationMs;
-  $('voiceTimer').textContent = formatVoiceTime(elapsed);
+function updateVoiceTimer(index) {
+  const sample = voiceSamples[index];
+  if (!sample) return;
+  const elapsed = activeVoiceIndex === index && voiceStartedAt
+    ? Math.min(VOICE_MAX_MS, Date.now() - voiceStartedAt)
+    : sample.durationMs;
+  $('voiceTimer' + index).textContent = formatVoiceTime(elapsed);
 }
 
-function clearVoiceRecording() {
-  stopVoiceTimer();
-  if (voiceRecorder && voiceRecorder.state !== 'inactive') {
-    try { voiceRecorder.stop(); } catch {}
-  }
+function stopVoiceStream() {
   if (voiceStream) {
     voiceStream.getTracks().forEach(track => track.stop());
     voiceStream = null;
   }
-  voiceRecorder = null;
-  voiceChunks = [];
-  voiceBlob = null;
-  voiceDurationMs = 0;
-  voiceStartedAt = 0;
-
-  if (voiceUrl) {
-    URL.revokeObjectURL(voiceUrl);
-    voiceUrl = '';
-  }
-
-  $('voicePreview').removeAttribute('src');
-  $('voicePreviewWrap').classList.add('hidden');
-  $('voiceTimer').textContent = '0:00';
-  $('voiceRecordBtn').classList.remove('recording');
-  $('voiceRecordBtn').innerHTML = '<span>●</span> Record';
 }
 
-async function startVoiceRecording() {
+function clearVoiceSample(index) {
+  const sample = voiceSamples[index];
+  if (!sample) return;
+
+  if (activeVoiceIndex === index && voiceRecorder?.state === 'recording') {
+    try { voiceRecorder.stop(); } catch {}
+  }
+
+  if (sample.url) {
+    URL.revokeObjectURL(sample.url);
+    sample.url = '';
+  }
+
+  sample.blob = null;
+  sample.durationMs = 0;
+  sample.mime = '';
+
+  $('voicePreview' + index).removeAttribute('src');
+  $('voicePreviewWrap' + index).classList.add('hidden');
+  $('voiceTimer' + index).textContent = '0:00';
+  $('voiceRecordBtn' + index).classList.remove('recording');
+  $('voiceRecordBtn' + index).innerHTML = '<span>●</span> Record Sample ' + (index + 1);
+}
+
+function resetAllVoiceSamples() {
+  stopVoiceTimer();
+  if (voiceRecorder?.state === 'recording') {
+    try { voiceRecorder.stop(); } catch {}
+  }
+  voiceRecorder = null;
+  activeVoiceIndex = -1;
+  voiceChunks = [];
+  voiceStartedAt = 0;
+  stopVoiceStream();
+  voiceSamples.forEach((_, index) => clearVoiceSample(index));
+}
+
+async function startVoiceRecording(index) {
   clearError();
 
   if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') {
@@ -217,69 +244,113 @@ async function startVoiceRecording() {
   }
 
   if (voiceRecorder?.state === 'recording') {
+    if (activeVoiceIndex === index) {
+      voiceRecorder.stop();
+      return;
+    }
     voiceRecorder.stop();
-    return;
+    await new Promise(resolve => setTimeout(resolve, 120));
   }
 
-  clearVoiceRecording();
+  clearVoiceSample(index);
 
   try {
     voiceStream = await navigator.mediaDevices.getUserMedia({ audio:true });
     voiceChunks = [];
+    activeVoiceIndex = index;
 
-    let options = {};
     const preferred = ['audio/webm;codecs=opus','audio/webm','audio/mp4'];
     const supported = preferred.find(type => MediaRecorder.isTypeSupported?.(type));
-    if (supported) options.mimeType = supported;
+    const options = {
+      ...(supported ? {mimeType:supported} : {}),
+      audioBitsPerSecond:48000
+    };
 
     voiceRecorder = new MediaRecorder(voiceStream, options);
+
     voiceRecorder.addEventListener('dataavailable', (event) => {
       if (event.data?.size) voiceChunks.push(event.data);
     });
 
     voiceRecorder.addEventListener('stop', () => {
+      const completedIndex = activeVoiceIndex;
       stopVoiceTimer();
-      voiceDurationMs = voiceStartedAt ? Math.max(0, Date.now() - voiceStartedAt) : voiceDurationMs;
+
+      const durationMs = voiceStartedAt
+        ? Math.min(VOICE_MAX_MS, Math.max(0, Date.now() - voiceStartedAt))
+        : 0;
+
       voiceStartedAt = 0;
-      updateVoiceTimer();
+      activeVoiceIndex = -1;
 
       const type = voiceRecorder?.mimeType || voiceChunks[0]?.type || 'audio/webm';
-      voiceBlob = new Blob(voiceChunks, { type });
+      const blob = new Blob(voiceChunks, { type });
+      const sample = voiceSamples[completedIndex];
 
-      if (voiceUrl) URL.revokeObjectURL(voiceUrl);
-      voiceUrl = URL.createObjectURL(voiceBlob);
-      $('voicePreview').src = voiceUrl;
-      $('voicePreviewWrap').classList.remove('hidden');
+      if (sample) {
+        if (sample.url) URL.revokeObjectURL(sample.url);
+        sample.blob = blob;
+        sample.durationMs = durationMs;
+        sample.mime = type;
+        sample.url = URL.createObjectURL(blob);
 
-      if (voiceStream) {
-        voiceStream.getTracks().forEach(track => track.stop());
-        voiceStream = null;
+        $('voicePreview' + completedIndex).src = sample.url;
+        $('voicePreviewWrap' + completedIndex).classList.remove('hidden');
+        $('voiceTimer' + completedIndex).textContent = formatVoiceTime(durationMs);
+        $('voiceRecordBtn' + completedIndex).classList.remove('recording');
+        $('voiceRecordBtn' + completedIndex).innerHTML = '<span>●</span> Record again';
       }
 
-      $('voiceRecordBtn').classList.remove('recording');
-      $('voiceRecordBtn').innerHTML = '<span>●</span> Record again';
+      stopVoiceStream();
+      voiceChunks = [];
+      voiceRecorder = null;
     });
 
     voiceRecorder.start();
     voiceStartedAt = Date.now();
-    voiceDurationMs = 0;
-    updateVoiceTimer();
-    voiceTimerId = setInterval(updateVoiceTimer, 250);
+    updateVoiceTimer(index);
+    voiceTimerId = setInterval(() => {
+      updateVoiceTimer(index);
+      if (Date.now() - voiceStartedAt >= VOICE_MAX_MS && voiceRecorder?.state === 'recording') {
+        voiceRecorder.stop();
+      }
+    }, 200);
 
-    $('voiceRecordBtn').classList.add('recording');
-    $('voiceRecordBtn').innerHTML = '<span>■</span> Stop';
+    $('voiceRecordBtn' + index).classList.add('recording');
+    $('voiceRecordBtn' + index).innerHTML = '<span>■</span> Stop';
   } catch (err) {
-    clearVoiceRecording();
+    stopVoiceTimer();
+    stopVoiceStream();
+    voiceRecorder = null;
+    activeVoiceIndex = -1;
+    voiceStartedAt = 0;
+    clearVoiceSample(index);
+
     if (err?.name === 'NotAllowedError') {
-      error('Microphone access was not allowed. You can continue without a voice sample.');
+      error('Microphone access was not allowed. You can continue without voice samples.');
     } else {
-      error('Could not start the microphone. You can continue without a voice sample.');
+      error('Could not start the microphone. You can continue without voice samples.');
     }
   }
 }
 
-$('voiceRecordBtn').addEventListener('click', startVoiceRecording);
-$('deleteVoiceBtn').addEventListener('click', clearVoiceRecording);
+for (let index = 0; index < VOICE_SAMPLE_COUNT; index++) {
+  $('voiceRecordBtn' + index).addEventListener('click', () => startVoiceRecording(index));
+  $('deleteVoiceBtn' + index).addEventListener('click', () => clearVoiceSample(index));
+}
+
+async function blobToBase64(blob) {
+  if (!blob) return '';
+  return await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const value = String(reader.result || '');
+      resolve(value.includes(',') ? value.split(',')[1] : value);
+    };
+    reader.onerror = () => reject(new Error('Could not read the voice sample.'));
+    reader.readAsDataURL(blob);
+  });
+}
 
 $('volunteerForm').addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -295,6 +366,17 @@ $('volunteerForm').addEventListener('submit', async (e) => {
 
   try {
     const imageData = await fileToBase64(selectedFile);
+    const voicePayload = [];
+    for (let index = 0; index < VOICE_SAMPLE_COUNT; index++) {
+      const sample = voiceSamples[index];
+      if (!sample.blob) continue;
+      voicePayload.push({
+        index,
+        durationMs:Math.min(VOICE_MAX_MS, Math.max(0, Math.round(sample.durationMs))),
+        mime:sample.mime || sample.blob.type || 'audio/webm',
+        audioData:await blobToBase64(sample.blob)
+      });
+    }
 
     await api('/.netlify/functions/photo-submit', {
       id:sessionId,
@@ -308,11 +390,7 @@ $('volunteerForm').addEventListener('submit', async (e) => {
       width:selectedDimensions.width,
       height:selectedDimensions.height,
       source:selectedSource,
-      voiceSample:{
-        recorded:!!voiceBlob,
-        durationMs:voiceBlob ? Math.min(30000, Math.max(0, Math.round(voiceDurationMs))) : 0,
-        localOnly:true
-      }
+      voiceSamples:voicePayload
     });
 
     if (previewUrl) {
@@ -321,7 +399,7 @@ $('volunteerForm').addEventListener('submit', async (e) => {
     }
     clearFileInputs();
     selectedFile = null;
-    clearVoiceRecording();
+    resetAllVoiceSamples();
 
     $('volunteerForm').classList.add('hidden');
     $('volunteerDone').classList.remove('hidden');
@@ -338,7 +416,10 @@ markJoined();
 syncGate();
 
 window.addEventListener('pagehide', () => {
-  if (voiceStream) voiceStream.getTracks().forEach(track => track.stop());
-  if (voiceUrl) URL.revokeObjectURL(voiceUrl);
+  stopVoiceTimer();
+  stopVoiceStream();
+  voiceSamples.forEach(sample => {
+    if (sample.url) URL.revokeObjectURL(sample.url);
+  });
   if (previewUrl) URL.revokeObjectURL(previewUrl);
 });
