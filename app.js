@@ -391,6 +391,32 @@
     };
   }
 
+async function checkLiveSearchReady() {
+    const status = document.querySelector(".buildStatus");
+    if (!status || !liveSearchBtn) return;
+
+    try {
+      const res = await fetch("/.netlify/functions/live-search", { method:"GET", cache:"no-store" });
+      const data = await res.json().catch(() => ({}));
+
+      if (res.ok && data.configured) {
+        status.classList.add("liveConfigured");
+        status.classList.remove("liveUnconfigured");
+        status.innerHTML = '<span class="statusDot"></span><strong>Live Search ready.</strong> Real public/indexed searches are configured. Synthetic Demo remains available as a clearly labelled fallback.';
+        liveSearchBtn.dataset.configured = "true";
+      } else {
+        status.classList.add("liveUnconfigured");
+        status.classList.remove("liveConfigured");
+        status.innerHTML = '<span class="statusDot"></span><strong>Live Search needs configuration.</strong> Add <b>BRAVE_SEARCH_API_KEY</b> in Netlify environment variables. Synthetic Demo and the privacy walkthroughs still work.';
+        liveSearchBtn.dataset.configured = "false";
+      }
+    } catch (e) {
+      status.classList.add("liveUnconfigured");
+      status.innerHTML = '<span class="statusDot"></span><strong>Live Search readiness could not be confirmed.</strong> Synthetic Demo and the privacy walkthroughs remain available.';
+      liveSearchBtn.dataset.configured = "unknown";
+    }
+  }
+
 function setConsentState() {
     const ok = !!consent.checked;
     if (liveSearchBtn) liveSearchBtn.disabled = !ok;
@@ -1246,4 +1272,5 @@ function setConsentState() {
 
   populateHubs();
   setConsentState();
+  checkLiveSearchReady();
 })();
