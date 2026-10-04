@@ -11,16 +11,26 @@ Production is designed for Netlify deployment from the `main` branch.
 - Node: 22.12+
 - Netlify Blobs: temporary QR/photo-demo session and consent-audio storage
 - Primary live-search provider: Brave Search API
+- Connected-story synthesis: OpenAI Responses API
+- Reverse-image web matching: Google Cloud Vision WEB_DETECTION
 
-## Required Netlify environment variable
+## Required Netlify environment variables
 
-Set this in **Netlify → Site configuration → Environment variables**:
+Set these in **Netlify → Site configuration → Environment variables**:
 
 ```
 BRAVE_SEARCH_API_KEY=<your Brave Search API key>
+OPENAI_API_KEY=<your OpenAI API key>
+GOOGLE_VISION_API_KEY=<your Google Cloud Vision API key>
 ```
 
-The API key remains server-side and is never returned to the browser.
+Optional model override:
+
+```
+OPENAI_MODEL=gpt-6-luna
+```
+
+All API keys remain server-side and are never returned to the browser. OpenAI synthesis requests use `store:false`.
 
 The app checks backend readiness on page load:
 
@@ -47,6 +57,14 @@ The live result model includes:
 - no sensitive-trait inference
 
 A minimum 14-second cinematic presentation window is enforced so fast searches still have time to build visually before the final results screen.
+
+### Connected-story synthesis
+
+After Brave returns masked public excerpts, the server sends only those already-masked excerpts to the OpenAI Responses API. The synthesis layer turns fragments into a short narrative, evidence-anchored story points and a broad timeline. It is instructed not to infer sensitive traits, expose exact addresses, profile minors, invent dates, or turn weak clues into facts. If OpenAI is unavailable, the app falls back to a simpler deterministic summary instead of substituting fabricated findings.
+
+### Reverse-image web matching
+
+The consented photo is sent transiently to Google Cloud Vision using `WEB_DETECTION`. The app keeps only sanitized match counts, broad web entities and matching-page domains/URLs in the temporary demo session. It does not use facial identification. The original image is not persisted by this application.
 
 ### Synthetic Demo
 
