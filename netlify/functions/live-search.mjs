@@ -337,7 +337,9 @@ const PRESENTATION_STOP_WORDS = new Set([
   "the","and","for","with","from","that","this","your","you","are","was","were","has","have","had","but","not","all","can","our","out",
   "about","into","more","than","their","they","them","his","her","she","him","who","what","when","where","how","why","will","would",
   "www","http","https","com","org","net","ca","profile","public","page","pages","home","official","view","website","site","search",
-  "facebook","instagram","linkedin","tiktok","twitter","reddit","youtube","threads","github","strava"
+  "facebook","instagram","linkedin","tiktok","twitter","reddit","youtube","threads","github","strava",
+  "strong","association","associations","define","defined","degree","degrees","holds","holding","life","master","masters","office",
+  "member","members","work","working","experience","profile","result","results","page","pages"
 ]);
 
 const PRESENTATION_SENSITIVE_TERMS = /\b(?:diagnos(?:is|ed)|cancer|hiv|aids|medical condition|medication|depression|suicid|religion|religious|catholic|muslim|jewish|christian|hindu|mosque|synagogue|sexual orientation|gay|lesbian|bisexual|transgender|political party|liberal party|conservative party|new democratic party|ndp|arrested|criminal charge|convicted|conviction)\b/i;
@@ -354,6 +356,21 @@ function safeExcerpt(value = "", max = 132) {
   return (cut || masked.slice(0,max)).trim() + "…";
 }
 
+function narrativeEligibleSource(source = {}) {
+  if (source.confidence !== "strong") return false;
+  const reasons = Array.isArray(source.reasons) ? source.reasons : [];
+  const clueCount = reasons.filter(reason=>String(reason).startsWith("clue: ")).length;
+  const username = reasons.some(reason=>/username in url|username match/i.test(reason));
+  const city = reasons.some(reason=>/city identity context/i.test(reason));
+  const age = reasons.some(reason=>/age compatible|birth-year clue compatible/i.test(reason));
+
+  if (username) return true;
+  if (clueCount >= 2) return true;
+  if (clueCount >= 1 && (city || age)) return true;
+  if (city && age) return true;
+  return false;
+}
+
 function presentationThemes(items, person) {
   const excluded = new Set(
     [person.fullName,person.city,person.username]
@@ -361,23 +378,29 @@ function presentationThemes(items, person) {
       .flatMap(v=>normalize(v).replace(/[@._-]/g," ").split(/\s+/))
       .filter(Boolean)
   );
-  ["masked","email","phone","address","contact","result","results","community"].forEach(term=>{
-    if(term==="community")return;
-    excluded.add(term);
-  });
-  const counts = new Map();
+  ["masked","email","phone","address","contact","result","results"].forEach(term=>excluded.add(term));
+
+  const sourceCounts = new Map();
   for (const item of items) {
     const text = normalize([item.title,item.snippet].filter(Boolean).join(" ")).replace(/[@._-]/g," ");
+    const seenInThisSource = new Set();
+
     for (const rawToken of text.split(/\s+/)) {
       const token=rawToken.replace(/[^a-z0-9]/g,"");
       if (!token || token.length < 4 || token.length > 24) continue;
       if (/^\d+$/.test(token) || /xxx|masked/.test(token) || PRESENTATION_STOP_WORDS.has(token) || excluded.has(token)) continue;
-      counts.set(token,(counts.get(token)||0)+1);
+      seenInThisSource.add(token);
+    }
+
+    for (const token of seenInThisSource) {
+      sourceCounts.set(token,(sourceCounts.get(token)||0)+1);
     }
   }
-  return [...counts.entries()]
+
+  return [...sourceCounts.entries()]
+    .filter(([,count])=>count >= 2)
     .sort((a,b)=>b[1]-a[1] || a[0].localeCompare(b[0]))
-    .slice(0,12)
+    .slice(0,10)
     .map(([term,count])=>({term,count}));
 }
 
@@ -398,22 +421,31 @@ async function searchImages(apiKey, q) {
 }
 
 function imageMatchesPerson(result, person) {
-  const hay = normalize([result?.title,result?.url,result?.source].filter(Boolean).join(" "));
+  const raw=[result?.title,result?.url,result?.source].filter(Boolean).join(" ");
+  const hay = normalize(raw);
   if (!hay) return false;
+
   const full = normalize(person.fullName);
-  const city = normalize(person.city);
   const handle = normalize(String(person.username || "").replace(/^@/,""));
   const nameParts = full.split(/\s+/).filter(Boolean);
   const fullNameMatch = full && hay.includes(full);
   const partsMatch = nameParts.length >= 2 && nameParts.every(part=>hay.includes(part));
   const handleMatch = handle && hay.includes(handle);
-  const cityMatch = city && hay.includes(city);
+  const city = cityIdentitySupport(raw, person.city);
+  const clueMatches = (person.searchClues || []).filter(clue =>
+    clueVariants(clue).some(variant => variantMatches(hay,variant))
+  );
 
-  // Exact handles can stand on their own. Name-only image matches must respect the
-  // supplied city so unrelated same-name people do not appear in the presentation.
   if (handleMatch) return true;
-  if (city && !cityMatch) return false;
-  return !!(fullNameMatch || partsMatch);
+  if (!(fullNameMatch || partsMatch)) return false;
+
+  if ((person.searchClues || []).length) {
+    if (!clueMatches.length) return false;
+    return clueMatches.length >= 2 || city.anchored;
+  }
+
+  if (normalize(person.city)) return city.anchored;
+  return true;
 }
 
 const providerWait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
@@ -636,7 +668,9 @@ export default async (req) => {
   if (addressClues.length) findings.push(["Address clues",addressClues.length+" masked public address clues. Example: "+addressClues[0],"MASKED"]);
 
   const coverageNames = ["LinkedIn","Instagram","Facebook","TikTok","Threads","Reddit","X / Twitter","YouTube","Strava","GitHub","Medium","Substack"];
-  const quoteSnippets = sources
+  const narrativeSources = sources.filter(source=>narrativeEligibleSource(source));
+
+  const quoteSnippets = narrativeSources
     .filter(source=>source.snippet && safeForPresentation(source.snippet))
     .slice(0,8)
     .map(source=>({
@@ -646,7 +680,7 @@ export default async (req) => {
       confidence:source.confidence
     }));
 
-  const webThumbnails = sources
+  const webThumbnails = narrativeSources
     .filter(source=>source.thumbnail)
     .map(source=>({
       src:source.thumbnail,
@@ -685,7 +719,10 @@ export default async (req) => {
     .filter((item,index,list)=>list.findIndex(other=>other.src===item.src)===index)
     .slice(0,12);
 
-  const themeTerms = presentationThemes(sources.filter(source=>safeForPresentation([source.title,source.snippet].join(" "))),person);
+  const themeTerms = presentationThemes(
+    narrativeSources.filter(source=>safeForPresentation([source.title,source.snippet].join(" "))),
+    person
+  );
   const signals = [];
   if (platforms.size > 1) signals.push(["◎","Cross-platform presence",platforms.size+" public source types returned matching pages."]);
   if (platforms.has("LinkedIn") || platforms.has("News")) signals.push(["▤","Professional or public references","Professional, organization or news results were present in the public search."]);
@@ -710,7 +747,7 @@ export default async (req) => {
   const intelligence = await synthesizePublicProfile({
     subject:fullName,
     city,
-    sources,
+    sources:narrativeSources,
     recurringThemes:themeTerms
   });
 
