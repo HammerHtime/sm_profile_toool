@@ -1666,6 +1666,43 @@ function setConsentState() {
     return null;
   }
 
+  function appDefaultSettingFor(name,target,detail) {
+    const known = {
+      "Instagram":{
+        "Private account":"Public for most adult accounts; teen accounts may start private",
+        "Contact syncing":"Off until you choose to sync contacts"
+      },
+      "Facebook":{
+        "Future posts":"Friends for many new personal accounts",
+        "Location":"No device-location access until you grant permission"
+      },
+      "TikTok":{
+        "Private account":"Public for most adults; younger teen accounts start private",
+        "Location":"No device-location access until you grant permission"
+      },
+      "Snapchat":{
+        "Snap Map":"Location sharing is off until you opt in",
+        "Precise Location":"No device-location access until you grant permission"
+      },
+      "YouTube":{
+        "Subscriptions":"Private by default"
+      },
+      "WhatsApp":{
+        "Live location":"Off until you intentionally share Live Location in a chat",
+        "Location":"No device-location access until you grant permission"
+      },
+      "GitHub":{
+        "Public email":"No public email is shown unless you choose one"
+      }
+    };
+
+    const exact=known[name]?.[target];
+    if(exact) return exact;
+    if(detail?.kind==="location") return "No device-location access until you grant permission";
+    if(detail?.kind==="notification") return "Depends on phone permission and app setup";
+    return "Varies by account, age, region or app version";
+  }
+
   function detailRowsHtml(detail) {
     if (!detail) return "";
     const recommended=String(detail.recommended||"").toLowerCase();
@@ -1743,7 +1780,10 @@ function setConsentState() {
         identity +
         '<div class="phoneDetailHeader"><span class="phoneBackChevron">‹</span><span><small>' + escapeHtml(detail.section||title) + '</small><strong>' + escapeHtml(title) + '</strong></span></div>' +
         detailRowsHtml(detail) +
-        '<div class="phoneRecommendation"><strong>RECOMMENDED PRIVACY SETTING</strong><span>' + escapeHtml(detail.recommended||"Review this setting") + '</span></div>' +
+        '<div class="phoneSettingCompare">' +
+          '<div class="phoneDefaultSetting"><strong>APP DEFAULT SETTING</strong><span>' + escapeHtml(appDefaultSettingFor(appName,target,detail)) + '</span></div>' +
+          '<div class="phoneRecommendation"><strong>RECOMMENDED PRIVACY SETTING</strong><span>' + escapeHtml(detail.recommended||"Review this setting") + '</span></div>' +
+        '</div>' +
       '</div>';
     }
 
@@ -1806,7 +1846,11 @@ function setConsentState() {
     const actionBlock = isExplain
       ? '<div class="explainBox"><strong>What to explain to the audience</strong><ul>' + bullets.map((b)=>"<li>"+escapeHtml(b)+"</li>").join("") + "</ul></div>"
       : detail
-        ? '<div class="settingWhyCard"><div><strong>WHY THIS SETTING MATTERS</strong><p>' + escapeHtml(detail.why||body) + '</p></div><div><strong>RECOMMENDED PRIVACY SETTING</strong><p>' + escapeHtml(detail.recommended||"Review this setting") + '</p></div></div>'
+        ? '<div class="settingWhyCard">' +
+            '<div class="settingWhyMain"><strong>WHY THIS SETTING MATTERS</strong><p>' + escapeHtml(detail.why||body) + '</p></div>' +
+            '<div class="settingDefaultTile"><strong>APP DEFAULT SETTING</strong><p>' + escapeHtml(appDefaultSettingFor(guidePlatform?.name,target,detail)) + '</p></div>' +
+            '<div class="settingRecommendedTile"><strong>RECOMMENDED PRIVACY SETTING</strong><p>' + escapeHtml(detail.recommended||"Review this setting") + '</p></div>' +
+          '</div>'
         : '<div class="tapCallout"><strong>Next action:</strong>&nbsp; ' + escapeHtml(target) + "</div>";
 
     const html =
