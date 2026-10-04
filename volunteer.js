@@ -8,7 +8,7 @@ let selectedFile = null;
 let selectedSource = '';
 let selectedDimensions = { width:0, height:0 };
 let previewUrl = '';
-const VOICE_SAMPLE_COUNT = 3;
+const VOICE_SAMPLE_COUNT = 1;
 const VOICE_MAX_MS = 10000;
 let voiceRecorder = null;
 let voiceStream = null;
@@ -219,7 +219,7 @@ function clearVoiceSample(index) {
   $('voicePreviewWrap' + index).classList.add('hidden');
   $('voiceTimer' + index).textContent = '0:00';
   $('voiceRecordBtn' + index).classList.remove('recording');
-  $('voiceRecordBtn' + index).innerHTML = '<span>●</span> Record Sample ' + (index + 1);
+  $('voiceRecordBtn' + index).innerHTML = '<span>●</span> Record consent phrase';
 }
 
 function resetAllVoiceSamples() {
@@ -390,7 +390,13 @@ $('volunteerForm').addEventListener('submit', async (e) => {
       width:selectedDimensions.width,
       height:selectedDimensions.height,
       source:selectedSource,
-      voiceSamples:voicePayload
+      voiceSamples:voicePayload,
+      voiceDelivery:{
+        consentPhraseWords:14,
+        speakingRateFactor:voicePayload[0]?.durationMs
+          ? Math.min(1.20,Math.max(0.80,5500/voicePayload[0].durationMs))
+          : 1
+      }
     });
 
     if (previewUrl) {
