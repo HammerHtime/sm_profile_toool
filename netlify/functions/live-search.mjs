@@ -229,6 +229,15 @@ function clueVariants(clue = "") {
   return [...new Set(variants.filter(Boolean))];
 }
 
+function variantMatches(hay = "", variant = "") {
+  const key=normalize(variant);
+  if (!key) return false;
+  if (key.length <= 3) {
+    return hay.split(/[^a-z0-9]+/).filter(Boolean).includes(key);
+  }
+  return hay.includes(key);
+}
+
 function cityIdentitySupport(raw = "", city = "") {
   const key=normalize(city);
   if (!key) return { mentioned:false, anchored:false };
@@ -267,7 +276,7 @@ function matchResult(result, person) {
   const age = ageAssessment(raw, person.ageContext);
 
   const clueMatches = (person.searchClues || []).filter(clue =>
-    clueVariants(clue).some(variant => variant && hay.includes(variant))
+    clueVariants(clue).some(variant => variantMatches(hay,variant))
   );
   const clueGateActive = (person.searchClues || []).length > 0;
 
