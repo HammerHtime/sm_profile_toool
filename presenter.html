@@ -172,24 +172,35 @@
             <div class="voiceRiskTop">
               <div class="voiceRiskIcon">🎙</div>
               <div>
-                <div class="eyebrow">VOICE CLONING AWARENESS</div>
-                <h3>A few seconds of exposed voice can become another risk signal.</h3>
+                <div class="eyebrow">VOICE EXPOSURE AWARENESS</div>
+                <h3>A few seconds of ordinary speech can become a valuable impersonation target.</h3>
               </div>
-              <span class="voiceDemoBadge">GENERIC AI VOICE</span>
+              <span class="voiceDemoBadge">ORIGINAL AUDIO</span>
             </div>
-            <div class="voiceRiskBody">
-              <div>
-                <strong id="voiceSampleStatus">No volunteer voice sample was recorded.</strong>
-                <p id="voiceSampleCopy">The demo does not create or store a participant voice clone.</p>
-              </div>
-              <button type="button" id="playVoiceRiskBtn" class="voicePlayBtn">
-                <span>▶</span>
-                Play scam-awareness example
+
+            <div class="voiceRiskIntro">
+              <strong id="voiceSampleStatus">No volunteer voice samples were recorded.</strong>
+              <p id="voiceSampleCopy">These buttons replay only the volunteer’s original harmless recordings. The demo never creates a cloned or synthetic version of their voice.</p>
+            </div>
+
+            <div class="voicePlaybackGrid">
+              <button type="button" id="playVoiceSample0" class="voiceSamplePlayBtn" disabled data-index="0">
+                <span class="voicePlayGlyph">▶</span>
+                <span><strong>Play Sample 1</strong><small>Travel and favourite places</small></span>
+              </button>
+              <button type="button" id="playVoiceSample1" class="voiceSamplePlayBtn" disabled data-index="1">
+                <span class="voicePlayGlyph">▶</span>
+                <span><strong>Play Sample 2</strong><small>Beautiful day, family and friends</small></span>
+              </button>
+              <button type="button" id="playVoiceSample2" class="voiceSamplePlayBtn" disabled data-index="2">
+                <span class="voicePlayGlyph">▶</span>
+                <span><strong>Play Sample 3</strong><small>Food, sports and travel</small></span>
               </button>
             </div>
+
             <div class="voiceSafetyStrip">
-              <strong>NOT THE PARTICIPANT’S VOICE</strong>
-              <span>The playback is a generic synthetic voice used only to demonstrate the type of emergency-money request families should verify through another channel.</span>
+              <strong>ORIGINAL VOLUNTEER RECORDINGS • NOT CLONED</strong>
+              <span>The teaching point is that ordinary exposed audio can be harvested and misused for impersonation, fraud or extortion. Verify urgent voice calls through another trusted channel.</span>
             </div>
           </section>
         </section>
