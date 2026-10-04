@@ -1670,6 +1670,16 @@ function setConsentState() {
     return null;
   }
 
+  function settingTeachingExpansion(detail) {
+    if (!detail) return "";
+    if (detail.kind==="location") return "Device location permission and in-app location sharing are separate controls, so review both.";
+    if (detail.kind==="notification") return "Lock-screen previews can expose content even while the phone is locked, so review previews as well as the main notification switch.";
+    if (detail.kind==="choices") return "Choosing a narrower audience reduces how many people can see or use this information to connect your account to other parts of your life.";
+    if (detail.kind==="toggle" || detail.kind==="toggles") return "This control affects future exposure, so confirm the switch matches how public you actually want this feature to be.";
+    if (detail.kind==="status") return "This is also an audit point: review what is already public or connected, not only the setting going forward.";
+    return "";
+  }
+
   function appDefaultSettingFor(name,target,detail) {
     const known = {
       "Instagram":{
@@ -1851,7 +1861,7 @@ function setConsentState() {
       ? '<div class="explainBox"><strong>What to explain to the audience</strong><ul>' + bullets.map((b)=>"<li>"+escapeHtml(b)+"</li>").join("") + "</ul></div>"
       : detail
         ? '<div class="settingWhyCard">' +
-            '<div class="settingWhyMain"><strong>WHY THIS SETTING MATTERS</strong><p>' + escapeHtml(detail.why||body) + '</p><span class="settingWhyHint">This is the teaching point for this setting. No separate explanation slide follows.</span></div>' +
+            '<div class="settingWhyMain"><strong>WHY THIS SETTING MATTERS</strong><p>' + escapeHtml(detail.why||body) + ' ' + escapeHtml(settingTeachingExpansion(detail)) + '</p></div>' +
             '<div class="settingDefaultTile"><strong>APP DEFAULT SETTING</strong><p>' + escapeHtml(appDefaultSettingFor(guidePlatform?.name,target,detail)) + '</p></div>' +
             '<div class="settingRecommendedTile"><strong>RECOMMENDED PRIVACY SETTING</strong><p>' + escapeHtml(detail.recommended||"Review this setting") + '</p></div>' +
           '</div>'

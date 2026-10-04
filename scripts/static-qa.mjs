@@ -91,7 +91,7 @@ if(!app.includes("APP DEFAULT SETTING") || !app.includes("RECOMMENDED PRIVACY SE
 else pass("App default and recommended privacy tiles render");
 if(!app.includes('.filter(step=>step[2]!=="EXPLAIN")')) fail("Social app guides still include redundant explanation slides");
 else pass("Social app guides remove redundant explanation slides");
-if(!app.includes("settingWhyHint")) fail("Setting-level teaching point expansion is missing");
+if(!app.includes("function settingTeachingExpansion(")) fail("Setting-level teaching point expansion is missing");
 else pass("Setting screen carries the full why-it-matters teaching point");
 if(!app.includes("function platformHeaderFor(")) fail("Social privacy walkthrough header renderer is missing");
 else pass("Social privacy walkthrough header renderer exists");
