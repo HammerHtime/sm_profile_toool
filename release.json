@@ -1,4 +1,4 @@
 {
-  "release": "public-footprint-rc2-smoke-v14",
-  "purpose": "Broad Google geocoding for story locations and privacy-preserving photo regions"
+  "release": "public-footprint-rc2-smoke-v15",
+  "purpose": "Report alignment, working privacy walkthroughs, native-style phone transitions, and stricter identity matching"
 }
