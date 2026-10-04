@@ -16,6 +16,7 @@ let activeVoiceIndex = -1;
 let voiceChunks = [];
 let voiceStartedAt = 0;
 let voiceTimerId = null;
+let discardVoiceOnStop = false;
 const voiceSamples = Array.from({length:VOICE_SAMPLE_COUNT}, () => ({
   blob:null,
   url:'',
@@ -204,6 +205,7 @@ function clearVoiceSample(index) {
   if (!sample) return;
 
   if (activeVoiceIndex === index && voiceRecorder?.state === 'recording') {
+    discardVoiceOnStop = true;
     try { voiceRecorder.stop(); } catch {}
   }
 
@@ -259,6 +261,7 @@ async function startVoiceRecording(index) {
   try {
     voiceStream = await navigator.mediaDevices.getUserMedia({ audio:true });
     voiceChunks = [];
+    discardVoiceOnStop = false;
     activeVoiceIndex = index;
 
     const preferred = ['audio/webm;codecs=opus','audio/webm','audio/mp4'];
@@ -284,6 +287,15 @@ async function startVoiceRecording(index) {
 
       voiceStartedAt = 0;
       activeVoiceIndex = -1;
+
+      if (discardVoiceOnStop) {
+        discardVoiceOnStop = false;
+        stopVoiceStream();
+        voiceChunks = [];
+        voiceRecorder = null;
+        syncGate();
+        return;
+      }
 
       const type = voiceRecorder?.mimeType || voiceChunks[0]?.type || 'audio/webm';
       const blob = new Blob(voiceChunks, { type });
