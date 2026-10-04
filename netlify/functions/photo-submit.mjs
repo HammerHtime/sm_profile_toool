@@ -72,12 +72,14 @@ const PUBLIC_THEME_STOP = new Set([
 ]);
 
 function correlationThemes(items, handle, firstName, city) {
-  const excluded=new Set([handle,firstName,city].filter(Boolean).flatMap(v=>normalize(v).split(/\s+/)).filter(Boolean));
+  const excluded=new Set([handle,firstName,city].filter(Boolean).flatMap(v=>normalize(v).replace(/[@._-]/g," ").split(/\s+/)).filter(Boolean));
+  ["masked","email","phone","address","contact","result","results"].forEach(term=>excluded.add(term));
   const counts=new Map();
   for(const item of items){
-    const text=normalize([item.title,item.description].filter(Boolean).join(" "));
-    for(const token of text.split(/\s+/)){
-      if(!token||token.length<4||token.length>24||PUBLIC_THEME_STOP.has(token)||excluded.has(token)||/^\d+$/.test(token))continue;
+    const text=normalize([item.title,item.description].filter(Boolean).join(" ")).replace(/[@._-]/g," ");
+    for(const rawToken of text.split(/\s+/)){
+      const token=rawToken.replace(/[^a-z0-9]/g,"");
+      if(!token||token.length<4||token.length>24||PUBLIC_THEME_STOP.has(token)||excluded.has(token)||/^\d+$/.test(token)||/xxx|masked/.test(token))continue;
       counts.set(token,(counts.get(token)||0)+1);
     }
   }
