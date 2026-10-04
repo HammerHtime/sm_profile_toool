@@ -504,6 +504,177 @@ async function checkLiveSearchReady() {
     }
   }
 
+  const scanPositions = [
+    [5,8,-7],[73,4,5],[82,57,-4],[7,60,6],[58,70,-2],[28,4,4],[68,32,7],[18,34,-5]
+  ];
+  const quotePositions = [
+    [4,25,-2],[68,18,2],[63,72,-1],[9,75,1],[39,8,-2],[36,74,2]
+  ];
+
+  function clearCinematicScan(){
+    ["scanPhotoLayer","scanQuoteLayer","scanWordCloud","scanPlatformNodes"].forEach(id=>{
+      const el=$(id); if(el) el.replaceChildren();
+    });
+    const count=$("scanDiscoveryCount"); if(count) count.textContent="0";
+    const progress=$("scanProgressValue"); if(progress) progress.textContent="0%";
+    const orb=$("scanProgressOrb"); if(orb) orb.style.setProperty("--scan-progress","0deg");
+    const label=$("scanStageLabel"); if(label) label.textContent="Initializing search";
+  }
+
+  function setCinematicProgress(value,label){
+    const pct=Math.max(0,Math.min(100,Math.round(value)));
+    const progress=$("scanProgressValue");
+    if(progress) progress.textContent=pct+"%";
+    const orb=$("scanProgressOrb");
+    if(orb) orb.style.setProperty("--scan-progress",(pct*3.6)+"deg");
+    const stage=$("scanStageLabel");
+    if(stage&&label) stage.textContent=label;
+  }
+
+  function startCinematicScan(subject){
+    clearCinematicScan();
+    const target=$("scanTargetName");
+    if(target) target.textContent=(subject||"SEARCH SUBJECT").toUpperCase();
+    const meta=$("scanTargetMeta");
+    if(meta) meta.textContent="Public/indexed sources only • sensitive values masked";
+    setCinematicProgress(4,"Opening public search");
+  }
+
+  function hydrateCinematicScan(report){
+    const presentation=report?.presentation||{};
+    const photos=Array.isArray(presentation.photos)?presentation.photos.slice(0,8):[];
+    const quotes=Array.isArray(presentation.quotes)?presentation.quotes.slice(0,6):[];
+    const themes=Array.isArray(presentation.themes)?presentation.themes.slice(0,12):[];
+    const sources=Array.isArray(report?.publicSources)?report.publicSources:[];
+
+    const photoLayer=$("scanPhotoLayer");
+    if(photoLayer){
+      photoLayer.replaceChildren();
+      photos.forEach((photo,index)=>{
+        if(!photo?.src)return;
+        const card=document.createElement("figure");
+        card.className="scanFloatPhoto";
+        const [x,y,r]=scanPositions[index%scanPositions.length];
+        card.style.setProperty("--x",x+"%");
+        card.style.setProperty("--y",y+"%");
+        card.style.setProperty("--r",r+"deg");
+        card.style.setProperty("--delay",(index*.16)+"s");
+        const img=document.createElement("img");
+        img.src=photo.src;
+        img.alt="";
+        img.loading="eager";
+        img.referrerPolicy="no-referrer";
+        img.addEventListener("error",()=>card.remove(),{once:true});
+        const cap=document.createElement("figcaption");
+        cap.textContent=photo.platform||photo.domain||"Public image";
+        card.append(img,cap);
+        photoLayer.appendChild(card);
+      });
+    }
+
+    const quoteLayer=$("scanQuoteLayer");
+    if(quoteLayer){
+      quoteLayer.replaceChildren();
+      quotes.forEach((quote,index)=>{
+        if(!quote?.text)return;
+        const card=document.createElement("div");
+        card.className="scanQuoteCard";
+        const [x,y,r]=quotePositions[index%quotePositions.length];
+        card.style.setProperty("--x",x+"%");
+        card.style.setProperty("--y",y+"%");
+        card.style.setProperty("--r",r+"deg");
+        card.style.setProperty("--delay",(index*.22+.25)+"s");
+        const platform=document.createElement("strong");
+        platform.textContent=quote.platform||quote.domain||"Public source";
+        const textEl=document.createElement("span");
+        textEl.textContent="“"+quote.text+"”";
+        card.append(platform,textEl);
+        quoteLayer.appendChild(card);
+      });
+    }
+
+    const cloud=$("scanWordCloud");
+    if(cloud){
+      cloud.replaceChildren();
+      themes.forEach((theme,index)=>{
+        const term=typeof theme==="string"?theme:theme.term;
+        const count=typeof theme==="object"?Number(theme.count)||1:1;
+        if(!term)return;
+        const span=document.createElement("span");
+        span.textContent=term;
+        span.style.setProperty("--scale",String(Math.min(1.65,1+count*.11)));
+        span.style.setProperty("--delay",(index*.09+.5)+"s");
+        cloud.appendChild(span);
+      });
+    }
+
+    const platformNodes=$("scanPlatformNodes");
+    if(platformNodes){
+      platformNodes.replaceChildren();
+      const platformNames=[...new Set(sources.map(s=>s.platform).filter(Boolean))].slice(0,8);
+      platformNames.forEach((name,index)=>{
+        const node=document.createElement("span");
+        node.className="scanPlatformNode";
+        node.textContent=name;
+        node.style.setProperty("--i",String(index));
+        node.style.setProperty("--total",String(Math.max(platformNames.length,1)));
+        platformNodes.appendChild(node);
+      });
+    }
+
+    const discoveries=photos.length+quotes.length+themes.length+sources.length;
+    const countEl=$("scanDiscoveryCount");
+    if(countEl) countEl.textContent=String(discoveries);
+  }
+
+  function renderPublicVoice(report,modeClass){
+    const panel=$("publicVoicePanel");
+    const quoteGrid=$("resultQuoteGrid");
+    const wordCloud=$("resultWordCloud");
+    if(!panel||!quoteGrid||!wordCloud)return;
+    const presentation=report?.presentation||{};
+    const quotes=Array.isArray(presentation.quotes)?presentation.quotes:[];
+    const themes=Array.isArray(presentation.themes)?presentation.themes:[];
+
+    panel.classList.toggle("hidden",!quotes.length&&!themes.length);
+    quoteGrid.replaceChildren();
+    wordCloud.replaceChildren();
+
+    quotes.slice(0,8).forEach(q=>{
+      const card=document.createElement("blockquote");
+      card.className="resultQuoteCard";
+      const textEl=document.createElement("p");
+      textEl.textContent="“"+String(q.text||"")+"”";
+      const cite=document.createElement("cite");
+      cite.textContent=(q.platform||q.domain||"Public source")+" • "+(q.confidence==="strong"?"strong match":"possible match");
+      card.append(textEl,cite);
+      quoteGrid.appendChild(card);
+    });
+
+    themes.slice(0,14).forEach(item=>{
+      const term=typeof item==="string"?item:item.term;
+      const count=typeof item==="object"?Number(item.count)||1:1;
+      if(!term)return;
+      const chip=document.createElement("span");
+      chip.className="resultThemeWord "+modeClass;
+      chip.textContent=term;
+      chip.style.fontSize=(.72+Math.min(.55,count*.06))+"rem";
+      wordCloud.appendChild(chip);
+    });
+  }
+
+  function updatePlatformGuideHits(report){
+    const found=new Set((report?.publicSources||[]).map(source=>source.platform).filter(Boolean));
+    document.querySelectorAll("#platformGrid .platformCard").forEach(card=>{
+      const name=card.querySelector(".platformName")?.textContent||"";
+      const status=card.querySelector(".platformStatus");
+      if(!status||/Privacy$/.test(name))return;
+      const hit=found.has(name);
+      card.classList.toggle("foundInSearch",hit);
+      status.textContent=hit?"FOUND IN LIVE SEARCH • FIX →":"PRIVACY GUIDE →";
+    });
+  }
+
 function setConsentState() {
     const ok = !!consent.checked;
     if (liveSearchBtn) liveSearchBtn.disabled = !ok || liveSearchBtn.dataset.configured === "false";
@@ -516,39 +687,65 @@ function setConsentState() {
 
   function scanSequence(done) {
     const steps = [
-      ["Searching public sources…","Checking social networks, news, forums, public directories and indexed pages."],
-      ["Linking public identifiers…","Comparing names, usernames and public profile fragments."],
-      ["Analyzing images and activity…","Classifying what public material reveals without exposing sensitive values."],
-      ["Masking sensitive findings…","Removing complete phone numbers, email addresses, school names and precise addresses."],
-      ["Building the privacy report…","Turning hundreds of fragments into an educational summary."]
+      ["Building synthetic demonstration…","No live public findings are being used in this fallback."],
+      ["Staging example platforms…","Creating clearly labelled synthetic platform nodes."],
+      ["Staging example images…","Synthetic blurred tiles demonstrate the visual search experience."],
+      ["Staging example excerpts…","Synthetic phrases demonstrate how public text can accumulate."],
+      ["Building the synthetic report…","Every result remains visibly labelled SYNTHETIC."]
     ];
     results.classList.add("hidden");
     scanPanel.classList.remove("hidden");
+    startCinematicScan("SYNTHETIC DEMO");
+    const syntheticPresentation={
+      publicSources:[
+        {platform:"Instagram"},{platform:"LinkedIn"},{platform:"Reddit"},{platform:"YouTube"}
+      ],
+      presentation:{
+        photos:[],
+        quotes:[
+          {platform:"Instagram",text:"Great weekend away with friends.",confidence:"possible"},
+          {platform:"Reddit",text:"Looking for recommendations for my next trip.",confidence:"possible"},
+          {platform:"LinkedIn",text:"Proud to be part of another community event.",confidence:"possible"}
+        ],
+        themes:[
+          {term:"travel",count:5},{term:"community",count:4},{term:"sports",count:3},
+          {term:"restaurants",count:3},{term:"technology",count:2},{term:"events",count:2}
+        ]
+      }
+    };
+    hydrateCinematicScan(syntheticPresentation);
     let i = 0;
     scanTitle.textContent = steps[0][0];
     scanSub.textContent = steps[0][1];
+    const started=Date.now();
     const timer = setInterval(() => {
       i++;
       if (i >= steps.length) {
         clearInterval(timer);
-        setTimeout(() => { scanPanel.classList.add("hidden"); done(); }, 350);
+        setCinematicProgress(100,"Synthetic report ready");
+        setTimeout(() => {
+          scanPanel.classList.add("hidden");
+          clearCinematicScan();
+          done();
+        }, 420);
         return;
       }
       scanTitle.textContent = steps[i][0];
       scanSub.textContent = steps[i][1];
-    }, 480);
+      setCinematicProgress(Math.min(92,18+i*18),steps[i][0].replace("…",""));
+    }, 650);
   }
 
   function renderReport(report) {
     const mode = report.dataMode === "verified" ? "verified" : report.dataMode === "synthetic" ? "synthetic" : "evidence";
     const banner = $("dataModeBanner");
-    const modeLabel = mode === "verified" ? "VERIFIED" : mode === "synthetic" ? "SYNTHETIC" : "EVIDENCE FILE";
+    const modeLabel = mode === "verified" ? "LIVE PUBLIC" : mode === "synthetic" ? "SYNTHETIC" : "EVIDENCE FILE";
     const modeClass = mode;
 
     if (banner) {
       banner.className = "dataModeBanner " + modeClass;
       if (mode === "verified") {
-        banner.innerHTML = "<strong>VERIFIED PUBLIC FINDINGS</strong><span>These findings were returned by configured public-source collectors and include the public source URL for review.</span>";
+        banner.innerHTML = "<strong>LIVE PUBLIC SEARCH RESULTS</strong><span>These are real public/indexed pages returned for the supplied identifiers. Strong and possible labels describe match confidence, not proof of identity.</span>";
       } else if (mode === "synthetic") {
         banner.innerHTML = "<strong>SYNTHETIC DEMONSTRATION DATA</strong><span>Everything on this result screen is fabricated to demonstrate what the presentation can look like. Nothing here was found about the person entered.</span>";
       } else {
@@ -645,6 +842,9 @@ function setConsentState() {
       });
     }
 
+    renderPublicVoice(report,modeClass);
+    updatePlatformGuideHits(report);
+
     $("profileSignalsPanel").classList.toggle("hidden", !(report.signals || []).length);
     $("profileSignalsGrid").innerHTML = "";
     (report.signals || []).forEach((s) => {
@@ -706,7 +906,7 @@ function setConsentState() {
     b.style.setProperty("--brand", p.brand || "#52d6ff");
     const status = parentMode
       ? (p.device ? "ENTER PARENT CONTROLS →" : "PARENT GUIDE →")
-      : (p.device ? "ENTER DEVICE →" : (p.found ? "FOUND + FIX →" : "PRIVACY GUIDE →"));
+      : (p.device ? "ENTER DEVICE →" : "PRIVACY GUIDE →");
     b.innerHTML = '<div class="platformIcon">' + p.icon + '</div><div class="platformName">' + p.name + '</div><div class="platformDesc">' + p.desc + '</div><div class="platformStatus">' + status + "</div>";
     b.addEventListener("click", () => openGuide(p, parentMode, b));
     return b;
@@ -1273,6 +1473,7 @@ function setConsentState() {
       liveSearchBtn.disabled = true;
 
       const searchStartedAt = Date.now();
+      startCinematicScan([firstName,lastName].filter(Boolean).join(" "));
       const statuses = [
         ["Searching the public internet…","Checking open web results without using age as a hard filter."],
         ["Checking public profiles…","Looking for name, city, username and platform matches."],
@@ -1287,6 +1488,8 @@ function setConsentState() {
         statusIndex = (statusIndex + 1) % statuses.length;
         scanTitle.textContent = statuses[statusIndex][0];
         scanSub.textContent = statuses[statusIndex][1];
+        const elapsed=Date.now()-searchStartedAt;
+        setCinematicProgress(Math.min(88,8+(elapsed/MIN_LIVE_SEARCH_MS)*80),statuses[statusIndex][0].replace("…",""));
       }, 900);
 
       try {
@@ -1311,17 +1514,23 @@ function setConsentState() {
           throw new Error((data.error || "Live search failed.") + (data.detail ? " " + data.detail : ""));
         }
 
+        hydrateCinematicScan(data);
+        setCinematicProgress(90,"Correlating results");
+
         const minimumSearchMs = 3200;
         const waitMs = minimumSearchMs - (Date.now() - searchStartedAt);
         if (waitMs > 0) await new Promise(resolve => setTimeout(resolve, waitMs));
         const remaining = MIN_LIVE_SEARCH_MS - (Date.now() - searchStartedAt);
         if (remaining > 0) await wait(remaining);
+        setCinematicProgress(100,"Results ready");
+        await wait(320);
         renderReport(data);
       } catch (e) {
         alert(e.message);
       } finally {
         clearInterval(timer);
         scanPanel.classList.add("hidden");
+        clearCinematicScan();
         setConsentState();
       }
     });
