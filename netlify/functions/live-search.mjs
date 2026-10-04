@@ -1,3 +1,4 @@
+import { synthesizePublicProfile } from "./profile-intelligence.mjs";
 const BRAVE_ENDPOINT = "https://api.search.brave.com/res/v1/web/search";
 const BRAVE_IMAGE_ENDPOINT = "https://api.search.brave.com/res/v1/images/search";
 
@@ -487,6 +488,7 @@ export default async (req) => {
         handleMasked:maskedHandle(raw.url,platform),
         title:safeExcerpt(title.text,120),
         snippet:safeExcerpt(snippet.text,150),
+        published:clean(raw.page_age || raw.age || "",50),
         thumbnail:braveThumbnail(raw)
       };
 
@@ -598,6 +600,13 @@ export default async (req) => {
     sources:coverageNames.map(name=>({name,matched:platforms.has(name)}))
   };
 
+  const intelligence = await synthesizePublicProfile({
+    subject:fullName,
+    city,
+    sources,
+    recurringThemes:themeTerms
+  });
+
   return respond({
     dataMode:"verified",
     synthetic:false,
@@ -621,6 +630,7 @@ export default async (req) => {
     } : null,
     cluesUsed:searchClues,
     signals,
+    intelligence,
     imageBreakdown:visualPhotos.length ? [["Public image search thumbnails",visualPhotos.length]] : [],
     activity:quoteSnippets.length ? [["Public excerpts surfaced",quoteSnippets.length]] : [],
     themes:themeTerms.map(item=>item.term),
