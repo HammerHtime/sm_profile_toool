@@ -44,7 +44,7 @@ function setProgress(status){
 function formatBytes(n){n=Number(n)||0;if(n<1024)return n+' B';if(n<1048576)return(n/1024).toFixed(1)+' KB';return(n/1048576).toFixed(1)+' MB';}
 function findingCard(title,value,copy,tone=''){
   const d=document.createElement('article');d.className='photoFindingCard '+tone;
-  d.innerHTML='<div class="findingLabel">'+title+'</div><strong>'+value+'</strong><p>'+copy+'</p>';return d;
+  d.innerHTML='<div class="provenanceMini verified">VERIFIED FROM PHOTO</div><div class="findingLabel">'+title+'</div><strong>'+value+'</strong><p>'+copy+'</p>';return d;
 }
 function mapUrl(z){
   const lat=Number(z.lat),lon=Number(z.lon),r=Number(z.radiusKm)||50,dlat=Math.max(r*1.25,60)/111.32,cos=Math.max(Math.cos(lat*Math.PI/180),.2),dlon=Math.max(r*1.25,60)/(111.32*cos);
