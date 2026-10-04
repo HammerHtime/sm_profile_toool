@@ -540,3 +540,10 @@
   .presenterHealth{width:100%;flex-wrap:wrap}
   .presenterHealth small{width:100%;padding-left:18px;margin-left:0}
 }
+
+
+.photoPreview.previewUnavailable{
+  min-height:180px;
+  object-fit:contain;
+  opacity:.12
+}
