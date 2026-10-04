@@ -283,3 +283,44 @@ button{border:0;cursor:pointer}
   .phoneScene{transition:none!important}
   .copySwapForward,.copySwapBack{animation:none!important}
 }
+
+
+/* Data provenance */
+.dataModeBanner.synthetic{border-color:rgba(255,166,72,.46);background:linear-gradient(90deg,rgba(255,166,72,.13),rgba(255,93,115,.07))}
+.dataModeBanner.synthetic strong{color:#ffbc75}
+.dataModeBanner.synthetic span{color:#e8c8a7}
+.dataModeBanner.evidence{border-color:rgba(82,214,255,.34);background:linear-gradient(90deg,rgba(82,214,255,.10),rgba(39,136,255,.06))}
+.dataModeBanner.evidence strong{color:#95e6ff}
+.dataModeBanner.evidence span{color:#bed7e5}
+.dataModeBanner.verified{border-color:rgba(85,227,156,.36);background:linear-gradient(90deg,rgba(85,227,156,.11),rgba(82,214,255,.05))}
+.dataModeBanner.verified strong{color:#9af0c2}
+.dataModeBanner.verified span{color:#c4e8d4}
+.provenanceMini{
+  display:inline-flex;
+  align-items:center;
+  width:max-content;
+  gap:5px;
+  border-radius:999px;
+  padding:4px 7px;
+  margin:0 0 8px;
+  font-size:.54rem;
+  line-height:1;
+  letter-spacing:.09em;
+  font-weight:950;
+  border:1px solid currentColor;
+  opacity:.95
+}
+.provenanceMini.synthetic{color:#ffb66d;background:rgba(255,166,72,.07)}
+.provenanceMini.evidence{color:#7ddcff;background:rgba(82,214,255,.06)}
+.provenanceMini.verified{color:#7ce9af;background:rgba(85,227,156,.06)}
+.stat .provenanceMini{position:relative;z-index:2}
+.accountMatch .provenanceMini,.signalCard .provenanceMini{margin-bottom:10px}
+.sourceModeDot{
+  display:inline-block;
+  width:7px;
+  height:7px;
+  border-radius:50%;
+  margin-right:5px
+}
+.sourceModeDot.synthetic{background:#ffad5e;box-shadow:0 0 9px rgba(255,173,94,.45)}
+.sourceModeDot.verified{background:#55e39c;box-shadow:0 0 9px rgba(85,227,156,.45)}
