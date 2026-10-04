@@ -684,9 +684,13 @@ function setConsentState() {
 
   function buildPlatformCard(p, parentMode) {
     const b = document.createElement("button");
-    b.className = "platformCard";
+    b.type = "button";
+    b.className = "platformCard" + (p.device ? " devicePrivacyCard" : "");
     b.style.setProperty("--brand", p.brand || "#52d6ff");
-    b.innerHTML = '<div class="platformIcon">' + p.icon + '</div><div class="platformName">' + p.name + '</div><div class="platformDesc">' + p.desc + '</div><div class="platformStatus">' + (parentMode ? "PARENT GUIDE →" : (p.found ? "FOUND + FIX →" : "PRIVACY GUIDE →")) + "</div>";
+    const status = parentMode
+      ? (p.device ? "ENTER PARENT CONTROLS →" : "PARENT GUIDE →")
+      : (p.device ? "ENTER DEVICE →" : (p.found ? "FOUND + FIX →" : "PRIVACY GUIDE →"));
+    b.innerHTML = '<div class="platformIcon">' + p.icon + '</div><div class="platformName">' + p.name + '</div><div class="platformDesc">' + p.desc + '</div><div class="platformStatus">' + status + "</div>";
     b.addEventListener("click", () => openGuide(p, parentMode, b));
     return b;
   }
