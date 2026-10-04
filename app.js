@@ -466,10 +466,10 @@ async function checkLiveSearchReady() {
     if (!status || !liveSearchBtn) return;
 
     try {
-      const res = await fetch("/api/live-search", { method:"GET", cache:"no-store" });
+      const res = await fetch("/.netlify/functions/health", { cache:"no-store" });
       const data = await res.json().catch(() => ({}));
 
-      if (res.ok && data.configured) {
+      if (res.ok && data.liveSearchConfigured) {
         status.classList.add("liveConfigured");
         status.classList.remove("liveUnconfigured");
         status.innerHTML = '<span class="statusDot"></span><strong>Live Search ready.</strong> Real public/indexed searches are configured. Synthetic Demo remains available as a clearly labelled fallback.';
