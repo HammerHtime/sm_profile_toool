@@ -13,6 +13,7 @@ Production is designed for Netlify deployment from the `main` branch.
 - Primary live-search provider: Brave Search API
 - Connected-story synthesis: OpenAI Responses API
 - Reverse-image web matching: Google Cloud Vision WEB_DETECTION
+- Broad location normalization: Google Geocoding API
 
 ## Required Netlify environment variables
 
@@ -22,6 +23,7 @@ Set these in **Netlify → Site configuration → Environment variables**:
 BRAVE_SEARCH_API_KEY=<your Brave Search API key>
 OPENAI_API_KEY=<your OpenAI API key>
 GOOGLE_VISION_API_KEY=<your Google Cloud Vision API key>
+GOOGLE_GEOCODING_API_KEY=<your Google Geocoding API key>
 ```
 
 Optional model override:
@@ -65,6 +67,12 @@ After Brave returns masked public excerpts, the server sends only those already-
 ### Reverse-image web matching
 
 The consented photo is sent transiently to Google Cloud Vision using `WEB_DETECTION`. The app keeps only sanitized match counts, broad web entities and matching-page domains/URLs in the temporary demo session. It does not use facial identification. The original image is not persisted by this application.
+
+### Broad location intelligence
+
+The AI synthesis may identify city or regional place names only when they are supported by the supplied public evidence. Google Geocoding normalizes up to four of those broad places for consistent city/region display and mapping. Exact addresses, schools, private properties and precise coordinates are not returned to the presentation.
+
+For photo GPS, the application first reduces the original coordinate to a 50 km privacy zone. Only that already-coarsened zone centre is sent for reverse geocoding, so the exact embedded coordinate is not sent to the geocoder.
 
 ### Synthetic Demo
 
