@@ -31,6 +31,8 @@
   ];
 
   const PLATFORMS = [
+    {name:"iPhone Privacy",icon:"●",brand:"#e7edf3",desc:"Location, precise location, contacts, photos, camera, microphone, tracking and app permissions",found:true,device:"ios"},
+    {name:"Android Privacy",icon:"◆",brand:"#72d572",desc:"Permission manager, location, precise location, camera, microphone, contacts, photos and app access",found:true,device:"android"},
     {name:"Instagram",icon:"◎",brand:"#ff3d9a",desc:"Account visibility, tags, mentions, contacts, activity and location",found:true},
     {name:"Facebook",icon:"f",brand:"#1877f2",desc:"Audience, profile discovery, tagging, friends, location and off-Facebook data",found:true},
     {name:"TikTok",icon:"♪",brand:"#25f4ee",desc:"Private account, suggestions, contacts, downloads, messages and location",found:true},
@@ -183,6 +185,34 @@
       ["People Nearby","Keep nearby discovery off unless actively using it.","People Nearby"],
       ["Why this matters","Phone-number visibility and nearby discovery can connect an otherwise pseudonymous Telegram account to a real-world identity.","EXPLAIN"]
     ],
+    "Twitch":[
+      ["Open Twitch","Tap your profile image and open Settings.","Settings"],
+      ["Security and Privacy","Open Security and Privacy.","Security and Privacy"],
+      ["Block unwanted users","Review blocked users and use blocking when needed.","Blocked users"],
+      ["Whispers","Review who can send Whispers and use safety controls for unwanted contact.","Whispers"],
+      ["Activity sharing","Review whether your activity, connections or linked accounts reveal more than intended.","Activity"],
+      ["Connections","Review connected accounts and revoke services you no longer use.","Connections"],
+      ["Why this matters","Public streams, chat history, linked accounts and activity patterns can connect a gaming identity to a broader public profile.","EXPLAIN"]
+    ],
+    "GitHub":[
+      ["Open GitHub","Open your profile, then Settings.","Settings"],
+      ["Public profile","Review the name, bio, company, location and website fields shown publicly.","Public profile"],
+      ["Public email","Make sure your public profile email is hidden unless you intentionally want it visible.","Public email"],
+      ["Email privacy","In Emails, keep your email private and use GitHub's no-reply address for commits when appropriate.","Email privacy"],
+      ["Public repositories","Review repositories, issue comments, pull requests and commit history that are visible publicly.","Public repositories"],
+      ["Contribution activity","Review whether public contribution activity reveals work patterns, projects or organizations.","Contributions"],
+      ["Connected applications","Remove OAuth apps or integrations you no longer use.","Applications"],
+      ["Why this matters","GitHub can connect a username to an email address, employer, technical interests, project history and years of timestamped activity.","EXPLAIN"]
+    ],
+    "Pinterest":[
+      ["Open Pinterest","Open your profile, then Settings.","Settings"],
+      ["Profile visibility","Review whether your profile can appear in search engines.","Search privacy"],
+      ["Boards","Review each board and make sensitive boards secret where appropriate.","Boards"],
+      ["Personalization","Review personalization and activity-based recommendations.","Personalization"],
+      ["Connected accounts","Review linked social or sign-in accounts and remove connections you no longer need.","Connected accounts"],
+      ["Contacts and discovery","Review contact syncing or discovery features if enabled.","Discoverability"],
+      ["Why this matters","Public boards can reveal interests, purchases, travel plans, home projects and other patterns that become useful identity clues.","EXPLAIN"]
+    ],
     "Strava":[
       ["Open Strava","Open Settings.","Settings"],
       ["Privacy Controls","Open Privacy Controls.","Privacy Controls"],
@@ -262,6 +292,37 @@
       ["Why it matters","Account privacy plus device controls reduces unwanted contact and public oversharing.","EXPLAIN"]
     ]
   };
+
+  const iosPrivacy = [
+    ["Open Settings","Open Settings on the iPhone.","Settings"],
+    ["Privacy & Security","Scroll to Privacy & Security.","Privacy & Security"],
+    ["Location Services","Open Location Services to review every app with location access.","Location Services"],
+    ["Review app access","For each app, choose Never, Ask Next Time, While Using, or Always based on what the app actually needs.","Location Services"],
+    ["Precise Location","Turn off Precise Location for apps that only need a general area.","Precise Location"],
+    ["Tracking","Return to Privacy & Security and open Tracking. Limit cross-app tracking where appropriate.","Tracking"],
+    ["Contacts","Review which apps can access your contacts.","Contacts"],
+    ["Photos","Review photo-library access. Use limited access when an app does not need the full library.","Photos"],
+    ["Camera","Review which apps can use the camera.","Camera"],
+    ["Microphone","Review which apps can use the microphone.","Microphone"],
+    ["Local Network","Review which apps can discover devices on your local network.","Local Network"],
+    ["Safety Check","For personal-safety situations, review Apple's Safety Check tools for sharing and account access.","Safety Check"],
+    ["Why this matters","Device permissions can reveal location, contacts, photos and nearby devices even when your social profile itself is private.","EXPLAIN"]
+  ];
+
+  const androidPrivacy = [
+    ["Open Settings","Open Settings on the Android device.","Settings"],
+    ["Security & privacy","Open Security & privacy. Menu wording can vary by manufacturer.","Security & privacy"],
+    ["Privacy controls","Open Privacy or Permission manager.","Privacy controls"],
+    ["Location","Review which apps can access location and whether they can use it all the time or only while in use.","Location"],
+    ["Precise location","Where supported, turn off precise location for apps that only need an approximate area.","Precise location"],
+    ["Camera","Review camera permission by app.","Camera"],
+    ["Microphone","Review microphone permission by app.","Microphone"],
+    ["Photos and videos","Review which apps can access photos and videos. Use selected-photo access where available.","Photos and videos"],
+    ["Contacts","Review contacts permission and remove access from apps that do not need your address book.","Contacts"],
+    ["Unused apps","Review permission auto-reset or pause-app-activity features for apps you no longer use.","Unused apps"],
+    ["Privacy dashboard","Use Privacy dashboard to see recent access to sensitive permissions.","Privacy dashboard"],
+    ["Why this matters","Android permission history can show which apps are accessing location, camera and microphone, helping reduce unnecessary exposure.","EXPLAIN"]
+  ];
 
   const iosParent = [
     ["Open Settings","On the parent's iPhone, open Settings.","Settings"],
@@ -630,8 +691,8 @@ function setConsentState() {
   let guidePlatform = null;
 
   function guideFor(p, parentMode) {
-    if (p.device === "ios") return iosParent;
-    if (p.device === "android") return androidParent;
+    if (p.device === "ios") return parentMode ? iosParent : iosPrivacy;
+    if (p.device === "android") return parentMode ? androidParent : androidPrivacy;
     if (parentMode) return parentGuides[p.name] || fallbackGuide(p.name);
     return genericGuide[p.name] || fallbackGuide(p.name);
   }
@@ -689,7 +750,7 @@ function setConsentState() {
     portal.innerHTML =
       '<div class="devicePortalBackdrop"></div>' +
       '<div class="devicePortalHud">' +
-        '<div class="devicePortalKicker">PRIVACY CONTROLS</div>' +
+        '<div class="devicePortalKicker">' + (parentMode ? "FAMILY SAFETY CONTROLS" : "PRIVACY CONTROLS") + '</div>' +
         '<h2>Enter the ' + deviceName + '</h2>' +
         '<p>Click ' + portalTargetLabel + ' or scroll down to move inside the phone.</p>' +
       '</div>' +
@@ -1076,6 +1137,8 @@ function setConsentState() {
   }
 
   function officialHelp(name, device) {
+    if (device === "ios" && name === "iPhone Privacy") return "https://support.apple.com/guide/iphone/control-access-to-information-in-apps-iph251e92810/ios";
+    if (device === "android" && name === "Android Privacy") return "https://support.google.com/android/answer/9431959";
     if (device === "ios") return "https://support.apple.com/families";
     if (device === "android") return "https://families.google/familylink/";
     const map = {
@@ -1090,7 +1153,10 @@ function setConsentState() {
       "X / Twitter":"https://help.x.com/",
       "WhatsApp":"https://faq.whatsapp.com/",
       "Telegram":"https://telegram.org/faq",
-      "Strava":"https://support.strava.com/"
+      "Twitch":"https://help.twitch.tv/",
+      "Strava":"https://support.strava.com/",
+      "GitHub":"https://docs.github.com/en/account-and-profile/setting-up-and-managing-your-personal-account-on-github/managing-user-account-settings",
+      "Pinterest":"https://help.pinterest.com/"
     };
     return map[name] || "https://www.google.com/search?q=" + encodeURIComponent(name + " privacy settings");
   }
