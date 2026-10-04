@@ -1844,3 +1844,58 @@ body.reportDeckActive{overflow:hidden}
 @media(max-width:700px){
   .presenterToolsBody{flex-direction:column;align-items:stretch}
 }
+
+
+/* Live-search readiness belongs at the top of the experience */
+.topLiveStatus{
+  position:absolute;
+  top:2px;
+  right:0;
+  z-index:8;
+  display:inline-flex;
+  align-items:center;
+  width:auto;
+  margin:0;
+  padding:9px 12px;
+  border-radius:999px;
+  background:rgba(7,19,29,.78);
+  border:1px solid rgba(255,255,255,.09);
+  color:#9fb2bf;
+  font-size:.72rem;
+  line-height:1;
+  box-shadow:0 12px 34px rgba(0,0,0,.22);
+  backdrop-filter:blur(12px)
+}
+.topLiveStatus strong{
+  margin:0;
+  color:#c7d8e2;
+  white-space:nowrap
+}
+.topLiveStatus .statusDot{
+  width:8px;
+  height:8px;
+  margin-right:7px
+}
+.topLiveStatus.liveConfigured{
+  background:rgba(85,227,156,.07);
+  border-color:rgba(85,227,156,.25);
+  color:#9fecc1
+}
+.topLiveStatus.liveConfigured strong{color:#9fecc1}
+.topLiveStatus.liveConfigured .statusDot{
+  background:#55e39c;
+  box-shadow:0 0 12px rgba(85,227,156,.72)
+}
+.topLiveStatus.liveUnconfigured{
+  background:rgba(255,173,94,.06);
+  border-color:rgba(255,173,94,.24)
+}
+.topLiveStatus.liveUnconfigured strong{color:#ffc07e}
+@media(max-width:720px){
+  .topLiveStatus{
+    position:static;
+    margin:0 0 20px auto;
+    width:max-content;
+    max-width:100%
+  }
+}
