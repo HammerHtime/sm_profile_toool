@@ -781,4 +781,4 @@ export const config = {
 };
 
 
-export { matchResult, buildAgeContext };
+export { matchResult, buildAgeContext, maskedHandle };

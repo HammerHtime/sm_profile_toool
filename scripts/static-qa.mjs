@@ -114,6 +114,13 @@ const rightPersonResult = liveModule.matchResult({
 if(rightPersonResult.confidence!=="strong") fail("Clue-supported identity match was not retained");
 else pass("Clue-supported identity match is retained");
 
+const fakeNewsHandle=liveModule.maskedHandle("https://www.espn.com/nhl/story/_/id/12345/andrew-hammond","espn.com");
+if(fakeNewsHandle) fail("Non-account news URL became a fake social handle");
+else pass("Non-account news URLs do not become fake handles");
+const linkedInHandle=liveModule.maskedHandle("https://www.linkedin.com/in/andrew-hammond-41194","LinkedIn");
+if(!linkedInHandle?.startsWith("@")) fail("LinkedIn account path did not produce a masked handle");
+else pass("Recognized social account paths still produce masked handles");
+
 const functionNames=new Set(fs.readdirSync(path.join(root,"netlify/functions"))
   .filter(n=>n.endsWith(".mjs")).map(n=>n.replace(/\.mjs$/,"")));
 for(const jsPath of ["app.js","presenter.js","volunteer.js"]){

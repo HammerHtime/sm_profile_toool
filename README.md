@@ -144,3 +144,16 @@ The GitHub Actions workflow runs the same QA checks on `main`, `qa-rc2` and pull
 - Do not use facial identification.
 - Do not create identity-level clones of an attendee's voice.
 - Do not imply that application deletion also deletes third-party provider logs.
+
+
+## October 2026 presentation hardening
+
+The production presentation now includes explicit regression protection for the issues found during real-world testing:
+
+- result stages scroll safely instead of clipping lower panels behind navigation controls
+- compact findings use stable grid columns and vertically separated provenance labels
+- non-social news/article URLs are no longer rendered as fake matched-account handles
+- social privacy walkthroughs have concrete phone-row/header renderers rather than blank phone screens
+- phone walkthrough navigation uses a native-style screen push while the teaching copy cross-fades independently
+- when the presenter supplies identity clues, same-name results must overlap a supplied clue before they can survive as a name-based match
+- short clue aliases are token-matched so strings such as `https` cannot accidentally satisfy an acronym clue
