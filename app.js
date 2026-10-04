@@ -464,6 +464,18 @@
         ["News / article mentions",86]
       ],
       themes:["Travel","Sports","Restaurants","Technology","Vehicles","Community events","Professional topics","Photography"],
+      presentation:{
+        photos:[],
+        quotes:[
+          {platform:"Instagram",text:"Great weekend away with friends.",confidence:"synthetic"},
+          {platform:"Reddit",text:"Looking for recommendations for my next trip.",confidence:"synthetic"},
+          {platform:"LinkedIn",text:"Proud to be part of another community event.",confidence:"synthetic"}
+        ],
+        themes:[
+          {term:"Travel",count:5},{term:"Community",count:4},{term:"Sports",count:3},
+          {term:"Restaurants",count:3},{term:"Technology",count:2},{term:"Events",count:2}
+        ]
+      },
       signals:[
         ["◎","Identity linking","Synthetic repeated usernames, contact fragments and bios connect sample accounts together."],
         ["⌖","Routine & location","Synthetic location signals demonstrate how routines and travel patterns can appear."],
@@ -646,7 +658,9 @@ async function checkLiveSearchReady() {
       const textEl=document.createElement("p");
       textEl.textContent="“"+String(q.text||"")+"”";
       const cite=document.createElement("cite");
-      cite.textContent=(q.platform||q.domain||"Public source")+" • "+(q.confidence==="strong"?"strong match":"possible match");
+      cite.textContent=modeClass==="synthetic"
+        ? ((q.platform||"Example source")+" • SYNTHETIC EXAMPLE")
+        : ((q.platform||q.domain||"Public source")+" • "+(q.confidence==="strong"?"strong match":"possible match"));
       card.append(textEl,cite);
       quoteGrid.appendChild(card);
     });
