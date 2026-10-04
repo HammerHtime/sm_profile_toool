@@ -184,6 +184,7 @@ function matchResult(result, person) {
 
   const fullName = full && hay.includes(full);
   const cityMatch = city && hay.includes(city);
+  const cityRequired = !!city;
   const usernameUrl = username && normalize(result.url).includes(username);
   const usernameAny = username && hay.includes(username);
   const age = ageSupport(raw, person.ageContext);
@@ -200,9 +201,19 @@ function matchResult(result, person) {
   if (age.supported) reasons.push(age.reason);
   clueMatches.slice(0,4).forEach(clue => reasons.push("clue: " + clue));
 
+  // An exact user-supplied username in the public URL is a strong independent identifier.
+  if (usernameUrl) return { confidence:"strong", reasons };
+
+  // When a city is supplied, geography becomes a required anchor for name-based matching.
+  // This prevents same-name profiles from other cities/countries from surfacing as "possible".
+  if (cityRequired && !cityMatch) {
+    if (fullName || usernameAny) return { confidence:"discard", reasons, geographyRejected:true };
+    return { confidence:"discard", reasons:[] };
+  }
+
   if (
-    usernameUrl ||
     (fullName && cityMatch) ||
+    (usernameAny && cityMatch) ||
     (fullName && age.supported) ||
     (fullName && clueMatches.length >= 1) ||
     (usernameAny && clueMatches.length >= 1)
@@ -370,16 +381,20 @@ export default async (req) => {
 
   const ageContext = buildAgeContext(age);
   const quotedName = '"' + fullName.replaceAll('"',"") + '"';
+  const quotedCity = city ? '"' + city.replaceAll('"',"") + '"' : "";
+  const nameWithCity = [quotedName, quotedCity].filter(Boolean).join(" ");
 
   // Do not put exact age into the main search queries. Age is a soft local ranking signal only.
+  // If a city is supplied, carry it through every name-based search pass so geography is
+  // enforced both at the provider-query stage and again by the local match filter.
   const queries = [
-    { group:"Open web", q:[quotedName, city && '"' + city.replaceAll('"',"") + '"'].filter(Boolean).join(" ") },
-    { group:"Professional", q:quotedName + " site:linkedin.com/in" },
-    { group:"Social", q:quotedName + " (site:instagram.com OR site:facebook.com OR site:tiktok.com OR site:threads.net)" },
-    { group:"Discussion", q:quotedName + " (site:reddit.com OR site:x.com OR site:twitter.com)" },
-    { group:"Video", q:quotedName + " site:youtube.com" },
-    { group:"Activity", q:quotedName + " (site:strava.com OR site:github.com OR site:medium.com OR site:substack.com)" },
-    { group:"News & organizations", q:[quotedName, city, "(news OR bio OR event OR conference OR organization)"].filter(Boolean).join(" ") }
+    { group:"Open web", q:nameWithCity },
+    { group:"Professional", q:nameWithCity + " site:linkedin.com/in" },
+    { group:"Social", q:nameWithCity + " (site:instagram.com OR site:facebook.com OR site:tiktok.com OR site:threads.net)" },
+    { group:"Discussion", q:nameWithCity + " (site:reddit.com OR site:x.com OR site:twitter.com)" },
+    { group:"Video", q:nameWithCity + " site:youtube.com" },
+    { group:"Activity", q:nameWithCity + " (site:strava.com OR site:github.com OR site:medium.com OR site:substack.com)" },
+    { group:"News & organizations", q:[nameWithCity, "(news OR bio OR event OR conference OR organization)"].filter(Boolean).join(" ") }
   ];
   if (username) queries.push({ group:"Username", q:'"' + username.replaceAll('"',"") + '"' });
 
@@ -388,12 +403,13 @@ export default async (req) => {
     const clueExpression = group.map(clue => '"' + clue.replaceAll('"',"") + '"').join(" OR ");
     queries.push({
       group:"Clues: " + group.join(", "),
-      q:quotedName + " (" + clueExpression + ")"
+      q:nameWithCity + " (" + clueExpression + ")"
     });
   }
 
   const person = { fullName, city, username, ageContext, searchClues };
   const byUrl = new Map();
+  let geographyRejected = 0;
   const contactClues = { emails:[], phones:[], addresses:[] };
 
   const queryBatches = [];
@@ -442,7 +458,10 @@ export default async (req) => {
         continue;
       }
       const match = matchResult(raw, person);
-      if (match.confidence === "discard") continue;
+      if (match.confidence === "discard") {
+        if (match.geographyRejected) geographyRejected += 1;
+        continue;
+      }
 
       const title = redact(raw.title || "");
       const snippet = redact(raw.description || "");
@@ -604,6 +623,9 @@ export default async (req) => {
       attempted:queries.length,
       completed:completedPasses.length,
       failed:failedPasses.length,
+      geographicFilterActive:!!city,
+      geographicAnchor:city || null,
+      geographyRejected,
       imageSearchCompleted:imageSearch.completed,
       imageSearchError:imageSearch.error
     },
