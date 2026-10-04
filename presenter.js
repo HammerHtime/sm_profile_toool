@@ -6,6 +6,7 @@ let session=null,pollTimer=null,revealIndex=0,latestStatus=null,searchRunning=fa
 let activeVoiceAudio=null,activeVoiceAudioUrl='',activeVoiceButton=null;
 const preloadedVoiceSamples=new Map();
 const startView=$('startView'),sessionView=$('sessionView'),revealDeck=$('revealDeck');
+const photoRevealNames=['Consent','One photo','Metadata','Photo exposure','Location','Digital breadcrumbs','Impact & voice'];
 
 async function request(path,options={}){
   const r=await fetch(path,{...options,headers:{'content-type':'application/json',...(options.headers||{})},cache:'no-store'});
@@ -412,6 +413,53 @@ function hydratePhotoAmbient(data){
     span.style.setProperty('--delay',(index*.1+.45)+'s');
     wordRoot.appendChild(span);
   });
+
+  // Keep the search visually alive even when no public correlation is verified.
+  // These are clearly presented as categories being checked, not as discovered evidence.
+  if(!photos.length && photoRoot){
+    [
+      ['▧','IMAGE CONTEXT'],['◎','METADATA'],['⌖','LOCATION CLUES'],['@','PUBLIC WEB']
+    ].forEach((item,index)=>{
+      const card=document.createElement('figure');
+      card.className='photoAmbientCard photoAmbientPlaceholder';
+      const [x,y,r]=photoAmbientPositions[index%photoAmbientPositions.length];
+      card.style.setProperty('--x',x+'%');
+      card.style.setProperty('--y',y+'%');
+      card.style.setProperty('--r',r+'deg');
+      card.style.setProperty('--delay',(index*.18)+'s');
+      card.innerHTML='<div class="ambientPlaceholderGlyph">'+item[0]+'</div><figcaption>CHECKING • '+item[1]+'</figcaption>';
+      photoRoot.appendChild(card);
+    });
+  }
+
+  if(!quotes.length && quoteRoot){
+    [
+      ['SEARCHING','Signs, logos, landmarks and event branding can create context.'],
+      ['CHECKING','Public pages appear only when a supplied identity clue verifies them.'],
+      ['VERIFYING','No result is promoted simply because a name looks similar.']
+    ].forEach((item,index)=>{
+      const card=document.createElement('div');
+      card.className='photoAmbientQuote ambientHint';
+      const [x,y,r]=photoQuotePositions[index%photoQuotePositions.length];
+      card.style.setProperty('--x',x+'%');
+      card.style.setProperty('--y',y+'%');
+      card.style.setProperty('--r',r+'deg');
+      card.style.setProperty('--delay',(index*.2+.25)+'s');
+      card.innerHTML='<strong>'+item[0]+'</strong><span>'+item[1]+'</span>';
+      quoteRoot.appendChild(card);
+    });
+  }
+
+  if(!themes.length && wordRoot){
+    ['metadata','capture time','device','GPS','visual context','signs','landmarks','logos','public profiles','source verification']
+      .forEach((term,index)=>{
+        const span=document.createElement('span');
+        span.textContent=term;
+        span.style.setProperty('--scale',String(1+(index%3)*.08));
+        span.style.setProperty('--delay',(index*.08+.35)+'s');
+        wordRoot.appendChild(span);
+      });
+  }
 }
 
 function setEraseSequenceStep(index,state){
@@ -467,6 +515,7 @@ async function startAutoSearch(data){
   searchRunning=true;
   searchComplete=false;
   latestStatus=data;
+  document.body.classList.add('photoPresentationMode');
 
   renderSubmitted(data);
   hydratePhotoAmbient(data);
@@ -561,6 +610,15 @@ async function startAutoSearch(data){
   setPulse('Search complete — verified and supplied results only');
   searchComplete=true;
   searchRunning=false;
+
+  // Move directly into the useful findings. The presenter no longer needs an
+  // extra arrow press just to leave the completed search screen.
+  await sleep(1300);
+  if(searchComplete && session){
+    $('liveSearchStage').classList.add('hidden');
+    revealDeck.classList.remove('hidden');
+    showReveal(3);
+  }
 }
 
 
@@ -786,9 +844,17 @@ function renderSubmitted(data){
   revealIndex=0;revealDeck.classList.add('hidden');
 }
 function showReveal(i){
-  const slides=[...document.querySelectorAll('.revealSlide')];if(!slides.length)return;revealIndex=Math.max(0,Math.min(i,slides.length-1));
+  const slides=[...document.querySelectorAll('.revealSlide')];
+  if(!slides.length)return;
+  revealIndex=Math.max(0,Math.min(i,slides.length-1));
   slides.forEach((s,n)=>s.classList.toggle('hidden',n!==revealIndex));
-  if(latestStatus&&revealIndex===2)metadataMap(latestStatus);if(latestStatus&&revealIndex===5)correlationMap(latestStatus);
+  if(latestStatus&&revealIndex===2)metadataMap(latestStatus);
+  if(latestStatus&&revealIndex===5)correlationMap(latestStatus);
+
+  if($('photoRevealCounter'))$('photoRevealCounter').textContent=(revealIndex+1)+' / '+slides.length;
+  if($('photoRevealName'))$('photoRevealName').textContent=photoRevealNames[revealIndex]||'Findings';
+  if($('photoPrev'))$('photoPrev').disabled=revealIndex===0;
+  if($('photoNext'))$('photoNext').textContent=revealIndex===slides.length-1?'Done':'Next →';
 }
 async function poll(){
   if(!session)return;
@@ -831,6 +897,7 @@ async function erase(){
     latestStatus=null;
     searchRunning=false;
     searchComplete=false;
+    document.body.classList.remove('photoPresentationMode');
     revealDeck.classList.add('hidden');
     $('liveSearchStage').classList.add('hidden');
     $('qrImage').removeAttribute('src');
@@ -854,6 +921,12 @@ async function erase(){
 $('startSession').addEventListener('click',createSession);
 $('copyLink').addEventListener('click',async()=>{const u=$('copyLink').dataset.url;if(!u)return;await navigator.clipboard.writeText(u);$('copyLink').textContent='Copied ✓';setTimeout(()=>$('copyLink').textContent='Copy volunteer link',1200);});
 $('erasePhotoDemo').addEventListener('click',erase);
+$('photoPrev')?.addEventListener('click',()=>showReveal(revealIndex-1));
+$('photoNext')?.addEventListener('click',()=>{
+  const slides=[...document.querySelectorAll('.revealSlide')];
+  if(revealIndex>=slides.length-1)return;
+  showReveal(revealIndex+1);
+});
 $('playOriginalConsent')?.addEventListener('click',()=>playOriginalVoiceSample(0));
 for(let index=0;index<3;index++){
   $('playGeneratedVoice'+index)?.addEventListener('click',()=>playGeneratedVoiceSample(index));
@@ -864,13 +937,7 @@ document.addEventListener('keydown',(e)=>{
 
   if(!revealDeck.classList.contains('hidden')){
     if(nextKeys.includes(e.key)){e.preventDefault();showReveal(revealIndex+1)}
-    if(backKeys.includes(e.key)){
-      e.preventDefault();
-      if(revealIndex<=3){
-        revealDeck.classList.add('hidden');
-        $('liveSearchStage').classList.remove('hidden');
-      }else showReveal(revealIndex-1);
-    }
+    if(backKeys.includes(e.key)){e.preventDefault();showReveal(revealIndex-1)}
     return;
   }
 
@@ -886,6 +953,7 @@ checkPresenterHealth();
 restorePresenterSession();
 
 window.addEventListener('pagehide',()=>{
+  document.body.classList.remove('photoPresentationMode');
   resetVoicePlaybackUi();
   clearPreloadedVoiceSamples();
   clearPhotoAmbient();
