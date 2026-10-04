@@ -375,3 +375,14 @@ export default async (req) => {
     provider:"Brave Search API"
   });
 };
+
+
+export const config = {
+  path:"/api/live-search",
+  rateLimit:{
+    action:"rate_limit",
+    aggregateBy:["ip","domain"],
+    windowSize:60,
+    windowLimit:6
+  }
+};
