@@ -5,6 +5,7 @@ const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (ch) => ({
 let session=null,pollTimer=null,revealIndex=0,latestStatus=null,searchRunning=false,searchComplete=false;
 let activeVoiceAudio=null,activeVoiceAudioUrl='',activeVoiceButton=null;
 const preloadedVoiceSamples=new Map();
+const preloadedGeneratedVoiceSamples=new Map();
 const startView=$('startView'),sessionView=$('sessionView'),revealDeck=$('revealDeck');
 const photoRevealNames=['Consent','One photo','Metadata','Photo exposure','Location','Digital breadcrumbs','Impact & voice'];
 
@@ -699,6 +700,10 @@ function clearPreloadedVoiceSamples(){
     if(item?.url) URL.revokeObjectURL(item.url);
   }
   preloadedVoiceSamples.clear();
+  for(const item of preloadedGeneratedVoiceSamples.values()){
+    if(item?.url) URL.revokeObjectURL(item.url);
+  }
+  preloadedGeneratedVoiceSamples.clear();
 }
 
 function renderVoiceRisk(data){
@@ -712,7 +717,7 @@ function renderVoiceRisk(data){
   if(original){
     const seconds=Math.max(1,Math.round((Number(original.durationMs)||0)/1000));
     status.textContent='Attendee supplied a '+seconds+'-second verbal-consent sample.';
-    copy.textContent='The original clip can be compared against three new harmless sentences generated with a generic AI voice adjusted only to the attendee’s approximate speaking pace.';
+    copy.textContent='The original clip can be compared against three new harmless sentences generated with a natural AI voice. It uses only the attendee’s approximate speaking pace and does not copy their vocal identity.';
   }else{
     status.textContent='No volunteer voice sample was recorded.';
     copy.textContent='Generated voice examples remain disabled because no verbal-consent sample was supplied.';
@@ -726,6 +731,7 @@ function renderVoiceRisk(data){
   }
 
   const generatedReady=!!original;
+  if(generatedReady)preloadGeneratedVoiceSamples(data);
   for(let index=0;index<3;index++){
     const button=$('playGeneratedVoice'+index);
     if(!button)continue;
@@ -789,50 +795,69 @@ async function playOriginalVoiceSample(index){
   }
 }
 
-const GENERATED_VOICE_LINES=[
-  "Hello there. I enjoy travelling and discovering new places.",
-  "Today is a great day to learn something new.",
-  "I like good food, live sports, and spending time with friends."
-];
-
-function playGeneratedVoiceSample(index){
-  const line=GENERATED_VOICE_LINES[index];
-  if(!line||!latestStatus)return;
-  if(!('speechSynthesis' in window)||typeof SpeechSynthesisUtterance==='undefined'){
-    alert('This browser does not provide speech synthesis for the AI voice demonstration.');
-    return;
+async function fetchGeneratedVoiceSample(index){
+  if(!session)throw new Error('No active photo-demo session.');
+  const response=await fetch('/.netlify/functions/photo-generated-voice',{
+    method:'POST',
+    headers:{'content-type':'application/json'},
+    body:JSON.stringify({
+      id:session.id,
+      presenterToken:session.presenterToken,
+      index
+    }),
+    cache:'no-store'
+  });
+  if(!response.ok){
+    const data=await response.json().catch(()=>({}));
+    throw new Error(data.error||'Could not generate the natural AI voice.');
   }
+  const blob=await response.blob();
+  if(!blob.size)throw new Error('The natural AI voice returned no audio.');
+  const url=URL.createObjectURL(blob);
+  preloadedGeneratedVoiceSamples.set(index,{blob,url});
+  return url;
+}
 
-  speechSynthesis.cancel();
-  const utterance=new SpeechSynthesisUtterance(line);
-  const rate=Number(latestStatus.voiceDelivery?.speakingRateFactor)||1;
-  utterance.rate=Math.min(1.20,Math.max(0.80,rate));
-  utterance.pitch=1;
-  utterance.volume=1;
+async function preloadGeneratedVoiceSamples(data){
+  const original=(Array.isArray(data?.voiceSamples)?data.voiceSamples:[])
+    .find(sample=>Number(sample.index)===0&&sample.available);
+  if(!original||!session)return;
 
-  const voices=speechSynthesis.getVoices();
-  const generic=voices.find(v=>/^en(-|_)/i.test(v.lang||''))||voices[0];
-  if(generic)utterance.voice=generic;
+  await Promise.allSettled([0,1,2].map(async index=>{
+    if(preloadedGeneratedVoiceSamples.has(index))return;
+    await fetchGeneratedVoiceSample(index);
+  }));
+}
 
+async function playGeneratedVoiceSample(index){
+  if(!latestStatus||!session)return;
   const button=$('playGeneratedVoice'+index);
-  if(button){
+  if(!button||button.disabled)return;
+
+  resetVoicePlaybackUi();
+  try{
     button.classList.add('playing');
     button.querySelector('.voicePlayGlyph').textContent='■';
     const strong=button.querySelector('strong');
-    if(strong)strong.textContent='Playing Generated Sample '+(index+1);
-  }
+    if(strong)strong.textContent='Loading Natural Sample '+(index+1)+'…';
+    activeVoiceButton=button;
 
-  const reset=()=>{
-    if(button){
-      button.classList.remove('playing');
-      button.querySelector('.voicePlayGlyph').textContent='▶';
-      const strong=button.querySelector('strong');
-      if(strong)strong.textContent='Generated Sample '+(index+1);
-    }
-  };
-  utterance.onend=reset;
-  utterance.onerror=reset;
-  speechSynthesis.speak(utterance);
+    let blobUrl=preloadedGeneratedVoiceSamples.get(index)?.url||'';
+    if(!blobUrl)blobUrl=await fetchGeneratedVoiceSample(index);
+
+    activeVoiceAudioUrl='';
+    activeVoiceAudio=new Audio(blobUrl);
+    if(strong)strong.textContent='Playing Generated Sample '+(index+1);
+    activeVoiceAudio.onended=resetVoicePlaybackUi;
+    activeVoiceAudio.onerror=()=>{
+      resetVoicePlaybackUi();
+      alert('The natural AI voice sample could not be played.');
+    };
+    await activeVoiceAudio.play();
+  }catch(err){
+    resetVoicePlaybackUi();
+    alert(err.message||'Could not play the natural AI voice sample.');
+  }
 }
 
 function renderSubmitted(data){
