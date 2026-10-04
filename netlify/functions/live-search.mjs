@@ -207,15 +207,20 @@ function presentationThemes(items, person) {
   const excluded = new Set(
     [person.fullName,person.city,person.username]
       .filter(Boolean)
-      .flatMap(v=>normalize(v).split(/\s+/))
+      .flatMap(v=>normalize(v).replace(/[@._-]/g," ").split(/\s+/))
       .filter(Boolean)
   );
+  ["masked","email","phone","address","contact","result","results","community"].forEach(term=>{
+    if(term==="community")return;
+    excluded.add(term);
+  });
   const counts = new Map();
   for (const item of items) {
-    const text = normalize([item.title,item.snippet].filter(Boolean).join(" "));
-    for (const token of text.split(/\s+/)) {
+    const text = normalize([item.title,item.snippet].filter(Boolean).join(" ")).replace(/[@._-]/g," ");
+    for (const rawToken of text.split(/\s+/)) {
+      const token=rawToken.replace(/[^a-z0-9]/g,"");
       if (!token || token.length < 4 || token.length > 24) continue;
-      if (/^\d+$/.test(token) || PRESENTATION_STOP_WORDS.has(token) || excluded.has(token)) continue;
+      if (/^\d+$/.test(token) || /xxx|masked/.test(token) || PRESENTATION_STOP_WORDS.has(token) || excluded.has(token)) continue;
       counts.set(token,(counts.get(token)||0)+1);
     }
   }
