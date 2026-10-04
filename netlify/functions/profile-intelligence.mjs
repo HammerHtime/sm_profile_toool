@@ -79,6 +79,7 @@ function deterministicFallback(subject, rows, recurringThemes = []) {
       evidenceIds:[]
     })),
     connections:[],
+    locations:[],
     caveat:"This synthesis is limited to the supplied public/indexed excerpts. It does not establish identity or prove an inference."
   };
 }
@@ -95,7 +96,7 @@ function extractOutputText(data) {
 const storySchema = {
   type:"object",
   additionalProperties:false,
-  required:["headline","overview","storyPoints","timeline","themes","connections","caveat"],
+  required:["headline","overview","storyPoints","timeline","themes","connections","locations","caveat"],
   properties:{
     headline:{type:"string"},
     overview:{type:"string"},
@@ -155,6 +156,20 @@ const storySchema = {
         }
       }
     },
+    locations:{
+      type:"array",
+      items:{
+        type:"object",
+        additionalProperties:false,
+        required:["label","context","confidence","evidenceIds"],
+        properties:{
+          label:{type:"string"},
+          context:{type:"string"},
+          confidence:{type:"string",enum:["strongly supported","supported","possible"]},
+          evidenceIds:{type:"array",items:{type:"string"}}
+        }
+      }
+    },
     caveat:{type:"string"}
   }
 };
@@ -182,7 +197,9 @@ Hard rules:
 - Do not name or profile minors or non-consenting third parties. You may say high-level phrases such as "a child", "children", "spouse" or "family member" only when public material makes that relationship relevant to the privacy lesson. Do not provide their school, employer, address or schedule.
 - Timeline entries may use only dates or broad periods present in the supplied evidence. Never invent a date.
 - Keep the overview to 2 or 3 sentences.
-- Return at most 5 story points, 5 timeline items, 6 themes and 5 connections.
+- Return at most 5 story points, 5 timeline items, 6 themes, 5 connections and 4 broad locations.
+- For locations, return only city, municipality, region or country names that are explicitly supported by the supplied evidence. Do not return street addresses, schools, exact properties, precise coordinates or inferred home addresses.
+- Location context may explain the supported role of the place at a high level, such as work, travel, recreation, community activity or a possible seasonal/cottage connection. Do not state a property relationship unless the supplied evidence supports it.
 - Focus on the combined picture: family context, work/professional context, travel, recreation, community involvement, broad locations, recurring activities and life milestones when those are actually supported.
 - This is a privacy-awareness summary, not an identity-verification or surveillance report.`;
 
@@ -241,6 +258,12 @@ Hard rules:
       timeline:(parsed.timeline||[]).slice(0,5),
       themes:(parsed.themes||[]).slice(0,6),
       connections:(parsed.connections||[]).slice(0,5),
+      locations:(parsed.locations||[]).slice(0,4).map(item=>({
+        label:clean(item?.label,120),
+        context:clean(item?.context,180),
+        confidence:["strongly supported","supported","possible"].includes(item?.confidence)?item.confidence:"possible",
+        evidenceIds:Array.isArray(item?.evidenceIds)?item.evidenceIds.slice(0,6):[]
+      })).filter(item=>item.label),
       caveat:clean(parsed.caveat,320)
     };
   } catch (error) {
