@@ -376,3 +376,123 @@
   .searchConnectionLine{stroke-dashoffset:0!important;animation:none!important}
   .searchNode{transition:none!important;opacity:1!important;transform:translate(-50%,-50%) scale(1)!important}
 }
+
+
+/* Volunteer mobile photo chooser */
+.photoChoiceGrid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px
+}
+.photoChoiceCard{
+  min-height:138px;
+  padding:18px 14px;
+  border-radius:20px;
+  border:1px solid rgba(82,214,255,.22);
+  background:
+    radial-gradient(circle at 50% 20%,rgba(82,214,255,.10),transparent 46%),
+    linear-gradient(145deg,#0d2232,#07131d);
+  color:#eef8ff;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:7px;
+  cursor:pointer;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.015),0 14px 34px rgba(0,0,0,.18);
+  transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease
+}
+.photoChoiceCard:active{transform:scale(.975)}
+.photoChoiceCard:hover{
+  border-color:rgba(82,214,255,.48);
+  box-shadow:0 0 32px rgba(82,214,255,.09)
+}
+.photoChoiceIcon{
+  width:54px;
+  height:54px;
+  border-radius:18px;
+  display:grid;
+  place-items:center;
+  background:linear-gradient(145deg,rgba(82,214,255,.19),rgba(39,136,255,.11));
+  border:1px solid rgba(82,214,255,.24);
+  color:#b9efff;
+  font-size:1.7rem;
+  box-shadow:0 0 24px rgba(82,214,255,.10)
+}
+.photoChoiceCard strong{font-size:.95rem}
+.photoChoiceCard small{font-size:.69rem;color:#8fa8ba}
+.hiddenFileInput{
+  position:absolute!important;
+  width:1px!important;
+  height:1px!important;
+  overflow:hidden!important;
+  clip:rect(0,0,0,0)!important;
+  white-space:nowrap!important;
+  clip-path:inset(50%)!important
+}
+.photoPreviewImageWrap{position:relative}
+.photoPreviewBadge{
+  position:absolute;
+  left:12px;
+  bottom:12px;
+  padding:6px 9px;
+  border-radius:999px;
+  background:rgba(3,12,19,.82);
+  border:1px solid rgba(82,214,255,.22);
+  color:#bfeeff;
+  font-size:.58rem;
+  letter-spacing:.1em;
+  font-weight:950;
+  backdrop-filter:blur(8px)
+}
+.photoPreviewFooter{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:10px 12px
+}
+.photoPreviewFooter .fineprint{padding:0;margin:0}
+.changePhotoBtn{
+  border:1px solid rgba(255,255,255,.10);
+  border-radius:999px;
+  padding:8px 10px;
+  background:#102536;
+  color:#e8f6ff;
+  font-size:.7rem;
+  font-weight:850;
+  white-space:nowrap
+}
+.mobileSubmit{
+  min-height:54px;
+  font-size:1rem;
+  box-shadow:0 14px 35px rgba(39,136,255,.23)
+}
+.volunteerSubmitting .mobileSubmit{
+  position:relative;
+  overflow:hidden
+}
+.volunteerSubmitting .mobileSubmit::after{
+  content:"";
+  position:absolute;
+  left:-40%;
+  top:0;
+  width:35%;
+  height:100%;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.26),transparent);
+  animation:submitSweep 1.1s linear infinite
+}
+@keyframes submitSweep{to{left:115%}}
+.volunteerDone{
+  background:
+    radial-gradient(circle at 50% 14%,rgba(85,227,156,.12),transparent 34%),
+    linear-gradient(145deg,#0c1e2b,#07131d)
+}
+.volunteerDone h2{font-size:2rem;margin:6px 0 10px}
+@media(max-width:420px){
+  .photoChoiceGrid{grid-template-columns:1fr}
+  .photoChoiceCard{min-height:105px;display:grid;grid-template-columns:54px 1fr;text-align:left;justify-items:start}
+  .photoChoiceCard small,.photoChoiceCard strong{grid-column:2}
+  .photoChoiceIcon{grid-row:1/3}
+  .photoPreviewFooter{align-items:flex-start;flex-direction:column}
+}
