@@ -176,11 +176,22 @@ export default async (req) => {
     record.status = "submitted";
     record.consent = true;
     record.submittedAt = new Date().toISOString();
+    const voiceSampleInput = body.voiceSample && typeof body.voiceSample === "object" ? body.voiceSample : {};
+    const voiceDurationMs = voiceSampleInput.recorded
+      ? Math.min(30000, Math.max(0, Number(voiceSampleInput.durationMs) || 0))
+      : 0;
+
     record.submission = {
       firstName,
       city,
       usernameMasked: maskHandle(username),
-      image: { mime, bytes: bytes.length, width, height }
+      image: { mime, bytes: bytes.length, width, height },
+      voiceSample: {
+        recorded: !!voiceSampleInput.recorded && voiceDurationMs > 0,
+        durationMs: Math.round(voiceDurationMs),
+        localOnly: true,
+        rawAudioPersisted: false
+      }
     };
     record.findings = {
       gpsEmbedded: !!zone,
