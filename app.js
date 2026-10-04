@@ -317,34 +317,31 @@
   };
 
   const iosPrivacy = [
-    ["Open Settings","Open Settings on the iPhone.","Settings"],
-    ["Privacy & Security","Scroll to Privacy & Security.","Privacy & Security"],
-    ["Location Services","Open Location Services to review every app with location access.","Location Services"],
-    ["Review app access","For each app, choose Never, Ask Next Time, While Using, or Always based on what the app actually needs.","Location Services"],
-    ["Precise Location","Turn off Precise Location for apps that only need a general area.","Precise Location"],
-    ["Tracking","Return to Privacy & Security and open Tracking. Limit cross-app tracking where appropriate.","Tracking"],
-    ["Contacts","Review which apps can access your contacts.","Contacts"],
-    ["Photos","Review photo-library access. Use limited access when an app does not need the full library.","Photos"],
-    ["Camera","Review which apps can use the camera.","Camera"],
-    ["Microphone","Review which apps can use the microphone.","Microphone"],
-    ["Local Network","Review which apps can discover devices on your local network.","Local Network"],
-    ["Safety Check","For personal-safety situations, review Apple's Safety Check tools for sharing and account access.","Safety Check"],
-    ["Why this matters","Device permissions can reveal location, contacts, photos and nearby devices even when your social profile itself is private.","EXPLAIN"]
+    ["Open Settings","Open the Settings app on the iPhone.","Settings"],
+    ["Open Privacy & Security","Scroll down and tap Privacy & Security.","Privacy & Security"],
+    ["Location Services","Tap Location Services to see every app that has requested location access.","Location Services"],
+    ["Precise Location","Inside an app's Location Services screen, review Precise Location.","Precise Location"],
+    ["Tracking","Go back to Privacy & Security and tap Tracking.","Tracking"],
+    ["Contacts","Go back to Privacy & Security and tap Contacts.","Contacts"],
+    ["Photos","Go back to Privacy & Security and tap Photos.","Photos"],
+    ["Camera","Go back to Privacy & Security and tap Camera.","Camera"],
+    ["Microphone","Go back to Privacy & Security and tap Microphone.","Microphone"],
+    ["Local Network","Go back to Privacy & Security and tap Local Network.","Local Network"],
+    ["Safety Check","Go back to Privacy & Security and tap Safety Check.","Safety Check"]
   ];
 
   const androidPrivacy = [
     ["Open Settings","Open Settings on the Android device.","Settings"],
-    ["Security & privacy","Open Security & privacy. Menu wording can vary by manufacturer.","Security & privacy"],
-    ["Privacy controls","Open Privacy or Permission manager.","Privacy controls"],
-    ["Location","Review which apps can access location and whether they can use it all the time or only while in use.","Location"],
-    ["Precise location","Where supported, turn off precise location for apps that only need an approximate area.","Precise location"],
-    ["Camera","Review camera permission by app.","Camera"],
-    ["Microphone","Review microphone permission by app.","Microphone"],
-    ["Photos and videos","Review which apps can access photos and videos. Use selected-photo access where available.","Photos and videos"],
-    ["Contacts","Review contacts permission and remove access from apps that do not need your address book.","Contacts"],
-    ["Unused apps","Review permission auto-reset or pause-app-activity features for apps you no longer use.","Unused apps"],
-    ["Privacy dashboard","Use Privacy dashboard to see recent access to sensitive permissions.","Privacy dashboard"],
-    ["Why this matters","Android permission history can show which apps are accessing location, camera and microphone, helping reduce unnecessary exposure.","EXPLAIN"]
+    ["Open Security & privacy","Tap Security & privacy. Wording can vary slightly by manufacturer.","Security & privacy"],
+    ["Open Permission manager","Open Privacy, then Permission manager.","Privacy controls"],
+    ["Location","Tap Location to review every app with location permission.","Location"],
+    ["Precise location","Tap an app under Location and review Use precise location.","Precise location"],
+    ["Camera","Go back to Permission manager and tap Camera.","Camera"],
+    ["Microphone","Go back to Permission manager and tap Microphone.","Microphone"],
+    ["Photos and videos","Go back to Permission manager and tap Photos and videos.","Photos and videos"],
+    ["Contacts","Go back to Permission manager and tap Contacts.","Contacts"],
+    ["Unused apps","Open an app's permissions and review Pause app activity if unused.","Unused apps"],
+    ["Privacy dashboard","Go back to Privacy and tap Privacy dashboard to review recent sensitive access.","Privacy dashboard"]
   ];
 
   const iosParent = [
@@ -1209,8 +1206,8 @@ function setConsentState() {
   let guidePlatform = null;
 
   function guideFor(p, parentMode) {
-    if (p.device === "ios") return parentMode ? iosParent : iosPrivacy;
-    if (p.device === "android") return parentMode ? androidParent : androidPrivacy;
+    if (p.device === "ios") return parentMode ? iosParent : expandDevicePrivacyGuide(p,iosPrivacy);
+    if (p.device === "android") return parentMode ? androidParent : expandDevicePrivacyGuide(p,androidPrivacy);
     if (parentMode) return parentGuides[p.name] || fallbackGuide(p.name);
 
     // Social-app walkthroughs are expanded into true click-by-click navigation.
@@ -1603,6 +1600,78 @@ function setConsentState() {
     return name || "Privacy";
   }
 
+  const DEVICE_SETTING_DETAILS = {
+    ios:{
+      "Location Services":{kind:"choices",section:"Location Services",options:["Never","Ask Next Time Or When I Share","While Using the App","Always"],recommended:"While Using or Never for most social apps",defaultText:"Apps have no location access until you grant permission.",why:"Location access can reveal where you are or support location-based features. Review each app individually instead of leaving broad access in place."},
+      "Precise Location":{kind:"toggle",section:"App Location Access",label:"Precise Location",value:"Off",recommended:"Off unless the app genuinely needs your exact position",defaultText:"Precise Location is chosen per app after location permission is granted.",why:"Turning Precise Location off gives an app an approximate area instead of your specific location."},
+      "Tracking":{kind:"toggle",section:"Tracking",label:"Allow Apps to Request to Track",value:"Off",recommended:"Off",defaultText:"Apps must request permission before tracking across other companies' apps and websites.",why:"Limiting tracking reduces cross-app advertising and profiling based on activity outside the app."},
+      "Contacts":{kind:"toggles",section:"Contacts",items:[["Messaging / social apps","Off unless needed"],["Utilities","Off unless needed"],["Trusted communication apps","Review individually"]],recommended:"Allow only apps that genuinely need your address book",defaultText:"Apps cannot access Contacts until permission is granted.",why:"Contact access can expose names, phone numbers and email addresses and can help apps connect you to other users."},
+      "Photos":{kind:"choices",section:"Photos",options:["None","Add Photos Only","Limited Access","Full Access"],recommended:"Limited Access where possible",defaultText:"Apps must request photo-library permission before access is granted.",why:"Full photo-library access can expose far more than the one image you intended to share, including screenshots and other personal media."},
+      "Camera":{kind:"toggles",section:"Camera",items:[["Social apps","Review individually"],["Unused apps","Off"],["Apps that never take photos/video","Off"]],recommended:"Only apps that genuinely need the camera",defaultText:"Apps cannot use Camera until permission is granted.",why:"Camera permission allows an app to capture photos or video when you use camera features."},
+      "Microphone":{kind:"toggles",section:"Microphone",items:[["Calling / recording apps","Review individually"],["Unused apps","Off"],["Apps that never record audio","Off"]],recommended:"Only apps that genuinely need the microphone",defaultText:"Apps cannot use Microphone until permission is granted.",why:"Microphone permission allows audio capture when the app uses recording or communication features."},
+      "Local Network":{kind:"toggles",section:"Local Network",items:[["Casting / smart-home apps","Review individually"],["Social apps without a local-device feature","Off"],["Unused apps","Off"]],recommended:"Off unless the app needs to find devices on your Wi-Fi network",defaultText:"Apps must request Local Network permission.",why:"Local Network access lets an app discover or communicate with devices on the same network."},
+      "Safety Check":{kind:"status",section:"Safety Check",status:"Emergency Reset or Manage Sharing & Access",recommended:"Use when you need to quickly review people, apps, devices and sharing",defaultText:"Safety Check is a review tool, not a permission that starts on or off.",why:"Safety Check can quickly review or stop sharing, reset app privacy permissions and review devices connected to your Apple Account."}
+    },
+    android:{
+      "Location":{kind:"choices",section:"Location permission",options:["Allow all the time","Allow only while using the app","Ask every time","Don't allow"],recommended:"Allow only while using or Don't allow for most social apps",defaultText:"Apps have no location permission until you grant it.",why:"Location permission can expose your device's location. Background access is more permissive than while-in-use access."},
+      "Precise location":{kind:"toggle",section:"Location permission",label:"Use precise location",value:"Off",recommended:"Off unless exact location is required",defaultText:"Precise versus approximate location is selected per app when location access is available.",why:"Turning precise location off lets the app use an approximate area instead of your exact position."},
+      "Camera":{kind:"choices",section:"Camera permission",options:["Allow only while using the app","Ask every time","Don't allow"],recommended:"Ask every time or Don't allow if camera use is rare",defaultText:"Apps must request Camera permission.",why:"Camera permission lets the app capture photos or video when camera features are used."},
+      "Microphone":{kind:"choices",section:"Microphone permission",options:["Allow only while using the app","Ask every time","Don't allow"],recommended:"Ask every time or Don't allow if microphone use is rare",defaultText:"Apps must request Microphone permission.",why:"Microphone permission lets the app record audio when microphone features are used."},
+      "Photos and videos":{kind:"choices",section:"Photos and videos",options:["Select photos and videos","Allow all","Don't allow"],recommended:"Select photos and videos where supported",defaultText:"Apps must request media permission before access is granted.",why:"Selected-photo access limits an app to the media you choose instead of your entire library."},
+      "Contacts":{kind:"choices",section:"Contacts permission",options:["Allow","Don't allow"],recommended:"Don't allow unless contact access is necessary",defaultText:"Apps must request Contacts permission.",why:"Contact access can expose names, phone numbers and email addresses and can help apps match you with other users."},
+      "Unused apps":{kind:"toggle",section:"Unused app settings",label:"Pause app activity if unused",value:"On",recommended:"On",defaultText:"Android can automatically reset permissions for apps you stop using.",why:"Pausing unused apps reduces stale permissions that remain active long after you stopped using an app."},
+      "Privacy dashboard":{kind:"status",section:"Privacy dashboard",status:"Review recent Location, Camera and Microphone access",recommended:"Check for access you do not recognize or no longer need",defaultText:"Privacy dashboard records recent permission use; it is a review screen rather than an on/off permission.",why:"The dashboard helps you spot which apps recently accessed sensitive permissions and then remove access you do not need."}
+    }
+  };
+
+  function deviceSettingDetailFor(device,target){
+    return DEVICE_SETTING_DETAILS[device]?.[target] || null;
+  }
+
+  function deviceDefaultSettingFor(device,target,detail){
+    return detail?.defaultText || "Permission state depends on what you previously granted to each app.";
+  }
+
+  function deviceMenuNameFor(device,target){
+    if(device==="ios"){
+      if(target==="Precise Location") return "Location Services → choose an app";
+      return "Privacy & Security";
+    }
+    if(device==="android"){
+      if(target==="Precise location") return "Permission manager → Location → choose an app";
+      if(target==="Unused apps") return "Apps → choose an app → Permissions";
+      if(target==="Privacy dashboard") return "Security & privacy → Privacy";
+      return "Permission manager";
+    }
+    return "Settings";
+  }
+
+  function expandDevicePrivacyGuide(p,source){
+    const base=source.filter(step=>step[2]!=="EXPLAIN").map(step=>step.slice());
+    const expanded=[];
+    let previousWasDetail=false;
+    for(const step of base){
+      const target=String(step[2]||"");
+      const detail=deviceSettingDetailFor(p.device,target);
+      if(detail){
+        const menu=deviceMenuNameFor(p.device,target);
+        expanded.push([
+          previousWasDetail ? "Go back, then tap " + step[0] : "Tap " + step[0],
+          previousWasDetail
+            ? "Tap Back until you return to " + menu + ". Then tap " + step[0] + "."
+            : "From " + menu + ", tap " + step[0] + ".",
+          "NAV:" + target
+        ]);
+        expanded.push(step);
+        previousWasDetail=true;
+      }else{
+        expanded.push(step);
+        previousWasDetail=false;
+      }
+    }
+    return expanded;
+  }
+
   const APP_SETTING_DETAILS = {
     "Instagram":{
       "Private account":{kind:"toggle",section:"Account privacy",label:"Private account",value:"On",recommended:"On",why:"Only approved followers can see future private-account posts. Existing followers remain until you remove them."},
@@ -1842,7 +1911,7 @@ function setConsentState() {
   }
 
   function phoneSceneHtml(title, target, explanation) {
-    const phoneIcon = guidePlatform?.device ? "⚙" : guidePlatform.icon;
+    const phoneIcon = guidePlatform?.icon || "⚙";
     const appName = guidePlatform?.name || "Privacy";
     const identity = '<div class="phoneAppIdentity" style="--app-brand:' + escapeHtml(guidePlatform?.brand || "#52d6ff") + '">' +
       '<span class="phoneAppLogo">' + phoneIcon + '</span><span><strong>' + escapeHtml(appName) + '</strong><small>' + (guidePlatform?.device ? 'DEVICE SETTINGS' : 'PRIVACY SETTINGS') + '</small></span>' +
@@ -1862,14 +1931,18 @@ function setConsentState() {
 
     const navigationOnly=isGuideNavigationTarget(target);
     const actualTarget=guideNavigationTarget(target);
-    const detail = guidePlatform?.device ? null : settingDetailFor(appName,actualTarget);
+    const detail = guidePlatform?.device
+      ? deviceSettingDetailFor(guidePlatform.device,actualTarget)
+      : settingDetailFor(appName,actualTarget);
     if (detail && !navigationOnly) {
       return '<div class="phoneScreen phoneDetailScreen">' +
         identity +
         '<div class="phoneDetailHeader"><span class="phoneBackChevron">‹</span><span><small>' + escapeHtml(detail.section||title) + '</small><strong>' + escapeHtml(title) + '</strong></span></div>' +
         detailRowsHtml(detail) +
         '<div class="phoneSettingCompare">' +
-          '<div class="phoneDefaultSetting"><strong>APP DEFAULT SETTING</strong><span>' + escapeHtml(appDefaultSettingFor(appName,target,detail)) + '</span></div>' +
+          '<div class="phoneDefaultSetting"><strong>' + (guidePlatform?.device ? 'DEVICE DEFAULT / NORMAL BEHAVIOUR' : 'APP DEFAULT SETTING') + '</strong><span>' +
+            escapeHtml(guidePlatform?.device ? deviceDefaultSettingFor(guidePlatform.device,actualTarget,detail) : appDefaultSettingFor(appName,actualTarget,detail)) +
+          '</span></div>' +
           '<div class="phoneRecommendation"><strong>RECOMMENDED PRIVACY SETTING</strong><span>' + escapeHtml(detail.recommended||"Review this setting") + '</span></div>' +
         '</div>' +
       '</div>';
@@ -1931,7 +2004,9 @@ function setConsentState() {
     const copy = $("coachSlide").querySelector(".coachCopy");
     const navigationOnly=isGuideNavigationTarget(target);
     const actualTarget=guideNavigationTarget(target);
-    const detail = !guidePlatform?.device ? settingDetailFor(guidePlatform?.name,actualTarget) : null;
+    const detail = guidePlatform?.device
+      ? deviceSettingDetailFor(guidePlatform.device,actualTarget)
+      : settingDetailFor(guidePlatform?.name,actualTarget);
     const bullets = isExplain
       ? ["What this control changes","What exposure or risk it reduces","What the child/user will notice","Any trade-off or limitation to understand"]
       : ["Follow this exact path on the device","The highlighted row is the next tap","Use the presentation clicker to advance one action at a time"];
@@ -1941,13 +2016,15 @@ function setConsentState() {
       : detail && !navigationOnly
         ? '<div class="settingWhyCard">' +
             '<div class="settingWhyMain"><strong>WHY THIS SETTING MATTERS</strong><p>' + escapeHtml(detail.why||body) + ' ' + escapeHtml(settingTeachingExpansion(detail)) + '</p></div>' +
-            '<div class="settingDefaultTile"><strong>APP DEFAULT SETTING</strong><p>' + escapeHtml(appDefaultSettingFor(guidePlatform?.name,target,detail)) + '</p></div>' +
+            '<div class="settingDefaultTile"><strong>' + (guidePlatform?.device ? 'DEVICE DEFAULT / NORMAL BEHAVIOUR' : 'APP DEFAULT SETTING') + '</strong><p>' +
+              escapeHtml(guidePlatform?.device ? deviceDefaultSettingFor(guidePlatform.device,actualTarget,detail) : appDefaultSettingFor(guidePlatform?.name,actualTarget,detail)) +
+            '</p></div>' +
             '<div class="settingRecommendedTile"><strong>RECOMMENDED PRIVACY SETTING</strong><p>' + escapeHtml(detail.recommended||"Review this setting") + '</p></div>' +
           '</div>'
         : '<div class="tapCallout"><strong>Next action:</strong>&nbsp; ' + escapeHtml(navigationOnly ? actualTarget : target) + "</div>";
 
     const html =
-      '<div class="coachAppBadge" style="--brand:' + escapeHtml(guidePlatform?.brand || "#52d6ff") + '"><span>' + (guidePlatform?.device ? "⚙" : guidePlatform.icon) + '</span><strong>' + escapeHtml(guidePlatform?.name || "Privacy") + '</strong></div>' +
+      '<div class="coachAppBadge" style="--brand:' + escapeHtml(guidePlatform?.brand || "#52d6ff") + '"><span>' + (guidePlatform?.icon || "⚙") + '</span><strong>' + escapeHtml(guidePlatform?.name || "Privacy") + '</strong></div>' +
       '<div class="eyebrow">' + (isExplain ? "WHY THIS SETTING MATTERS" : "STEP " + (guideIndex + 1)) + '</div>' +
       "<h2>" + escapeHtml(title) + "</h2><p>" + escapeHtml(body) + "</p>" + actionBlock;
 
