@@ -86,3 +86,63 @@ jobs:
           if (!data.searchHealth || data.searchHealth.completed < 1) throw new Error("No Brave search pass completed");
           console.log("Live Search API completed with Brave.");
           NODE
+
+      - name: Exercise live photo demo lifecycle
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          create="$(curl -fsS --max-time 30 -H 'content-type: application/json' -d '{}' "$SITE_URL/api/photo-create")"
+          id="$(CREATE_JSON="$create" node -e 'const d=JSON.parse(process.env.CREATE_JSON); process.stdout.write(d.id||"")')"
+          presenter="$(CREATE_JSON="$create" node -e 'const d=JSON.parse(process.env.CREATE_JSON); process.stdout.write(d.presenterToken||"")')"
+          join="$(CREATE_JSON="$create" node -e 'const d=JSON.parse(process.env.CREATE_JSON); const u=new URL(d.joinUrl); process.stdout.write(new URLSearchParams(u.hash.slice(1)).get("token")||"")')"
+
+          test -n "$id"
+          test -n "$presenter"
+          test -n "$join"
+
+          image_b64='iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII='
+          submit_payload="$(ID="$id" JOIN="$join" IMAGE="$image_b64" node - <<'NODE'
+          const payload={
+            id:process.env.ID,
+            joinToken:process.env.JOIN,
+            consent:true,
+            firstName:"QzzxPhoto",
+            lastName:"",
+            city:"",
+            username:"",
+            mime:"image/png",
+            imageData:process.env.IMAGE,
+            width:1,
+            height:1,
+            source:"qa",
+            voiceSamples:[],
+            voiceDelivery:{speakingRateFactor:1}
+          };
+          process.stdout.write(JSON.stringify(payload));
+          NODE
+          )"
+
+          submit="$(curl -fsS --max-time 45 -H 'content-type: application/json' -d "$submit_payload" "$SITE_URL/.netlify/functions/photo-submit")"
+          SUBMIT_JSON="$submit" node - <<'NODE'
+          const data=JSON.parse(process.env.SUBMIT_JSON||"{}");
+          if(!data.ok || data.status!=="submitted") throw new Error("Photo submit did not complete");
+          NODE
+
+          status_payload="$(ID="$id" PRESENTER="$presenter" node -e 'process.stdout.write(JSON.stringify({id:process.env.ID,presenterToken:process.env.PRESENTER}))')"
+          status="$(curl -fsS --max-time 30 -H 'content-type: application/json' -d "$status_payload" "$SITE_URL/.netlify/functions/photo-status")"
+          STATUS_JSON="$status" node - <<'NODE'
+          const data=JSON.parse(process.env.STATUS_JSON||"{}");
+          if(data.status!=="submitted") throw new Error("Photo session is not submitted");
+          if(data.image?.mime!=="image/png") throw new Error("Photo metadata did not survive status round-trip");
+          if(data.correlation?.attempted!==false) throw new Error("Photo correlation should stay off without a strong identity anchor");
+          console.log("Photo create, submit, status and privacy guard passed.");
+          NODE
+
+          erase_payload="$(ID="$id" PRESENTER="$presenter" node -e 'process.stdout.write(JSON.stringify({id:process.env.ID,presenterToken:process.env.PRESENTER}))')"
+          erased="$(curl -fsS --max-time 30 -H 'content-type: application/json' -d "$erase_payload" "$SITE_URL/.netlify/functions/photo-erase")"
+          ERASE_JSON="$erased" node - <<'NODE'
+          const data=JSON.parse(process.env.ERASE_JSON||"{}");
+          if(!data.ok || !data.deleted) throw new Error("Photo session erase failed");
+          console.log("Photo session erase passed.");
+          NODE
