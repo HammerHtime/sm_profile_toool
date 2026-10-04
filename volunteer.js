@@ -3,6 +3,7 @@ const params = new URLSearchParams(location.hash ? location.hash.slice(1) : loca
 const sessionId = params.get('session') || '';
 const joinToken = params.get('token') || '';
 
+let sessionReady = false;
 let selectedFile = null;
 let selectedSource = '';
 let selectedDimensions = { width:0, height:0 };
@@ -39,14 +40,17 @@ async function markJoined() {
   }
   try {
     await api('/.netlify/functions/photo-join', { id:sessionId, joinToken });
+    sessionReady = true;
+    syncGate();
   } catch (err) {
+    sessionReady = false;
     error(err.message);
     $('submitVolunteer').disabled = true;
   }
 }
 
 function syncGate() {
-  const ok = $('vConsent').checked && $('vFirstName').value.trim() && selectedFile;
+  const ok = sessionReady && $('vConsent').checked && $('vFirstName').value.trim() && selectedFile;
   $('submitVolunteer').disabled = !ok;
 }
 
@@ -94,6 +98,11 @@ async function useSelectedPhoto(file, source) {
 
   if (previewUrl) URL.revokeObjectURL(previewUrl);
   previewUrl = URL.createObjectURL(file);
+  $('photoPreview').onerror = () => {
+    $('photoPreview').classList.add('previewUnavailable');
+    $('photoMeta').textContent = 'Photo selected. Preview is not available for this image format on this browser.';
+  };
+  $('photoPreview').onload = () => $('photoPreview').classList.remove('previewUnavailable');
   $('photoPreview').src = previewUrl;
   $('photoPreviewWrap').classList.remove('hidden');
   $('photoSourceBadge').textContent = source === 'camera' ? 'NEW PHOTO' : 'PHOTO LIBRARY';
@@ -189,7 +198,7 @@ $('volunteerForm').addEventListener('submit', async (e) => {
     document.body.classList.remove('volunteerSubmitting');
     error(err.message);
     button.disabled = false;
-    button.textContent = 'Consent & Start Live Search';
+    button.textContent = 'Consent & Start Analysis';
   }
 });
 
