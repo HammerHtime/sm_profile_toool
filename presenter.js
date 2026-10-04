@@ -1,5 +1,5 @@
 const $ = (id) => document.getElementById(id);
-let session=null,pollTimer=null,revealIndex=0,latestStatus=null;
+let session=null,pollTimer=null,revealIndex=0,latestStatus=null,searchRunning=false,searchComplete=false;
 const startView=$('startView'),sessionView=$('sessionView'),revealDeck=$('revealDeck');
 
 async function request(path,options={}){
@@ -38,7 +38,7 @@ function setProgress(status){
   }else if(status==='joined'){
     steps[0]?.classList.add('done');steps[1]?.classList.add('active');orb.classList.add('connected');$('liveTitle').textContent='Volunteer connected';$('liveMessage').textContent='Their phone is showing the consent and photo-upload screen.';
   }else if(status==='submitted'){
-    steps.forEach(x=>x.classList.add('done'));orb.classList.add('ready');$('liveTitle').textContent='Privacy findings ready';$('liveMessage').textContent='Use your presentation clicker to reveal the results one screen at a time.';
+    steps.forEach(x=>x.classList.add('done'));orb.classList.add('ready');$('liveTitle').textContent='Photo received — analysis starting';$('liveMessage').textContent='No click needed. The search visualization will run automatically.';
   }
 }
 function formatBytes(n){n=Number(n)||0;if(n<1024)return n+' B';if(n<1048576)return(n/1024).toFixed(1)+' KB';return(n/1048576).toFixed(1)+' MB';}
@@ -87,6 +87,243 @@ function impact(data){
   const vals=[[embedded,'embedded signals'],[f.gpsEmbedded?'50 km':'—','location privacy zone'],[data.image?.bytes?1:0,'image analyzed'],[data.participant?.usernameMasked?1:0,'supplied public handle']];
   $('impactStats').innerHTML=vals.map(v=>'<div class="impactStat"><strong>'+v[0]+'</strong><span>'+v[1]+'</span></div>').join('');
 }
+
+function sleep(ms){return new Promise(resolve=>setTimeout(resolve,ms));}
+
+function countValue(value){
+  if(typeof value==='number' && Number.isFinite(value)) return Math.max(0,Math.round(value));
+  if(value && typeof value==='object'){
+    for(const key of ['count','total','matches','items','results']){
+      const n=Number(value[key]);
+      if(Number.isFinite(n)) return Math.max(0,Math.round(n));
+    }
+  }
+  return 0;
+}
+
+function platformIcon(name){
+  const icons={
+    'LinkedIn':'in','Instagram':'◎','Facebook':'f','TikTok':'♪','Reddit':'●',
+    'YouTube':'▶','X / Twitter':'X','X':'X','Twitter':'X','Threads':'@',
+    'GitHub':'{}','Strava':'▲','News':'▤','Web':'⌘','Public web':'⌘',
+    'Location':'⌖','GPS':'⌖','Capture time':'◷','Camera / device':'▣','File':'#',
+    'Exact image':'▧','Public images':'▧','Mentions':'@'
+  };
+  return icons[name]||'●';
+}
+
+function normalizePublicNodes(data){
+  const c=data.correlation||data.publicCorrelation||{};
+  const found=new Map();
+
+  const add=(name,value,subtitle='verified public matches')=>{
+    const count=countValue(value);
+    if(count<=0)return;
+    const key=name.toLowerCase();
+    const prev=found.get(key);
+    if(!prev || count>prev.count) found.set(key,{name,count,subtitle,icon:platformIcon(name),kind:'public'});
+  };
+
+  if(Array.isArray(c.platforms)){
+    c.platforms.forEach(p=>add(p.name||p.platform,p,p.label||'verified public matches'));
+  }else if(c.platforms && typeof c.platforms==='object'){
+    Object.entries(c.platforms).forEach(([name,value])=>add(name,value));
+  }
+
+  const direct=[
+    ['LinkedIn',c.linkedin],['Instagram',c.instagram],['Facebook',c.facebook],['TikTok',c.tiktok],
+    ['Reddit',c.reddit],['YouTube',c.youtube],['X / Twitter',c.x||c.twitter],
+    ['Threads',c.threads],['GitHub',c.github],['Strava',c.strava],
+    ['Exact image',c.exactImageMatches||c.exactMatches],
+    ['Public web',c.webPages||c.publicPages||c.pages],
+    ['News',c.newsArticles||c.news],
+    ['Public images',c.publicImages||c.images],
+    ['Mentions',c.mentions]
+  ];
+  direct.forEach(([name,value])=>add(name,value));
+
+  if(Array.isArray(c.accounts)){
+    const grouped={};
+    c.accounts.forEach(a=>{
+      const name=a.platform||a.source||'Public web';
+      grouped[name]=(grouped[name]||0)+1;
+    });
+    Object.entries(grouped).forEach(([name,value])=>add(name,value,'verified public accounts'));
+  }
+
+  return [...found.values()].slice(0,10);
+}
+
+function verifiedMetadataNodes(data){
+  const f=data.findings||{},img=data.image||{};
+  const nodes=[];
+  if(f.gpsEmbedded) nodes.push({name:'GPS',count:1,subtitle:'embedded location signal',icon:'⌖',kind:'metadata'});
+  if(f.captureDateEmbedded) nodes.push({name:'Capture time',count:1,subtitle:f.capturedAtYear?('year '+f.capturedAtYear):'original date found',icon:'◷',kind:'metadata'});
+  if(f.cameraMetadataEmbedded) nodes.push({name:'Camera / device',count:1,subtitle:f.cameraSummary||'device metadata',icon:'▣',kind:'metadata'});
+  if(img.bytes) nodes.push({name:'File',count:1,subtitle:(img.width||'?')+' × '+(img.height||'?')+' · '+formatBytes(img.bytes),icon:'#',kind:'metadata'});
+  return nodes;
+}
+
+function nodePosition(index,total){
+  const angle=(-90 + (360/Math.max(total,1))*index) * Math.PI/180;
+  const rx=36, ry=35;
+  return {x:50+Math.cos(angle)*rx,y:50+Math.sin(angle)*ry};
+}
+
+function addSearchConnection(x,y,kind='metadata'){
+  const svg=$('searchConnections');
+  if(!svg)return;
+  const line=document.createElementNS('http://www.w3.org/2000/svg','line');
+  line.setAttribute('x1','500');line.setAttribute('y1','310');
+  line.setAttribute('x2',String(x*10));line.setAttribute('y2',String(y*6.2));
+  line.classList.add('searchConnectionLine',kind==='public'?'public':'metadata');
+  svg.appendChild(line);
+}
+
+function addSearchNode(node,index,total){
+  const stage=$('searchNetwork');
+  if(!stage)return;
+  const pos=nodePosition(index,total);
+  addSearchConnection(pos.x,pos.y,node.kind);
+
+  const el=document.createElement('div');
+  el.className='searchNode '+(node.kind==='public'?'publicNode':'metadataNode');
+  el.style.left=pos.x+'%';
+  el.style.top=pos.y+'%';
+  el.innerHTML=
+    '<div class="searchNodeIcon">'+node.icon+'</div>'+
+    '<strong class="searchNodeCount">'+node.count+'</strong>'+
+    '<span class="searchNodeName">'+node.name+'</span>'+
+    '<small>'+node.subtitle+'</small>'+
+    '<em>VERIFIED</em>';
+  stage.appendChild(el);
+  requestAnimationFrame(()=>el.classList.add('visible'));
+}
+
+function setSearchProgress(value,label){
+  const pct=Math.max(0,Math.min(100,Math.round(value)));
+  $('searchProgressValue').textContent=pct+'%';
+  $('searchProgressRing').style.setProperty('--progress',pct*3.6+'deg');
+  $('searchProgressLabel').textContent=label||'Searching';
+}
+
+function setChecklist(index,labelOverride=''){
+  const items=[...document.querySelectorAll('.searchCheck')];
+  items.forEach((item,i)=>{
+    item.classList.toggle('done',i<index);
+    item.classList.toggle('active',i===index);
+  });
+  if(labelOverride && items[index]) items[index].querySelector('span').textContent=labelOverride;
+}
+
+function setPulse(text){
+  $('searchPulseText').textContent=text;
+  $('searchPulseText').classList.remove('pulseFlash');
+  void $('searchPulseText').offsetWidth;
+  $('searchPulseText').classList.add('pulseFlash');
+}
+
+function updateSearchMetrics(metaNodes,publicNodes){
+  const locationSignals=metaNodes.some(n=>n.name==='GPS')?1:0;
+  const verifiedMatches=publicNodes.reduce((sum,n)=>sum+n.count,0);
+  $('metricSignals').textContent=metaNodes.length;
+  $('metricPlatforms').textContent=publicNodes.length;
+  $('metricLocations').textContent=locationSignals;
+  $('metricMatches').textContent=verifiedMatches;
+}
+
+async function startAutoSearch(data){
+  if(searchRunning)return;
+  searchRunning=true;
+  searchComplete=false;
+  latestStatus=data;
+
+  renderSubmitted(data);
+
+  const presenterGrid=document.querySelector('.presenterGrid');
+  if(presenterGrid)presenterGrid.classList.add('hidden');
+  $('liveSearchStage').classList.remove('hidden');
+  revealDeck.classList.add('hidden');
+  $('searchCompleteBanner').classList.add('hidden');
+  $('searchNetwork').querySelectorAll('.searchNode').forEach(n=>n.remove());
+  $('searchConnections').replaceChildren();
+
+  const img=data.image||{};
+  $('searchCoreMeta').textContent=(img.width&&img.height)?(img.width+' × '+img.height):'verified upload';
+  $('searchStageTitle').textContent='Searching privacy signals…';
+  $('searchStageSubtitle').textContent='Verified findings appear around the photo as they are confirmed.';
+  setSearchProgress(4,'Starting');
+  setChecklist(0);
+  setPulse('Photo received. Initializing analysis…');
+
+  const metaNodes=verifiedMetadataNodes(data);
+  const publicNodes=normalizePublicNodes(data);
+  const allNodes=[...metaNodes,...publicNodes];
+  updateSearchMetrics(metaNodes,publicNodes);
+
+  await sleep(650);
+  setChecklist(1);setSearchProgress(18,'Reading metadata');setPulse('Reading EXIF and file-level metadata…');
+  await sleep(550);
+
+  const fileNodes=metaNodes.filter(n=>n.name!=='GPS');
+  let shown=0;
+  for(const node of fileNodes){
+    addSearchNode(node,shown,Math.max(allNodes.length,4));shown++;
+    setSearchProgress(22+shown*6,'Reading metadata');
+    setPulse(node.name+' verified');
+    await sleep(520);
+  }
+
+  setChecklist(2);setSearchProgress(43,'Checking location');setPulse('Checking embedded location signals…');
+  await sleep(650);
+  const gps=metaNodes.find(n=>n.name==='GPS');
+  if(gps){
+    addSearchNode(gps,shown,Math.max(allNodes.length,4));shown++;
+    setPulse('Embedded GPS signal verified');
+  }else{
+    setChecklist(2,'No embedded GPS detected');
+    setPulse('No embedded GPS coordinates found');
+  }
+
+  await sleep(650);
+  setChecklist(3);setSearchProgress(56,'Checking public sources');setPulse('Checking for verified public correlations…');
+
+  if(publicNodes.length){
+    for(const node of publicNodes){
+      await sleep(520);
+      addSearchNode(node,shown,Math.max(allNodes.length,4));shown++;
+      setSearchProgress(Math.min(88,58+Math.round((shown/Math.max(allNodes.length,1))*28)),'Public correlation');
+      setPulse(node.name+': '+node.count+' verified match'+(node.count===1?'':'es'));
+      $('metricMatches').textContent=publicNodes.slice(0,shown-metaNodes.length).reduce((sum,n)=>sum+n.count,0);
+    }
+  }else{
+    await sleep(900);
+    setChecklist(3,'No verified public correlations returned');
+    setPulse('No verified public platform matches were returned');
+  }
+
+  await sleep(600);
+  setChecklist(4);setSearchProgress(91,'Grouping findings');setPulse('Grouping verified findings…');
+  await sleep(800);
+  setChecklist(5);setSearchProgress(97,'Compiling results');setPulse('Compiling the final privacy picture…');
+  await sleep(850);
+
+  setSearchProgress(100,'Complete');
+  document.querySelectorAll('.searchCheck').forEach(x=>{x.classList.remove('active');x.classList.add('done');});
+  $('searchStageTitle').textContent='Search complete';
+  const publicCount=publicNodes.reduce((sum,n)=>sum+n.count,0);
+  $('searchStageSubtitle').textContent=publicNodes.length
+    ? ('Verified photo signals plus '+publicCount+' public match'+(publicCount===1?'':'es')+' are displayed.')
+    : 'Verified photo metadata is displayed. No public-platform matches were verified.';
+  $('searchCompleteText').textContent=publicNodes.length
+    ? 'Every glowing node represents a verified finding returned by the backend.'
+    : 'Only verified photo findings are shown. No fake platform matches were added.';
+  $('searchCompleteBanner').classList.remove('hidden');
+  setPulse('Search complete — verified results only');
+  searchComplete=true;
+  searchRunning=false;
+}
+
 function renderSubmitted(data){
   latestStatus=data;$('participantName').textContent=data.participant?.firstName||'Volunteer';
   const grid=$('photoFindingCards');grid.replaceChildren();const img=data.image||{},f=data.findings||{};
@@ -109,7 +346,7 @@ function renderSubmitted(data){
     $('locationCopy').textContent='That does not mean the image has no location clues. Signs, landmarks, events, uniforms and background details can still expose context.';
     wrap.innerHTML='<div class="noLocationGraphic"><span>◎</span><strong>NO GPS METADATA</strong><small>Exact location remains hidden</small></div>';
   }
-  revealIndex=0;revealDeck.classList.remove('hidden');showReveal(0);
+  revealIndex=0;revealDeck.classList.add('hidden');
 }
 function showReveal(i){
   const slides=[...document.querySelectorAll('.revealSlide')];if(!slides.length)return;revealIndex=Math.max(0,Math.min(i,slides.length-1));
@@ -121,7 +358,7 @@ async function poll(){
   try{
     const d=await request('/.netlify/functions/photo-status?id='+encodeURIComponent(session.id)+'&token='+encodeURIComponent(session.presenterToken));
     setProgress(d.status);
-    if(d.status==='submitted'&&latestStatus?.submittedAt!==d.submittedAt)renderSubmitted(d);
+    if(d.status==='submitted'&&latestStatus?.submittedAt!==d.submittedAt)startAutoSearch(d);
   }catch(e){if(/expired|not found/i.test(e.message)){clearInterval(pollTimer);$('liveTitle').textContent='Session expired';$('liveMessage').textContent='Create a new QR code for another volunteer.';}}
 }
 function startPolling(){clearInterval(pollTimer);poll();pollTimer=setInterval(poll,1500);}
@@ -129,11 +366,33 @@ async function erase(){
   if(!session)return;$('erasePhotoDemo').disabled=true;
   try{
     await request('/.netlify/functions/photo-erase',{method:'POST',body:JSON.stringify({id:session.id,presenterToken:session.presenterToken})});
-    clearInterval(pollTimer);sessionStorage.removeItem('pfPhotoPresenter');session=null;latestStatus=null;revealDeck.classList.add('hidden');$('qrImage').removeAttribute('src');
+    clearInterval(pollTimer);sessionStorage.removeItem('pfPhotoPresenter');session=null;latestStatus=null;searchRunning=false;searchComplete=false;revealDeck.classList.add('hidden');$('liveSearchStage').classList.add('hidden');$('qrImage').removeAttribute('src');
     $('erasePhotoNotice').classList.remove('hidden');$('liveTitle').textContent='Demo data erased';$('liveMessage').textContent='The temporary session record has been deleted. The raw photo was never persisted.';$('erasePhotoDemo').textContent='Deleted ✓';
   }catch(e){alert(e.message);$('erasePhotoDemo').disabled=false;}
 }
 $('startSession').addEventListener('click',createSession);
 $('copyLink').addEventListener('click',async()=>{const u=$('copyLink').dataset.url;if(!u)return;await navigator.clipboard.writeText(u);$('copyLink').textContent='Copied ✓';setTimeout(()=>$('copyLink').textContent='Copy volunteer link',1200);});
 $('erasePhotoDemo').addEventListener('click',erase);
-document.addEventListener('keydown',(e)=>{if(revealDeck.classList.contains('hidden'))return;if(['ArrowRight','PageDown',' ','Enter'].includes(e.key)){e.preventDefault();showReveal(revealIndex+1)}if(['ArrowLeft','PageUp'].includes(e.key)){e.preventDefault();showReveal(revealIndex-1)}});
+document.addEventListener('keydown',(e)=>{
+  const nextKeys=['ArrowRight','PageDown',' ','Enter'];
+  const backKeys=['ArrowLeft','PageUp'];
+
+  if(!revealDeck.classList.contains('hidden')){
+    if(nextKeys.includes(e.key)){e.preventDefault();showReveal(revealIndex+1)}
+    if(backKeys.includes(e.key)){
+      e.preventDefault();
+      if(revealIndex<=3){
+        revealDeck.classList.add('hidden');
+        $('liveSearchStage').classList.remove('hidden');
+      }else showReveal(revealIndex-1);
+    }
+    return;
+  }
+
+  if(!$('liveSearchStage').classList.contains('hidden') && searchComplete && nextKeys.includes(e.key)){
+    e.preventDefault();
+    $('liveSearchStage').classList.add('hidden');
+    revealDeck.classList.remove('hidden');
+    showReveal(3);
+  }
+});
