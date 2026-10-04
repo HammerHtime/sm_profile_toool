@@ -55,6 +55,7 @@ export default async (req) => {
         generatedVoice:"generic"
       },
       findings: record.findings || null,
+      webDetection: record.webDetection || null,
       correlation: record.correlation || null
     });
   } catch (error) {
