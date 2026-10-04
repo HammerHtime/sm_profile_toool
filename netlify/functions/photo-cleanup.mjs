@@ -2,22 +2,21 @@ import { store } from "./photo-session-lib.mjs";
 
 export default async () => {
   const s = store();
-  let cursor;
   let deleted = 0;
 
-  do {
-    const page = await s.list({ prefix:"sessions/", cursor });
-    for (const blob of page.blobs || []) {
-      try {
-        const record = await s.get(blob.key, { type:"json", consistency:"strong" });
-        if (!record?.expiresAt || Date.parse(record.expiresAt) <= Date.now()) {
-          await s.delete(blob.key);
-          deleted++;
-        }
-      } catch {}
+  const page = await s.list({ prefix:"sessions/" });
+
+  for (const blob of page.blobs || []) {
+    try {
+      const record = await s.get(blob.key, { type:"json", consistency:"strong" });
+      if (!record?.expiresAt || Date.parse(record.expiresAt) <= Date.now()) {
+        await s.delete(blob.key);
+        deleted++;
+      }
+    } catch (error) {
+      console.error("photo-cleanup entry failed", blob.key, error);
     }
-    cursor = page.hasMore ? page.cursor : undefined;
-  } while (cursor);
+  }
 
   return Response.json({ deleted });
 };
