@@ -26,6 +26,12 @@ globalThis.fetch=async (input,init={})=>{
           thumbnail:{src:braveThumb}
         },
         {
+          title:"Alex Example public event photo Miami Florida",
+          url:"https://example.net/gallery/alex-example-miami",
+          source:"example.net",
+          thumbnail:{src:"https://imgs.search.brave.com/wrong-city.jpg"}
+        },
+        {
           title:"Unrelated person",
           url:"https://example.net/unrelated",
           source:"example.net",
@@ -54,6 +60,11 @@ globalThis.fetch=async (input,init={})=>{
           title:"Alex Example travel discussion",
           description:"Talking about travel, community events and local sports.",
           url:"https://www.reddit.com/user/alexexample"
+        },
+        {
+          title:"Alex Example - Miami Florida profile",
+          description:"Alex Example is based in Miami, Florida and works in the United States.",
+          url:"https://www.facebook.com/alex-example-miami"
         },
         {
           title:"University event only",
@@ -89,6 +100,8 @@ try{
   test("live mode is public",data.dataMode==="verified",data.dataMode);
   test("provider is Brave",data.provider==="Brave Search API",data.provider);
   test("strong matches are returned",data.publicSources.some(x=>x.confidence==="strong"),data.publicSources);
+  test("wrong-city same-name result is discarded",!data.publicSources.some(x=>x.url.includes("alex-example-miami")),data.publicSources);
+  test("geography rejection is reported",Number(data.searchHealth?.geographyRejected)>=1,data.searchHealth);
   test("clue-only false match is discarded",!data.publicSources.some(x=>x.url.includes("event-only")),data.publicSources);
   test("raw email is not exposed",!JSON.stringify(data).includes("alex.example@example.com"));
   test("raw phone is not exposed",!JSON.stringify(data).includes("416-555-1202"));
@@ -98,6 +111,7 @@ try{
   test("presentation quotes exist",Array.isArray(data.presentation?.quotes)&&data.presentation.quotes.length>0,data.presentation);
   test("presentation themes exist",Array.isArray(data.presentation?.themes)&&data.presentation.themes.length>0,data.presentation);
   test("blur-safe Brave thumbnail payload exists",data.presentation?.photos?.some(x=>x.src===braveThumb),data.presentation?.photos);
+  test("wrong-city image is discarded",!data.presentation?.photos?.some(x=>x.src==="https://imgs.search.brave.com/wrong-city.jpg"),data.presentation?.photos);
   test("image disclaimer rejects face verification",/not verified by facial recognition/i.test(data.presentation?.disclaimer||""),data.presentation?.disclaimer);
   test("age remains soft signal",/soft supporting signal/i.test(data.ageMatching?.note||""),data.ageMatching);
 
