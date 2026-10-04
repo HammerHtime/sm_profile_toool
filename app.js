@@ -675,7 +675,7 @@ function setConsentState() {
 
     const isIOS = p.device === "ios";
     const deviceName = isIOS ? "iPhone" : "Android";
-    const settingsIcon = isIOS ? "⚙" : "⚙";
+    const portalTargetLabel = isIOS ? "Settings" : "Family Link";
     const appTiles = isIOS
       ? [
           ["✉","Messages"],["◉","Camera"],["▧","Photos"],["⌖","Find My"],
@@ -691,7 +691,7 @@ function setConsentState() {
       '<div class="devicePortalHud">' +
         '<div class="devicePortalKicker">PRIVACY CONTROLS</div>' +
         '<h2>Enter the ' + deviceName + '</h2>' +
-        '<p>Click Settings or scroll down to move inside the phone.</p>' +
+        '<p>Click ' + portalTargetLabel + ' or scroll down to move inside the phone.</p>' +
       '</div>' +
       '<div class="devicePortalPhone">' +
         '<div class="portalPhoneNotch"></div>' +
@@ -700,14 +700,14 @@ function setConsentState() {
           '<div class="portalWallpaperGlow"></div>' +
           '<div class="portalAppGrid">' +
             appTiles.map(([icon,label]) =>
-              '<button type="button" class="portalApp ' + (label === "Settings" ? "portalSettingsApp" : "") + '" aria-label="' + label + '">' +
+              '<button type="button" class="portalApp ' + (label === portalTargetLabel ? "portalSettingsApp" : "") + '" aria-label="' + label + '">' +
                 '<span>' + icon + '</span><small>' + label + '</small>' +
               '</button>'
             ).join("") +
           '</div>' +
         '</div>' +
       '</div>' +
-      '<div class="portalInstruction"><span class="portalMouse">↕</span><strong>SCROLL TO ENTER SETTINGS</strong><small>or click the glowing Settings icon</small></div>' +
+      '<div class="portalInstruction"><span class="portalMouse">↕</span><strong>SCROLL TO ENTER ' + portalTargetLabel.toUpperCase() + '</strong><small>or click the glowing ' + portalTargetLabel + ' icon</small></div>' +
       '<div class="portalFlash"></div>';
 
     const phone = portal.querySelector(".devicePortalPhone");
