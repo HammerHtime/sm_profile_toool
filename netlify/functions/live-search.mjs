@@ -39,10 +39,13 @@ function redact(text = "") {
   let out = String(text);
   const emails = [...out.matchAll(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi)].map(m => m[0]);
   const phones = [...out.matchAll(/(?:\+?1[-.\s]?)?(?:\(?\d{3}\)?[-.\s]?)\d{3}[-.\s]?\d{4}/g)].map(m => m[0]);
-  const addresses = [...out.matchAll(/\b\d{1,6}[A-Za-z]?\s+(?:[A-Za-z0-9.'-]+\s+){0,4}(?:Street|St|Road|Rd|Avenue|Ave|Drive|Dr|Boulevard|Blvd|Lane|Ln|Court|Ct|Crescent|Cres|Way)\b/gi)].map(m => m[0]);
 
+  // Mask contact strings before scanning addresses so the tail of a phone
+  // number cannot be mistaken for a street number.
   for (const v of emails) out = out.replaceAll(v, maskEmail(v));
   for (const v of phones) out = out.replaceAll(v, maskPhone(v));
+
+  const addresses = [...out.matchAll(/\b\d{1,6}[A-Za-z]?\s+(?:[A-Za-z0-9.'-]+\s+){0,4}(?:Street|St|Road|Rd|Avenue|Ave|Drive|Dr|Boulevard|Blvd|Lane|Ln|Court|Ct|Crescent|Cres|Way)\b/gi)].map(m => m[0]);
   for (const v of addresses) out = out.replaceAll(v, maskAddress(v));
 
   return {
