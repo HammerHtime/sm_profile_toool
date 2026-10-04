@@ -552,13 +552,13 @@ async function startAutoSearch(data){
   $('searchStageTitle').textContent='Search complete';
   const publicCount=publicNodes.reduce((sum,n)=>sum+n.count,0);
   $('searchStageSubtitle').textContent=publicNodes.length
-    ? ('Verified photo signals plus '+publicCount+' public match'+(publicCount===1?'':'es')+' are displayed.')
+    ? ('Verified photo signals, participant-supplied signals and '+publicCount+' public match'+(publicCount===1?'':'es')+' are displayed.')
     : 'Verified photo metadata is displayed. No public-platform matches were verified.';
   $('searchCompleteText').textContent=publicNodes.length
-    ? 'Every glowing node represents a verified finding returned by the backend.'
+    ? 'Every glowing node represents a verified backend finding or a participant-supplied signal.'
     : 'Only verified photo findings are shown. No fake platform matches were added.';
   $('searchCompleteBanner').classList.remove('hidden');
-  setPulse('Search complete — verified results only');
+  setPulse('Search complete — verified and supplied results only');
   searchComplete=true;
   searchRunning=false;
 }
