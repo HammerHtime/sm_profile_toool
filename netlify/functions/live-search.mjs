@@ -206,9 +206,17 @@ async function searchWeb(apiKey, q) {
 }
 
 export default async (req) => {
+  const apiKey = process.env.BRAVE_SEARCH_API_KEY;
+
+  if (req.method === "GET") {
+    return respond({
+      configured: !!apiKey,
+      provider: "Brave Search API"
+    });
+  }
+
   if (req.method !== "POST") return respond({ error:"POST required" }, 405);
 
-  const apiKey = process.env.BRAVE_SEARCH_API_KEY;
   if (!apiKey) {
     return respond({
       error:"Live public search is not configured.",
