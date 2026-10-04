@@ -100,6 +100,44 @@ function platformFor(url = "") {
   return host || "Public web";
 }
 
+function accountTokenFor(url = "", platform = "") {
+  try {
+    const u=new URL(url);
+    const parts=u.pathname.split("/").filter(Boolean);
+    if (platform==="LinkedIn" && parts[0]==="in") return normalize(parts[1]||"");
+    if (platform==="Facebook" || platform==="Instagram" || platform==="X / Twitter" || platform==="GitHub" || platform==="Pinterest" || platform==="Twitch") return normalize(parts[0]||"").replace(/^@/,"");
+    if ((platform==="TikTok" || platform==="Threads" || platform==="Medium") && parts[0]?.startsWith("@")) return normalize(parts[0]).replace(/^@/,"");
+    if (platform==="Reddit" && ["user","u"].includes(parts[0])) return normalize(parts[1]||"");
+    if (platform==="YouTube") {
+      if (parts[0]?.startsWith("@")) return normalize(parts[0]).replace(/^@/,"");
+      if (["channel","c","user"].includes(parts[0])) return normalize(parts[1]||"");
+    }
+  } catch {}
+  return "";
+}
+
+function accountExpansionQuery(source) {
+  const token=accountTokenFor(source?.url||"",source?.platform||"");
+  if (!token || token.length < 4) return "";
+  const quoted='"'+token.replaceAll('"',"")+'"';
+  if (source.platform==="LinkedIn") return "site:linkedin.com/posts " + quoted;
+  if (source.platform==="Facebook") return "site:facebook.com " + quoted + " (posts OR photos OR videos)";
+  if (source.platform==="Instagram") return "site:instagram.com " + quoted;
+  if (source.platform==="X / Twitter") return "(site:x.com OR site:twitter.com) " + quoted;
+  if (source.platform==="TikTok") return "site:tiktok.com " + quoted;
+  if (source.platform==="Threads") return "site:threads.net " + quoted;
+  if (source.platform==="YouTube") return "site:youtube.com " + quoted;
+  if (source.platform==="Reddit") return "site:reddit.com " + quoted;
+  return "";
+}
+
+function accountExpansionMatches(raw, seed) {
+  const token=accountTokenFor(seed?.url||"",seed?.platform||"");
+  if (!token) return false;
+  if (platformFor(raw?.url||"") !== seed.platform) return false;
+  const hay=normalize([raw?.url,raw?.title,raw?.description].filter(Boolean).join(" "));
+  return variantMatches(hay,token);
+}
 function maskedHandle(url = "", platform = "") {
   try {
     const supported = new Set([
@@ -616,6 +654,42 @@ export default async (req) => {
     }
   }
 
+  let accountExpansionPasses=0;
+  const accountSeeds=[...byUrl.values()]
+    .filter(source=>source.confidence==="strong" && accountExpansionQuery(source))
+    .slice(0,2);
+
+  for (const seed of accountSeeds) {
+    const q=accountExpansionQuery(seed);
+    if (!q) continue;
+    try {
+      const expanded=await searchWeb(apiKey,q);
+      accountExpansionPasses += 1;
+      for (const raw of expanded) {
+        if (!raw?.url || byUrl.has(raw.url) || !accountExpansionMatches(raw,seed)) continue;
+        const title=redact(raw.title||"");
+        const snippet=redact(raw.description||"");
+        const platform=platformFor(raw.url);
+        byUrl.set(raw.url,{
+          url:raw.url,
+          domain:(()=>{ try { return new URL(raw.url).hostname.replace(/^www\./,""); } catch { return ""; } })(),
+          platform,
+          confidence:"strong",
+          reasons:[...(seed.reasons||[]),"verified account expansion"],
+          queryGroup:"Verified account expansion: "+platform,
+          handleMasked:maskedHandle(raw.url,platform),
+          title:safeExcerpt(title.text,120),
+          snippet:safeExcerpt(snippet.text,150),
+          published:clean(raw.page_age || raw.age || "",50),
+          thumbnail:braveThumbnail(raw)
+        });
+      }
+    } catch (error) {
+      console.error("verified account expansion failed",seed.platform,error);
+    }
+    await providerWait(220);
+  }
+
   const sources = [...byUrl.values()]
     .sort((a,b)=>{
       if (a.confidence !== b.confidence) return a.confidence === "strong" ? -1 : 1;
@@ -716,8 +790,8 @@ export default async (req) => {
   };
 
   const sourceCoverage = {
-    searched:completedPasses.length,
-    attempted:queries.length,
+    searched:completedPasses.length + accountExpansionPasses,
+    attempted:queries.length + accountSeeds.length,
     failed:failedPasses.length,
     matched:new Set(sources.map(s=>s.queryGroup)).size,
     sources:coverageNames.map(name=>({name,matched:platforms.has(name)}))
