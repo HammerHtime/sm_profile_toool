@@ -492,31 +492,34 @@ function clearPreloadedVoiceSamples(){
 
 function renderVoiceRisk(data){
   const samples=Array.isArray(data.voiceSamples)?data.voiceSamples:[];
+  const delivery=data.voiceDelivery||{};
   const status=$('voiceSampleStatus');
   const copy=$('voiceSampleCopy');
   if(!status||!copy)return;
 
-  const totalSeconds=Math.round(samples.reduce((sum,s)=>sum+(Number(s.durationMs)||0),0)/1000);
-  if(samples.length){
-    status.textContent='Volunteer supplied '+samples.length+' original voice sample'+(samples.length===1?'':'s')+
-      ' totaling about '+Math.max(1,totalSeconds)+' seconds.';
-    copy.textContent='These are the volunteer’s harmless original recordings. No cloned or synthetic participant voice is created.';
+  const original=samples.find(sample=>Number(sample.index)===0&&sample.available);
+  if(original){
+    const seconds=Math.max(1,Math.round((Number(original.durationMs)||0)/1000));
+    status.textContent='Attendee supplied a '+seconds+'-second verbal-consent sample.';
+    copy.textContent='The original clip can be compared against three new harmless sentences generated with a generic AI voice adjusted only to the attendee’s approximate speaking pace.';
   }else{
-    status.textContent='No volunteer voice samples were recorded.';
-    copy.textContent='The voice-exposure section remains available as a teaching point, but there is no participant audio to play.';
+    status.textContent='No volunteer voice sample was recorded.';
+    copy.textContent='Generated voice examples remain disabled because no verbal-consent sample was supplied.';
   }
 
+  const originalButton=$('playOriginalConsent');
+  if(originalButton){
+    const ready=!!original&&preloadedVoiceSamples.has(0);
+    originalButton.disabled=!ready;
+    originalButton.classList.toggle('available',ready);
+  }
+
+  const generatedReady=!!original;
   for(let index=0;index<3;index++){
-    const button=$('playVoiceSample'+index);
+    const button=$('playGeneratedVoice'+index);
     if(!button)continue;
-    const available=samples.some(sample=>Number(sample.index)===index&&sample.available);
-    const ready=available&&preloadedVoiceSamples.has(index);
-    button.disabled=!ready;
-    button.classList.toggle('available',ready);
-    const strong=button.querySelector('strong');
-    if(strong) strong.textContent=available
-      ? (ready?'Play Sample '+(index+1):'Preparing Sample '+(index+1)+'…')
-      : 'Sample '+(index+1)+' not recorded';
+    button.disabled=!generatedReady;
+    button.classList.toggle('available',generatedReady);
   }
 }
 
@@ -573,6 +576,52 @@ async function playOriginalVoiceSample(index){
     resetVoicePlaybackUi();
     alert(err.message||'Could not play the voice sample.');
   }
+}
+
+const GENERATED_VOICE_LINES=[
+  "Hello there. I enjoy travelling and discovering new places.",
+  "Today is a great day to learn something new.",
+  "I like good food, live sports, and spending time with friends."
+];
+
+function playGeneratedVoiceSample(index){
+  const line=GENERATED_VOICE_LINES[index];
+  if(!line||!latestStatus)return;
+  if(!('speechSynthesis' in window)||typeof SpeechSynthesisUtterance==='undefined'){
+    alert('This browser does not provide speech synthesis for the AI voice demonstration.');
+    return;
+  }
+
+  speechSynthesis.cancel();
+  const utterance=new SpeechSynthesisUtterance(line);
+  const rate=Number(latestStatus.voiceDelivery?.speakingRateFactor)||1;
+  utterance.rate=Math.min(1.20,Math.max(0.80,rate));
+  utterance.pitch=1;
+  utterance.volume=1;
+
+  const voices=speechSynthesis.getVoices();
+  const generic=voices.find(v=>/^en(-|_)/i.test(v.lang||''))||voices[0];
+  if(generic)utterance.voice=generic;
+
+  const button=$('playGeneratedVoice'+index);
+  if(button){
+    button.classList.add('playing');
+    button.querySelector('.voicePlayGlyph').textContent='■';
+    const strong=button.querySelector('strong');
+    if(strong)strong.textContent='Playing Generated Sample '+(index+1);
+  }
+
+  const reset=()=>{
+    if(button){
+      button.classList.remove('playing');
+      button.querySelector('.voicePlayGlyph').textContent='▶';
+      const strong=button.querySelector('strong');
+      if(strong)strong.textContent='Generated Sample '+(index+1);
+    }
+  };
+  utterance.onend=reset;
+  utterance.onerror=reset;
+  speechSynthesis.speak(utterance);
 }
 
 function renderSubmitted(data){
@@ -636,8 +685,9 @@ async function erase(){
 $('startSession').addEventListener('click',createSession);
 $('copyLink').addEventListener('click',async()=>{const u=$('copyLink').dataset.url;if(!u)return;await navigator.clipboard.writeText(u);$('copyLink').textContent='Copied ✓';setTimeout(()=>$('copyLink').textContent='Copy volunteer link',1200);});
 $('erasePhotoDemo').addEventListener('click',erase);
+$('playOriginalConsent')?.addEventListener('click',()=>playOriginalVoiceSample(0));
 for(let index=0;index<3;index++){
-  $('playVoiceSample'+index)?.addEventListener('click',()=>playOriginalVoiceSample(index));
+  $('playGeneratedVoice'+index)?.addEventListener('click',()=>playGeneratedVoiceSample(index));
 }
 document.addEventListener('keydown',(e)=>{
   const nextKeys=['ArrowRight','PageDown',' ','Enter'];
