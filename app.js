@@ -625,6 +625,8 @@ function setConsentState() {
     element.classList.add("portalClosing");
     setTimeout(() => element.remove(), 280);
     activeDevicePortal = null;
+    currentGuide = null;
+    guidePlatform = null;
     document.body.style.overflow = "";
   }
 
@@ -632,7 +634,8 @@ function setConsentState() {
     if (activeDevicePortal) closeDevicePortal();
 
     guidePlatform = p;
-    currentGuide = guideFor(p, parentMode);
+    const portalGuide = guideFor(p, parentMode);
+    currentGuide = null;
     guideIndex = 0;
 
     const rect = originEl?.getBoundingClientRect();
@@ -700,7 +703,7 @@ function setConsentState() {
         portal.remove();
         activeDevicePortal = null;
         // The portal already performed the "open Settings" action.
-        openGuideDirect(p, parentMode, Math.min(1, currentGuide.length - 1));
+        openGuideDirect(p, parentMode, Math.min(1, portalGuide.length - 1));
       }, 760);
     };
 
