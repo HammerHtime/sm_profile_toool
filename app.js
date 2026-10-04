@@ -524,7 +524,7 @@
       const i = Math.abs(hashCode(target)) % rows.length;
       rows[i] = target;
     }
-    let html = '<div class="phoneMock" style="--brand:' + (guidePlatform.brand || "#52d6ff") + '"><div class="phoneNotch"></div><div class="phoneStatus"><span>9:41</span><span>● ● ●</span></div><div class="phoneScreen"><div class="phoneTitle"><span class="phoneTitleIcon">' + guidePlatform.icon + "</span><span>" + guidePlatform.name + "</span></div><div class="phoneRows">";
+    let html = '<div class="phoneMock" style="--brand:' + (guidePlatform.brand || "#52d6ff") + '"><div class="phoneNotch"></div><div class="phoneStatus"><span>9:41</span><span>● ● ●</span></div><div class="phoneScreen"><div class="phoneTitle"><span class="phoneTitleIcon">' + guidePlatform.icon + "</span><span>" + guidePlatform.name + '</span></div><div class="phoneRows">';
     rows.forEach((r) => {
       const isTarget = target !== "EXPLAIN" && r === target;
       html += '<div class="phoneRow' + (isTarget ? " target" : "") + '"><span>' + r + "</span>" + (isTarget ? '<span class="toggle on"></span>' : "<span>›</span>") + "</div>";
