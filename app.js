@@ -312,48 +312,6 @@
     ["Why it matters","Family Link combines device limits, app approval, web/content controls, location and permission review in one parent dashboard.","EXPLAIN"]
   ];
 
-  function syntheticReport() {
-    return {
-      subject: (($("firstName").value || "Alex") + " " + ($("lastName").value || "Morgan")).trim(),
-      score: 82,
-      level: "HIGH EXPOSURE",
-      stats:[
-        {n:8,k:"social accounts"},
-        {n:675,k:"public images"},
-        {n:17,k:"recurring people"},
-        {n:23,k:"location signals"}
-      ],
-      findings:[
-        ["Identity","Age range, city and multiple identity-linking signals were found.","PARTIAL"],
-        ["Previous addresses","4 historical residential addresses found. Example: 123 xxxxx St.","MASKED"],
-        ["Phone numbers","2 public phone-number references. Example: 416-xxx-xx02.","MASKED"],
-        ["Email addresses","3 public email references. Example: an•••••@g•••.com.","MASKED"],
-        ["Education","2 education records located. Institution names hidden.","HIDDEN"],
-        ["Employment","6 employment / organization associations located.","SUMMARY"],
-        ["Images","675 publicly accessible images classified by what they reveal.","SUMMARY"],
-        ["Public activity","1,482 posts, comments, replies, shares and public mentions catalogued.","SUMMARY"]
-      ],
-      accounts:[
-        ["Instagram","@ale••••••n02"],["Facebook","alex••••••••onto"],["TikTok","@am••••••02"],["LinkedIn","alex••••••••4821"],
-        ["Reddit","u/ale••••••n02"],["X / Twitter","@ale••••n"],["YouTube","Alex•••••02"],["Strava","A••x M••••n"]
-      ],
-      sourceHits:new Set(["Instagram","Facebook","TikTok","LinkedIn","Reddit","X / Twitter","YouTube","Snapchat","Discord (public)","Strava (public)","News articles","Event pages","Organization bios","Public comments","Public replies","Public photo galleries","Google-indexed profiles","Public association pages","Sports results","Professional directories"]),
-      imageBreakdown:[
-        ["Friends / family / social groups",345],["Travel destinations",129],["Sports and activities",51],["Vehicles",43],["Food / restaurants",38],["Work / public events",24],["Pets",18],["Home / property clues",15],["Documents / screens",12]
-      ],
-      activity:[["Posts and captions",602],["Comments",371],["Replies",209],["Shares / reposts",128],["Forum contributions",93],["News / article mentions",79]],
-      themes:["Travel","Sports","Restaurants","Technology","Vehicles","Community events","Professional topics","Photography"],
-      signals:[
-        ["◎","Identity linking","Repeated usernames, partially masked contact details and public bios connect accounts together."],
-        ["⌖","Routine & location","23 public location signals reveal general areas and recurring travel patterns."],
-        ["◌","Social network","17 recurring people appear across public images or public interactions. Identities remain hidden."],
-        ["✎","Public voice","1,482 public posts, comments, replies, shares and mentions create a long-lived behavioural record."],
-        ["▣","Image history","675 images reveal destinations, activities, vehicles, events and property clues."],
-        ["◷","Time depth","Public material spans approximately 18 years, allowing a timeline to be reconstructed."]
-      ]
-    };
-  }
-
   function setConsentState() {
     const ok = !!consent.checked;
     if (liveSearchBtn) liveSearchBtn.disabled = !ok;
@@ -389,28 +347,24 @@
   }
 
   function renderReport(report) {
-    const mode = report.synthetic ? "synthetic" : (report.dataMode || "evidence");
+    const mode = report.dataMode === "verified" ? "verified" : "evidence";
     const banner = $("dataModeBanner");
-    const modeLabel = mode === "synthetic" ? "SYNTHETIC" : mode === "verified" ? "VERIFIED" : "EVIDENCE FILE";
-    const modeClass = mode === "synthetic" ? "synthetic" : mode === "verified" ? "verified" : "evidence";
+    const modeLabel = mode === "verified" ? "VERIFIED" : "EVIDENCE FILE";
+    const modeClass = mode === "verified" ? "verified" : "evidence";
 
     if (banner) {
       banner.className = "dataModeBanner " + modeClass;
-      if (mode === "synthetic") {
-        banner.innerHTML = "<strong>SYNTHETIC DEMONSTRATION DATA</strong><span>Every number, account, address, image count and activity count on this screen is fabricated for presentation testing. Nothing here was found about the person entered.</span>";
-      } else if (mode === "verified") {
-        banner.innerHTML = "<strong>VERIFIED PUBLIC FINDINGS</strong><span>These findings were returned by configured public-source collectors and passed source verification before display.</span>";
+      if (mode === "verified") {
+        banner.innerHTML = "<strong>VERIFIED PUBLIC FINDINGS</strong><span>These findings were returned by configured public-source collectors and include the public source URL for review.</span>";
       } else {
         banner.innerHTML = "<strong>USER-SUPPLIED EVIDENCE</strong><span>This report summarizes the JSON file you uploaded. It has not been independently verified by this app as a live public-source search.</span>";
       }
     }
 
-    $("subjectName").textContent = report.subject || "Demo Subject";
-    $("summaryLine").textContent = mode === "synthetic"
-      ? "Presentation-only sample output. No live public search was performed."
-      : mode === "verified"
-        ? "Verified public-source findings, privacy-masked before display."
-        : "Summary of user-supplied evidence. Not independently verified by this build.";
+    $("subjectName").textContent = report.subject || "Search Subject";
+    $("summaryLine").textContent = mode === "verified"
+      ? "Verified public-source findings, privacy-masked before display."
+      : "Summary of user-supplied evidence. Not independently verified by this build.";
     $("score").textContent = report.score || 0;
     $("scoreLabel").textContent = report.level || "LOW";
 
@@ -444,18 +398,7 @@
 
     const sourcePanel = $("sourceCoveragePanel");
     $("sourceCoverageGrid").innerHTML = "";
-    if (mode === "synthetic") {
-      sourcePanel.classList.remove("hidden");
-      $("sourceSearched").textContent = SOURCE_NAMES.length;
-      $("sourceMatched").textContent = report.sourceHits ? report.sourceHits.size : 0;
-      SOURCE_NAMES.forEach((name) => {
-        const chip = document.createElement("div");
-        const hit = report.sourceHits && report.sourceHits.has(name);
-        chip.className = "sourceChip" + (hit ? " hit" : "");
-        chip.innerHTML = '<span class="sourceModeDot synthetic"></span>' + (hit ? "✓ " : "○ ") + name;
-        $("sourceCoverageGrid").appendChild(chip);
-      });
-    } else if (mode === "verified" && report.sourceCoverage) {
+    if (mode === "verified" && report.sourceCoverage) {
       sourcePanel.classList.remove("hidden");
       $("sourceSearched").textContent = report.sourceCoverage.searched || 0;
       $("sourceMatched").textContent = report.sourceCoverage.matched || 0;
@@ -528,9 +471,7 @@
       });
     }
 
-    $("takeaway").textContent = mode === "synthetic"
-      ? "This screen demonstrates how the finished presentation will look. It does not represent findings about the person entered."
-      : "One post is a fragment. Hundreds of verified or supplied fragments can become a profile. Always check the provenance label before treating a value as a real finding.";
+    $("takeaway").textContent = "One post is a fragment. Hundreds of verified or supplied fragments can become a profile. Always check the provenance label and source before treating a value as a real finding.";
     results.classList.remove("hidden");
     results.scrollIntoView({behavior:"smooth",block:"start"});
   }
