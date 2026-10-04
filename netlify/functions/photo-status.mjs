@@ -28,7 +28,8 @@ export default async (req) => {
         usernameMasked: record.submission.usernameMasked
       } : null,
       image: record.submission?.image || null,
-      findings: record.findings || null
+      findings: record.findings || null,
+      correlation: record.correlation || null
     });
   } catch (error) {
     console.error("photo-status failed", error);
