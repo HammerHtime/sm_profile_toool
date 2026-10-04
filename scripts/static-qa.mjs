@@ -79,6 +79,14 @@ else pass("Synthetic provenance banner exists");
 
 if(!app.includes("function platformRowsFor(")) fail("Social privacy walkthrough row renderer is missing");
 else pass("Social privacy walkthrough row renderer exists");
+if(!app.includes("const APP_SETTING_DETAILS = {") || !app.includes("function settingDetailFor(")) fail("App privacy detail-screen model is missing");
+else pass("App privacy walkthroughs render real setting detail screens");
+if(!app.includes("phoneAppIdentity") || !app.includes("coachAppBadge")) fail("Persistent app branding is missing from walkthroughs");
+else pass("Walkthroughs keep app identity and branding visible");
+if(!app.includes('target==="Notifications"') || !app.includes("phoneNotificationSettings")) fail("Universal notification privacy screen is missing");
+else pass("Every app guide includes a notification privacy screen");
+if(!app.includes('detail.kind === "location"')) fail("Location permission detail screen is missing");
+else pass("Location permission choices render inside the phone");
 if(!app.includes("function platformHeaderFor(")) fail("Social privacy walkthrough header renderer is missing");
 else pass("Social privacy walkthrough header renderer exists");
 if(!app.includes("phoneSceneNativeIncoming")) fail("Native-style phone screen transition is missing");
