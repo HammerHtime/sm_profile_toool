@@ -77,6 +77,43 @@ else pass("Presenter erase confirmation exists");
 if(!app.includes("SYNTHETIC DEMONSTRATION DATA")) fail("Synthetic provenance banner is missing");
 else pass("Synthetic provenance banner exists");
 
+if(!app.includes("function platformRowsFor(")) fail("Social privacy walkthrough row renderer is missing");
+else pass("Social privacy walkthrough row renderer exists");
+if(!app.includes("function platformHeaderFor(")) fail("Social privacy walkthrough header renderer is missing");
+else pass("Social privacy walkthrough header renderer exists");
+if(!app.includes("phoneSceneNativeIncoming")) fail("Native-style phone screen transition is missing");
+else pass("Native-style phone screen transition exists");
+
+const css=read("styles.css");
+if(!/\.reportStageViewport\s*\{[^}]*overflow:auto/s.test(css)) fail("Report deck viewport is not scroll-safe");
+else pass("Report deck viewport prevents content clipping");
+if(!css.includes(".copyFadeOut") || !css.includes(".copyFadeIn")) fail("Coach copy cross-fade styles are missing");
+else pass("Coach copy cross-fade styles exist");
+
+const liveModule = await import(new URL("../netlify/functions/live-search.mjs", import.meta.url));
+const testPerson = {
+  fullName:"Andrew Hammond",
+  city:"Toronto",
+  username:"",
+  ageContext:liveModule.buildAgeContext(50),
+  searchClues:["Toronto Police","University of Western Ontario"]
+};
+const wrongPersonResult = liveModule.matchResult({
+  title:"Ottawa Senators goaltender Andrew Hammond leads win over Toronto Maple Leafs",
+  description:"Hockey coverage and player results.",
+  url:"https://example.com/sports/andrew-hammond"
+}, testPerson);
+if(wrongPersonResult.confidence!=="discard") fail("Same-name sports collision was not rejected");
+else pass("Same-name sports collision is rejected");
+
+const rightPersonResult = liveModule.matchResult({
+  title:"Andrew Hammond - Toronto Police Service",
+  description:"Andrew Hammond, Toronto Police, with education at Western University in Ontario.",
+  url:"https://example.com/profile/andrew-hammond"
+}, testPerson);
+if(rightPersonResult.confidence!=="strong") fail("Clue-supported identity match was not retained");
+else pass("Clue-supported identity match is retained");
+
 const functionNames=new Set(fs.readdirSync(path.join(root,"netlify/functions"))
   .filter(n=>n.endsWith(".mjs")).map(n=>n.replace(/\.mjs$/,"")));
 for(const jsPath of ["app.js","presenter.js","volunteer.js"]){
