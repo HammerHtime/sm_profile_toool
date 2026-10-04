@@ -793,3 +793,145 @@ button{border:0;cursor:pointer}
   .portalSettingsApp span,.portalMouse{animation:none!important}
   .devicePortal.entering .portalFlash{animation:none!important}
 }
+
+
+/* Cinematic app-entry portals */
+.appPortal{
+  position:fixed;
+  inset:0;
+  z-index:4180;
+  overflow:hidden;
+  background:
+    radial-gradient(circle at 50% 48%,color-mix(in srgb,var(--brand) 18%,transparent),transparent 25%),
+    linear-gradient(180deg,rgba(2,7,11,.94),rgba(2,7,11,.99));
+  opacity:0;
+  transition:opacity .28s ease
+}
+.appPortal.active{opacity:1}
+.appPortal.portalClosing{opacity:0}
+.appPortalBackdrop{
+  position:absolute;
+  inset:0;
+  background-image:
+    radial-gradient(circle at center,rgba(255,255,255,.025) 1px,transparent 1px),
+    linear-gradient(rgba(82,214,255,.018) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(82,214,255,.018) 1px,transparent 1px);
+  background-size:26px 26px,52px 52px,52px 52px;
+  mask-image:radial-gradient(circle at center,#000 0 62%,transparent 95%)
+}
+.appPortalHud{
+  position:absolute;
+  top:7vh;
+  left:50%;
+  transform:translateX(-50%) translateY(-12px);
+  width:min(760px,90vw);
+  text-align:center;
+  opacity:0;
+  z-index:7;
+  transition:opacity .4s ease .18s,transform .4s ease .18s
+}
+.appPortal.active .appPortalHud{opacity:1;transform:translateX(-50%) translateY(0)}
+.appPortalHud h2{
+  margin:8px 0 6px;
+  font-size:clamp(2.3rem,5vw,4.8rem);
+  letter-spacing:-.055em
+}
+.appPortalHud p{margin:0;color:#91a9b9}
+.appPortalCore{
+  appearance:none;
+  position:fixed;
+  left:50vw;
+  top:54vh;
+  width:260px;
+  height:260px;
+  transform:translate(-50%,-50%) scale(.23);
+  border-radius:50%;
+  border:1px solid color-mix(in srgb,var(--brand) 58%,white 8%);
+  background:
+    radial-gradient(circle at 50% 38%,color-mix(in srgb,var(--brand) 26%,#10202c),#07131d 70%);
+  color:#fff;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  cursor:pointer;
+  box-shadow:
+    0 0 0 12px color-mix(in srgb,var(--brand) 5%,transparent),
+    0 0 85px color-mix(in srgb,var(--brand) 32%,transparent),
+    0 32px 90px rgba(0,0,0,.52);
+  z-index:5;
+  transition:
+    left .68s cubic-bezier(.16,.82,.2,1),
+    top .68s cubic-bezier(.16,.82,.2,1),
+    transform .68s cubic-bezier(.16,.82,.2,1),
+    opacity .4s ease,
+    filter .5s ease
+}
+.appPortal.active .appPortalCore{
+  left:50vw!important;
+  top:54vh!important;
+  transform:translate(-50%,-50%) scale(1)
+}
+.appPortalIcon{
+  width:96px;
+  height:96px;
+  display:grid;
+  place-items:center;
+  border-radius:28px;
+  font-size:3.1rem;
+  font-weight:950;
+  background:color-mix(in srgb,var(--brand) 82%,#09131d);
+  box-shadow:0 0 36px color-mix(in srgb,var(--brand) 32%,transparent);
+  transition:transform .55s ease,box-shadow .55s ease
+}
+.appPortalCore strong{
+  font-size:1.15rem;
+  letter-spacing:-.02em
+}
+.appPortalCore small{
+  font-size:.54rem;
+  letter-spacing:.12em;
+  font-weight:950;
+  color:#9eb4c3
+}
+.appPortalRing{
+  position:absolute;
+  inset:-26px;
+  border:1px solid color-mix(in srgb,var(--brand) 28%,transparent);
+  border-radius:50%;
+  animation:appPortalOrbit 6s linear infinite
+}
+.appPortalRing.ringB{
+  inset:-55px;
+  border-style:dashed;
+  opacity:.58;
+  animation-duration:9s;
+  animation-direction:reverse
+}
+@keyframes appPortalOrbit{to{transform:rotate(360deg)}}
+.appPortal.entering .appPortalHud,
+.appPortal.entering .portalInstruction{opacity:0;transition-delay:0s}
+.appPortal.entering .appPortalCore{
+  left:50vw!important;
+  top:54vh!important;
+  transform:translate(-50%,-50%) scale(4.8);
+  opacity:.05;
+  filter:blur(7px)
+}
+.appPortal.entering .appPortalIcon{
+  transform:scale(2.4);
+  box-shadow:0 0 110px color-mix(in srgb,var(--brand) 78%,transparent)
+}
+.appPortal.entering .portalFlash{animation:portalFlashIn .68s ease forwards}
+
+@media(max-width:700px){
+  .appPortalCore{width:210px;height:210px}
+  .appPortalIcon{width:82px;height:82px;font-size:2.5rem}
+  .appPortal.active .appPortalCore{transform:translate(-50%,-50%) scale(.9)}
+  .appPortal.entering .appPortalCore{transform:translate(-50%,-50%) scale(4)}
+}
+@media(prefers-reduced-motion:reduce){
+  .appPortal,.appPortalCore,.appPortalHud{transition:none!important}
+  .appPortalRing{animation:none!important}
+}
