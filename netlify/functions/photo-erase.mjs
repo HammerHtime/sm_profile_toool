@@ -1,4 +1,4 @@
-import { cleanText, deleteSession, getSession, jsonResponse, safeEqual } from "./photo-session-lib.mjs";
+import { cleanText, deleteSession, getSession, jsonResponse, safeEqual, store, voiceAudioKey } from "./photo-session-lib.mjs";
 
 export default async (req) => {
   if (req.method !== "POST") return jsonResponse({ error: "Method not allowed" }, 405);
@@ -12,6 +12,10 @@ export default async (req) => {
     if (!record) return jsonResponse({ ok: true, deleted: true });
     if (!safeEqual(presenterToken, record.presenterTokenHash)) return jsonResponse({ error: "Invalid presenter token" }, 403);
 
+    const audioStore = store();
+    for (const sample of record.submission?.voiceSamples || []) {
+      try { await audioStore.delete(voiceAudioKey(id,sample.index)); } catch {}
+    }
     await deleteSession(id);
     return jsonResponse({ ok: true, deleted: true });
   } catch (error) {
