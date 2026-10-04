@@ -106,7 +106,7 @@
 
         <div id="searchCompleteBanner" class="searchCompleteBanner hidden">
           <div><strong>SEARCH COMPLETE</strong><span id="searchCompleteText">Verified findings are ready.</span></div>
-          <span>Use → when you want to enter the detailed results.</span>
+          <span>Detailed findings will open automatically.</span>
         </div>
       </section>
 
@@ -212,13 +212,19 @@
               <span>The generated sentences use a generic synthetic voice influenced only by approximate speaking pace. The teaching point is that short voice samples can be harvested and manipulated, while criminal tools can go further into impersonation and extortion.</span>
             </div>
           </section>
+
+          <div class="photoRevealControls" id="photoRevealControls">
+            <button type="button" id="photoPrev" class="secondaryBtn">← Back</button>
+            <div><strong id="photoRevealCounter">4 / 7</strong><span id="photoRevealName">Photo exposure</span></div>
+            <button type="button" id="photoNext" class="primary">Next →</button>
+          </div>
         </section>
       </section>
 
       <section class="presenterFooter panel">
         <div>
           <strong>Automatic search animation</strong>
-          <div class="fineprint">Once the photo arrives, the search runs on its own. After it finishes, use → only if you want to enter the detailed findings.</div>
+          <div class="fineprint">Once the photo arrives, the search runs automatically and opens the detailed findings without requiring a scroll.</div>
         </div>
         <button type="button" id="erasePhotoDemo" class="danger">Erase Demo Data</button>
       </section>
