@@ -935,3 +935,25 @@ button{border:0;cursor:pointer}
   .appPortal,.appPortalCore,.appPortalHud{transition:none!important}
   .appPortalRing{animation:none!important}
 }
+
+
+.buildStatus.liveConfigured{
+  border-color:rgba(85,227,156,.28);
+  background:rgba(85,227,156,.055);
+  color:#b9dac8
+}
+.buildStatus.liveConfigured strong{color:#8ef0ba}
+.buildStatus.liveConfigured .statusDot{
+  background:#55e39c;
+  box-shadow:0 0 10px rgba(85,227,156,.5)
+}
+.buildStatus.liveUnconfigured{
+  border-color:rgba(255,173,94,.26);
+  background:rgba(255,173,94,.055);
+  color:#cbb9a5
+}
+.buildStatus.liveUnconfigured strong{color:#ffbd7c}
+.buildStatus.liveUnconfigured .statusDot{
+  background:#ffad5e;
+  box-shadow:0 0 10px rgba(255,173,94,.45)
+}
