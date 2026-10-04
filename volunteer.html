@@ -41,11 +41,34 @@
       </div>
       <p class="fineprint">Use a photo of yourself that you are comfortable using in this live demonstration. Maximum 4 MB.</p>
 
-      <div class="mobileStep"><b>3</b><span>Consent</span></div>
+      <div class="mobileStep"><b>3</b><span>Voice sample <small>optional</small></span></div>
+      <section class="voiceSamplePanel" aria-labelledby="voiceSampleTitle">
+        <div class="voiceSampleHeader">
+          <div>
+            <strong id="voiceSampleTitle">Record a short voice sample</strong>
+            <small>Suggested phrase: “I’ve uploaded my photo for you to use.”</small>
+          </div>
+          <span class="voicePrivacyBadge">NOT UPLOADED</span>
+        </div>
+        <div class="voiceRecorder">
+          <button type="button" id="voiceRecordBtn" class="voiceRecordBtn"><span>●</span> Record</button>
+          <div class="voiceTimer" id="voiceTimer">0:00</div>
+          <div class="voiceWave" id="voiceWave" aria-hidden="true">
+            <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+          </div>
+        </div>
+        <div id="voicePreviewWrap" class="voicePreviewWrap hidden">
+          <audio id="voicePreview" controls preload="metadata"></audio>
+          <button type="button" id="deleteVoiceBtn" class="changePhotoBtn">Delete recording</button>
+        </div>
+        <p class="fineprint">The recording stays on this phone and is discarded after submission. The presentation receives only that a sample was recorded and its duration. No participant voice clone is created.</p>
+      </section>
+
+      <div class="mobileStep"><b>4</b><span>Consent</span></div>
       <label class="consentBox mobileConsent">
         <span class="consent">
           <input id="vConsent" type="checkbox" required />
-          <span><strong>I consent to this live privacy demonstration.</strong><small>I confirm this is my photo or I have permission to use it. I understand the presenter will see summarized or masked findings, not my raw photo. If I provide a public username, that handle may be sent to the configured public-search provider to check public/indexed webpages. If I am under 18, my parent or guardian is present and consents.</small></span>
+          <span><strong>I consent to this live privacy demonstration.</strong><small>I confirm this is my photo or I have permission to use it. I understand the presenter will see summarized or masked findings, not my raw photo. If I record the optional voice sample, the audio itself stays on this device and is not uploaded; only the recording duration is sent to the presentation. If I provide a public username, that handle may be sent to the configured public-search provider to check public/indexed webpages. If I am under 18, my parent or guardian is present and consents.</small></span>
         </span>
       </label>
 
