@@ -1024,6 +1024,7 @@ button{border:0;cursor:pointer}
 /* Cinematic live public-search experience */
 .cinematicScan{
   position:relative;
+  display:block;
   min-height:650px;
   overflow:hidden;
   padding:0;
@@ -1062,6 +1063,7 @@ button{border:0;cursor:pointer}
 }
 .scanHud{
   position:relative;
+  width:100%;
   z-index:8;
   min-height:650px;
   padding:30px;
