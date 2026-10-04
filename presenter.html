@@ -48,6 +48,62 @@
         </section>
       </div>
 
+
+      <section id="liveSearchStage" class="liveSearchStage hidden" aria-live="polite">
+        <div class="searchStageHeader">
+          <div>
+            <div class="eyebrow">LIVE PHOTO ANALYSIS</div>
+            <h2 id="searchStageTitle">Searching privacy signals…</h2>
+            <p id="searchStageSubtitle">The photo has been received. Analysis begins automatically.</p>
+          </div>
+          <div class="searchProgressWrap">
+            <div class="searchProgressRing" id="searchProgressRing"><strong id="searchProgressValue">0%</strong></div>
+            <span id="searchProgressLabel">Starting</span>
+          </div>
+        </div>
+
+        <div class="searchExperience">
+          <aside class="searchChecklist" id="searchChecklist">
+            <div class="searchCheck active"><i></i><span>Photo received</span></div>
+            <div class="searchCheck"><i></i><span>Reading file metadata</span></div>
+            <div class="searchCheck"><i></i><span>Checking location signals</span></div>
+            <div class="searchCheck"><i></i><span>Checking public correlation</span></div>
+            <div class="searchCheck"><i></i><span>Grouping verified findings</span></div>
+            <div class="searchCheck"><i></i><span>Compiling results</span></div>
+          </aside>
+
+          <div class="searchNetworkWrap">
+            <div class="searchRadar"></div>
+            <svg id="searchConnections" class="searchConnections" viewBox="0 0 1000 620" preserveAspectRatio="none" aria-hidden="true"></svg>
+            <div id="searchNetwork" class="searchNetwork">
+              <div class="searchCore" id="searchCore">
+                <div class="searchCoreOrbit orbitOne"></div>
+                <div class="searchCoreOrbit orbitTwo"></div>
+                <div class="searchCoreCard">
+                  <div class="scanBeam"></div>
+                  <div class="searchCoreIcon">▧</div>
+                  <strong>PHOTO RECEIVED</strong>
+                  <span id="searchCoreMeta">Analyzing…</span>
+                </div>
+              </div>
+            </div>
+            <div class="searchPulseText" id="searchPulseText">Initializing scan…</div>
+          </div>
+        </div>
+
+        <div class="searchMetrics" id="searchMetrics">
+          <div><strong id="metricSignals">0</strong><span>verified signals</span></div>
+          <div><strong id="metricPlatforms">0</strong><span>public sources</span></div>
+          <div><strong id="metricLocations">0</strong><span>location signals</span></div>
+          <div><strong id="metricMatches">0</strong><span>verified matches</span></div>
+        </div>
+
+        <div id="searchCompleteBanner" class="searchCompleteBanner hidden">
+          <div><strong>SEARCH COMPLETE</strong><span id="searchCompleteText">Verified findings are ready.</span></div>
+          <span>Use → when you want to enter the detailed results.</span>
+        </div>
+      </section>
+
       <section id="revealDeck" class="hidden revealDeck">
         <section class="panel revealSlide" data-reveal="0">
           <div class="eyebrow">VOLUNTEER CONNECTED</div>
@@ -115,8 +171,8 @@
 
       <section class="presenterFooter panel">
         <div>
-          <strong>Presentation remote ready</strong>
-          <div class="fineprint">Right arrow, Space, Enter or Page Down advances. Left arrow or Page Up goes back.</div>
+          <strong>Automatic search animation</strong>
+          <div class="fineprint">Once the photo arrives, the search runs on its own. After it finishes, use → only if you want to enter the detailed findings.</div>
         </div>
         <button id="erasePhotoDemo" class="danger">Erase Demo Data</button>
       </section>
