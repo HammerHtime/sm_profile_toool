@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Join Photo Privacy Demo</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="photo-demo.css" />
+</head>
+<body class="volunteerBody">
+  <main class="volunteerShell">
+    <section class="mobileBrand"><div class="livePill"><span></span> LIVE PRIVACY DEMO</div><h1>Join the photo demo</h1><p>Your photo is processed for this presentation and is not stored by the demo.</p></section>
+
+    <form id="volunteerForm" class="panel volunteerForm">
+      <div class="mobileStep"><b>1</b><span>About you</span></div>
+      <label>First name<input id="vFirstName" required maxlength="40" autocomplete="given-name" placeholder="Alex" /></label>
+      <label>City <small>optional</small><input id="vCity" maxlength="80" autocomplete="address-level2" placeholder="Toronto" /></label>
+      <label>Public username <small>optional</small><input id="vUsername" maxlength="80" autocomplete="off" placeholder="@alexm" /></label>
+
+      <div class="mobileStep"><b>2</b><span>Your photo</span></div>
+      <label class="photoUploadChoice">Take or choose a photo<input id="vPhoto" type="file" required accept="image/jpeg,image/png,image/webp,image/heic,image/heif" capture="user" /></label>
+      <div id="photoPreviewWrap" class="photoPreviewWrap hidden"><img id="photoPreview" alt="Your selected photo" /><div id="photoMeta" class="fineprint"></div></div>
+      <p class="fineprint">Choose a photo of yourself that you are comfortable using in this live demonstration. Maximum 4 MB.</p>
+
+      <div class="mobileStep"><b>3</b><span>Consent</span></div>
+      <label class="consentBox mobileConsent">
+        <span class="consent">
+          <input id="vConsent" type="checkbox" required />
+          <span><strong>I consent to this live privacy demonstration.</strong><small>I confirm this is my photo or I have permission to use it. I understand the presenter will see summarized or masked findings, not my raw photo. If I am under 18, my parent or guardian is present and consents.</small></span>
+        </span>
+      </label>
+
+      <button id="submitVolunteer" class="primary mobileSubmit" disabled>Send to live demo</button>
+      <div id="volunteerError" class="error hidden"></div>
+    </form>
+
+    <section id="volunteerDone" class="panel volunteerDone hidden">
+      <div class="doneCheck">✓</div>
+      <h2>You're connected.</h2>
+      <p>The presenter can now reveal the privacy findings. Your raw image was not stored by the demo.</p>
+      <p class="fineprint">When the presenter presses Erase Demo Data, the temporary session record is deleted.</p>
+    </section>
+  </main>
+  <script src="volunteer.js"></script>
+</body>
+</html>
