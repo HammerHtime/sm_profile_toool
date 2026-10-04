@@ -74,6 +74,11 @@
           </aside>
 
           <div class="searchNetworkWrap">
+            <div id="photoAmbientLayer" class="photoAmbientLayer" aria-hidden="true">
+              <div id="photoAmbientPhotos" class="photoAmbientPhotos"></div>
+              <div id="photoAmbientQuotes" class="photoAmbientQuotes"></div>
+              <div id="photoAmbientWords" class="photoAmbientWords"></div>
+            </div>
             <div class="searchRadar"></div>
             <svg id="searchConnections" class="searchConnections" viewBox="0 0 1000 620" preserveAspectRatio="none" aria-hidden="true"></svg>
             <div id="searchNetwork" class="searchNetwork">
@@ -218,6 +223,21 @@
         <button type="button" id="erasePhotoDemo" class="danger">Erase Demo Data</button>
       </section>
       <div id="erasePhotoNotice" class="eraseNotice hidden"><div class="eraseCheck">✓</div><div><strong>Live demo erased.</strong><br><span>The temporary session record has been deleted.</span></div></div>
+      <div id="eraseSequenceOverlay" class="eraseSequenceOverlay hidden" role="status" aria-live="assertive">
+        <div class="eraseSequenceCard">
+          <div class="eraseSequenceIcon" id="eraseSequenceIcon">⌫</div>
+          <div class="eyebrow">SECURE DEMO CLEANUP</div>
+          <h2 id="eraseSequenceTitle">Deleting temporary demo data…</h2>
+          <p id="eraseSequenceCopy">Please keep this screen open while the temporary session is cleared.</p>
+          <div class="eraseSequenceSteps" id="eraseSequenceSteps">
+            <div data-erase-step="0"><span>1</span><strong>Photo analysis</strong><em>waiting</em></div>
+            <div data-erase-step="1"><span>2</span><strong>Voice recording</strong><em>waiting</em></div>
+            <div data-erase-step="2"><span>3</span><strong>Search session</strong><em>waiting</em></div>
+            <div data-erase-step="3"><span>4</span><strong>Presenter cache</strong><em>waiting</em></div>
+          </div>
+          <div class="eraseSequenceBar"><span id="eraseSequenceBar"></span></div>
+        </div>
+      </div>
     </section>
   </main>
   <script src="presenter.js"></script>
