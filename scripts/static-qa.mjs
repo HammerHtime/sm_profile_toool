@@ -147,6 +147,35 @@ else pass("Presenter no longer uses browser speech synthesis");
 if(!presenter.includes("photo-generated-voice")) fail("Presenter natural AI voice endpoint is missing");
 else pass("Presenter uses server-generated natural AI speech");
 
+const lisaPerson={
+  fullName:"Lisa Butcher",
+  city:"Kelowna",
+  username:"",
+  ageContext:null,
+  searchClues:["Therapist"]
+};
+const lisaWrong=liveModule.matchResult({
+  title:"Lisa Butcher - Therapist",
+  description:"Therapist based in the United Kingdom.",
+  url:"https://www.facebook.com/lisabutcherukofficial"
+},lisaPerson);
+if(lisaWrong.confidence!=="discard") fail("Kelowna Lisa Butcher collision was not rejected");
+else pass("Kelowna Lisa Butcher collision is rejected");
+
+const lisaRight=liveModule.matchResult({
+  title:"Lisa Butcher | Counselling BC",
+  description:"Registered Clinical Counsellor. Primary location Kelowna, BC. Private counselling practice.",
+  url:"https://counsellingbc.com/listings/lbutcher.htm"
+},lisaPerson);
+if(lisaRight.confidence!=="strong") fail("Kelowna counsellor synonym match was not retained");
+else pass("Kelowna counsellor synonym match is retained");
+
+if(!read("netlify/functions/live-search.mjs").includes("Verified account expansion")) fail("Verified social-account expansion is missing");
+else pass("Verified social accounts can expand into indexed posts and photos");
+
+if(!presenter.includes("finishPhotoReveal()")) fail("Photo presenter Done handler is missing");
+else pass("Photo presenter Done returns to the session screen");
+
 const functionNames=new Set(fs.readdirSync(path.join(root,"netlify/functions"))
   .filter(n=>n.endsWith(".mjs")).map(n=>n.replace(/\.mjs$/,"")));
 for(const jsPath of ["app.js","presenter.js","volunteer.js"]){
