@@ -936,7 +936,7 @@ function setConsentState() {
 
   function iosRowsFor(target) {
     const screenTimeRows = ["Apps & Websites","Allowed Contacts","Time Allowances","Screen Time Schedules","Content & Privacy Restrictions","Communication Safety"];
-    const privacyRows = ["Location Services","Tracking","Contacts","Calendars","Photos","Bluetooth","Local Network","Microphone","Camera"];
+    const privacyRows = ["Location Services","Tracking","Contacts","Calendars","Photos","Bluetooth","Local Network","Microphone","Camera","Safety Check"];
 
     if (target === "Family") return ["Airplane Mode","Wi-Fi","Bluetooth","Cellular","Notifications","Sounds & Haptics","Family","Screen Time","General","Privacy & Security"];
     if (target === "Child") return ["Family Checklist","Subscriptions","Purchase Sharing","Location Sharing","Child","Parents / Guardians"];
@@ -949,23 +949,43 @@ function setConsentState() {
     return ["Family","Screen Time","Privacy & Security","Notifications","General","Apps"];
   }
 
-  function deviceRowsFor(target) {
-    if (guidePlatform?.device === "ios") return iosRowsFor(target);
-    if (guidePlatform?.device === "android") {
+  function androidRowsFor(target) {
+    const personal = guidePlatform?.name === "Android Privacy";
+    if (!personal) {
       if (target === "Family Link") return ["Google","Security & privacy","Digital Wellbeing","Family Link","Apps","Location"];
       return ["Controls","Daily limit","Downtime","App limits","Content restrictions","Location","Account settings"];
     }
+
+    const permissionRows = ["Location","Camera","Microphone","Photos and videos","Contacts","Nearby devices","Notifications"];
+    if (target === "Settings") return ["Network & internet","Connected devices","Apps","Notifications","Battery","Storage","Security & privacy","Location"];
+    if (target === "Security & privacy") return ["App security","Device unlock","Account security","System & updates","Privacy","More security & privacy"];
+    if (target === "Privacy controls") return ["Privacy dashboard","Permission manager","Show passwords","Notifications on lock screen","Ads","Health Connect"];
+    if (permissionRows.includes(target) || target === "Precise location") return permissionRows;
+    if (target === "Unused apps") return ["Permission manager","Unused apps","Privacy dashboard","Ads"];
+    if (target === "Privacy dashboard") return ["Location","Camera","Microphone","Other permissions","See other permissions"];
+    return ["Security & privacy","Privacy dashboard","Permission manager","Location","Apps"];
+  }
+
+  function deviceRowsFor(target) {
+    if (guidePlatform?.device === "ios") return iosRowsFor(target);
+    if (guidePlatform?.device === "android") return androidRowsFor(target);
     return null;
   }
 
   function phoneHeaderFor(target) {
     if (guidePlatform?.device === "ios") {
       const screenTimeTargets = ["Apps & Websites","Allowed Contacts","Time Allowances","Screen Time Schedules","Content & Privacy Restrictions","Communication Safety"];
-      const privacyTargets = ["Location Services","Tracking","Contacts","Calendars","Photos","Bluetooth","Local Network","Microphone","Camera","Precise Location"];
+      const privacyTargets = ["Location Services","Tracking","Contacts","Calendars","Photos","Bluetooth","Local Network","Microphone","Camera","Precise Location","Safety Check"];
       if (screenTimeTargets.includes(target)) return "Screen Time";
       if (privacyTargets.includes(target)) return target === "Precise Location" ? "Location Services" : "Privacy & Security";
       if (target === "Child" || target === "Screen Time") return "Family";
       return "Settings";
+    }
+    if (guidePlatform?.device === "android") {
+      if (guidePlatform?.name === "Android / Family Link") return "Family Link";
+      if (["Location","Camera","Microphone","Photos and videos","Contacts","Precise location"].includes(target)) return "Permission manager";
+      if (["Privacy controls","Unused apps","Privacy dashboard"].includes(target)) return "Privacy";
+      return target === "Security & privacy" ? "Settings" : "Security & privacy";
     }
     return guidePlatform?.name || "Privacy Guide";
   }
