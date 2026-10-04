@@ -1,5 +1,6 @@
 import { openAIConfigured, openAIModel } from "./profile-intelligence.mjs";
 import { googleVisionConfigured } from "./google-vision-web.mjs";
+import { googleGeocodingConfigured } from "./google-geocoding.mjs";
 import { randomUUID } from "node:crypto";
 import { store } from "./photo-session-lib.mjs";
 
@@ -51,6 +52,7 @@ export default async (req) => {
     openAIConfigured:openAIConfigured(),
     openAIModel:openAIModel(),
     googleVisionConfigured:googleVisionConfigured(),
+    googleGeocodingConfigured:googleGeocodingConfigured(),
     blobs:{ ok:false }
   };
 
