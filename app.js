@@ -4,7 +4,7 @@
   const $ = (id) => document.getElementById(id);
   const consent = $("consent");
   const consentBox = $("consentBox");
-  const demoBtn = $("demoBtn");
+  const liveSearchBtn = $("liveSearchBtn");
   const uploadLabel = $("uploadLabel");
   const fileInput = $("fileInput");
   const scanPanel = $("scanPanel");
@@ -356,7 +356,7 @@
 
   function setConsentState() {
     const ok = !!consent.checked;
-    demoBtn.disabled = !ok;
+    if (liveSearchBtn) liveSearchBtn.disabled = !ok;
     fileInput.disabled = !ok;
     uploadLabel.classList.toggle("disabled", !ok);
     uploadLabel.setAttribute("aria-disabled", ok ? "false" : "true");
@@ -467,6 +467,39 @@
       });
     } else {
       sourcePanel.classList.add("hidden");
+    }
+
+
+    const publicSourcesPanel = $("publicSourcesPanel");
+    const publicSourcesGrid = $("publicSourcesGrid");
+    if (publicSourcesPanel && publicSourcesGrid) {
+      publicSourcesGrid.innerHTML = "";
+      const publicSources = report.publicSources || [];
+      publicSourcesPanel.classList.toggle("hidden", !publicSources.length);
+
+      publicSources.forEach((source) => {
+        const card = document.createElement("a");
+        card.className = "publicSourceCard " + (source.confidence === "strong" ? "strongMatch" : "possibleMatch");
+        card.href = source.url;
+        card.target = "_blank";
+        card.rel = "noopener noreferrer";
+
+        const reasons = (source.reasons || []).join(" • ");
+        card.innerHTML =
+          '<div class="publicSourceTop">' +
+            '<span class="publicSourcePlatform">' + (source.platform || source.domain || "Public web") + '</span>' +
+            '<span class="matchConfidence ' + (source.confidence || "possible") + '">' +
+              (source.confidence === "strong" ? "STRONG MATCH" : "POSSIBLE MATCH") +
+            '</span>' +
+          '</div>' +
+          '<strong>' + (source.title || source.domain || "Public result") + '</strong>' +
+          '<p>' + (source.snippet || "Open the source to review this result.") + '</p>' +
+          '<div class="publicSourceMeta">' +
+            '<span>' + (source.domain || "") + '</span>' +
+            '<span>' + (reasons || "name match") + '</span>' +
+          '</div>';
+        publicSourcesGrid.appendChild(card);
+      });
     }
 
     $("profileSignalsPanel").classList.toggle("hidden", !(report.signals || []).length);
@@ -754,11 +787,73 @@
   }
 
   consent.addEventListener("change", setConsentState);
-  demoBtn.addEventListener("click", () => {
-    if (!consent.checked) return;
-    eraseNotice.classList.add("hidden");
-    scanSequence(() => renderReport(syntheticReport()));
-  });
+
+  if (liveSearchBtn) {
+    liveSearchBtn.addEventListener("click", async () => {
+      if (!consent.checked) return;
+
+      const firstName = $("firstName").value.trim();
+      const lastName = $("lastName").value.trim();
+      const age = $("age").value.trim();
+      const city = $("city").value.trim();
+      const username = $("username").value.trim();
+
+      if (!firstName || !lastName) {
+        alert("Enter a first and last name before running the live search.");
+        return;
+      }
+
+      eraseNotice.classList.add("hidden");
+      results.classList.add("hidden");
+      scanPanel.classList.remove("hidden");
+      liveSearchBtn.disabled = true;
+
+      const statuses = [
+        ["Searching the public internet…","Checking open web results without using age as a hard filter."],
+        ["Checking public profiles…","Looking for name, city, username and platform matches."],
+        ["Comparing identity clues…","Age is only a soft supporting signal, not a requirement."],
+        ["Checking news and organization pages…","Looking for public bios, events, media and professional references."],
+        ["Verifying source links…","Only sourced results will be shown."]
+      ];
+      let statusIndex = 0;
+      scanTitle.textContent = statuses[0][0];
+      scanSub.textContent = statuses[0][1];
+      const timer = setInterval(() => {
+        statusIndex = (statusIndex + 1) % statuses.length;
+        scanTitle.textContent = statuses[statusIndex][0];
+        scanSub.textContent = statuses[statusIndex][1];
+      }, 900);
+
+      try {
+        const res = await fetch("/.netlify/functions/live-search", {
+          method:"POST",
+          headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({
+            consent:true,
+            firstName,
+            lastName,
+            age,
+            city,
+            username
+          }),
+          cache:"no-store"
+        });
+
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          throw new Error((data.error || "Live search failed.") + (data.detail ? " " + data.detail : ""));
+        }
+
+        renderReport(data);
+      } catch (e) {
+        alert(e.message);
+      } finally {
+        clearInterval(timer);
+        scanPanel.classList.add("hidden");
+        setConsentState();
+      }
+    });
+  }
 
   fileInput.addEventListener("change", async () => {
     if (!consent.checked || !fileInput.files[0]) return;
