@@ -38,6 +38,7 @@ export default async (req) => {
         usernameMasked: record.submission.usernameMasked
       } : null,
       image: record.submission?.image || null,
+      voiceSample: record.submission?.voiceSample || { recorded:false, durationMs:0, localOnly:true, rawAudioPersisted:false },
       findings: record.findings || null,
       correlation: record.correlation || null
     });
