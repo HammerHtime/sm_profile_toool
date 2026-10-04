@@ -3,6 +3,7 @@ import { cleanText, deleteSession, expired, getSession, jsonResponse, putSession
 
 const MAX_BYTES = 4 * 1024 * 1024;
 const allowed = new Set(["image/jpeg","image/jpg","image/png","image/webp","image/heic","image/heif"]);
+const BRAVE_ENDPOINT = "https://api.search.brave.com/res/v1/web/search";
 
 function maskHandle(v = "") {
   const s = cleanText(v, 80);
@@ -24,6 +25,109 @@ function cameraLabel(exif = {}) {
   const make = cleanText(exif.Make || "", 35);
   const model = cleanText(exif.Model || "", 50);
   return [make, model].filter(Boolean).join(" ").replace(/\s+/g, " ").trim();
+}
+
+function normalize(v = "") {
+  return String(v).toLowerCase().normalize("NFKD").replace(/[^a-z0-9@._ -]/g, " ").replace(/\s+/g, " ").trim();
+}
+
+function platformFor(url = "") {
+  let host = "";
+  try { host = new URL(url).hostname.replace(/^www\./, "").toLowerCase(); } catch {}
+  const rules = [
+    ["linkedin.com","LinkedIn"],["instagram.com","Instagram"],["facebook.com","Facebook"],
+    ["tiktok.com","TikTok"],["reddit.com","Reddit"],["x.com","X / Twitter"],
+    ["twitter.com","X / Twitter"],["youtube.com","YouTube"],["youtu.be","YouTube"],
+    ["threads.net","Threads"],["strava.com","Strava"],["github.com","GitHub"],
+    ["medium.com","Medium"],["substack.com","Substack"],["pinterest.com","Pinterest"],
+    ["twitch.tv","Twitch"],["bsky.app","Bluesky"],["meetup.com","Meetup"],["flickr.com","Flickr"]
+  ];
+  for (const [needle,label] of rules) if (host.includes(needle)) return label;
+  return "Public web";
+}
+
+async function braveSearch(apiKey, q) {
+  const response = await fetch(BRAVE_ENDPOINT, {
+    method:"POST",
+    headers:{
+      "accept":"application/json",
+      "content-type":"application/json",
+      "x-subscription-token":apiKey
+    },
+    body:JSON.stringify({ q, country:"CA", search_lang:"en", count:20 })
+  });
+
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data?.error?.detail || data?.message || "Public correlation search failed");
+  return data?.web?.results || [];
+}
+
+async function publicHandleCorrelation(username, firstName, city) {
+  const handle = cleanText(String(username || "").replace(/^@/, ""), 80);
+  const apiKey = process.env.BRAVE_SEARCH_API_KEY;
+
+  if (!handle) {
+    return {
+      attempted:false,
+      configured:!!apiKey,
+      basis:"No public username supplied",
+      totalMatches:0,
+      platforms:[],
+      sourceDomains:[]
+    };
+  }
+
+  if (!apiKey) {
+    return {
+      attempted:false,
+      configured:false,
+      basis:"Public username supplied, but live public correlation is not configured",
+      totalMatches:0,
+      platforms:[],
+      sourceDomains:[]
+    };
+  }
+
+  const quoted = '"' + handle.replaceAll('"',"") + '"';
+  const queries = [
+    quoted + " (site:instagram.com OR site:facebook.com OR site:tiktok.com OR site:linkedin.com OR site:threads.net)",
+    quoted + " (site:reddit.com OR site:x.com OR site:twitter.com OR site:youtube.com OR site:github.com OR site:strava.com)",
+    [quoted, firstName && '"' + firstName.replaceAll('"',"") + '"', city && '"' + city.replaceAll('"',"") + '"'].filter(Boolean).join(" ")
+  ];
+
+  const batches = await Promise.all(queries.map(q => braveSearch(apiKey,q)));
+  const seen = new Map();
+  const normalizedHandle = normalize(handle);
+
+  for (const result of batches.flat()) {
+    if (!result?.url) continue;
+    const hay = normalize([result.title,result.description,result.url].filter(Boolean).join(" "));
+    if (!hay.includes(normalizedHandle)) continue;
+
+    let domain = "";
+    try { domain = new URL(result.url).hostname.replace(/^www\./,"").toLowerCase(); } catch {}
+    if (!domain) continue;
+
+    if (!seen.has(result.url)) {
+      seen.set(result.url,{ platform:platformFor(result.url), domain });
+    }
+  }
+
+  const matches = [...seen.values()];
+  const counts = new Map();
+  matches.forEach(m => counts.set(m.platform,(counts.get(m.platform)||0)+1));
+
+  return {
+    attempted:true,
+    configured:true,
+    basis:"Supplied public username only. No facial identification.",
+    totalMatches:matches.length,
+    platforms:[...counts.entries()]
+      .map(([name,count]) => ({ name,count,label:"public pages matching supplied handle" }))
+      .sort((a,b)=>b.count-a.count)
+      .slice(0,10),
+    sourceDomains:[...new Set(matches.map(m=>m.domain))].slice(0,12)
+  };
 }
 
 export default async (req) => {
@@ -86,6 +190,20 @@ export default async (req) => {
       cameraSummary: camera || "",
       rawPhotoPersisted: false
     };
+
+    try {
+      record.correlation = await publicHandleCorrelation(username, firstName, city);
+    } catch (correlationError) {
+      console.error("photo public correlation failed", correlationError);
+      record.correlation = {
+        attempted:true,
+        configured:!!process.env.BRAVE_SEARCH_API_KEY,
+        basis:"Public correlation failed. No public matches were displayed.",
+        totalMatches:0,
+        platforms:[],
+        sourceDomains:[]
+      };
+    }
 
     await putSession(record);
 
