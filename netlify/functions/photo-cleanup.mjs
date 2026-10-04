@@ -1,4 +1,4 @@
-import { store } from "./photo-session-lib.mjs";
+import { store, voiceAudioKey } from "./photo-session-lib.mjs";
 
 export default async () => {
   const s = store();
@@ -10,6 +10,9 @@ export default async () => {
     try {
       const record = await s.get(blob.key, { type:"json", consistency:"strong" });
       if (!record?.expiresAt || Date.parse(record.expiresAt) <= Date.now()) {
+        for (const sample of record?.submission?.voiceSamples || []) {
+          try { await s.delete(voiceAudioKey(record.id,sample.index)); } catch {}
+        }
         await s.delete(blob.key);
         deleted++;
       }
