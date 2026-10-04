@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Public Footprint | AI Privacy Demo</title>
+  <meta name="description" content="A privacy-first educational demo showing how much public information can be inferred without exposing sensitive details." />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="shell">
+    <section class="hero">
+      <div class="eyebrow">AI PRIVACY DEMONSTRATION</div>
+      <h1>What does the internet know about you?</h1>
+      <p class="lead">See how much public information can be connected to you while keeping sensitive details deliberately masked.</p>
+      <div class="presentationFlow" aria-label="Presentation flow">
+        <div class="flowStage active"><span>01</span><strong>Name + age</strong><small>Public footprint</small></div>
+        <div class="flowConnector"></div>
+        <div class="flowStage"><span>02</span><strong>One photo</strong><small>Breadcrumb trail</small></div>
+        <div class="flowConnector"></div>
+        <div class="flowStage"><span>03</span><strong>Fix it</strong><small>Platform settings</small></div>
+        <div class="flowConnector"></div>
+        <div class="flowStage parent"><span>04</span><strong>Parents</strong><small>Family safety</small></div>
+      </div>
+    </section>
+
+    <section class="panel input-panel" id="inputPanel">
+      <div class="sectionHead">
+        <div>
+          <div class="stepPill">STEP 1</div>
+          <h2>Start a privacy-safe search</h2>
+        </div>
+        <div class="privacyChip">No data saved</div>
+      </div>
+
+      <div class="grid two">
+        <label>First name<input id="firstName" autocomplete="off" placeholder="Alex" /></label>
+        <label>Last name<input id="lastName" autocomplete="off" placeholder="Morgan" /></label>
+        <label>Age<input id="age" inputmode="numeric" autocomplete="off" placeholder="38" /></label>
+        <label>City<input id="city" autocomplete="off" placeholder="Toronto" /></label>
+        <label>Optional public username<input id="username" autocomplete="off" placeholder="alexm" /></label>
+      </div>
+
+      <div class="consentBox" id="consentBox">
+        <label class="consent">
+          <input type="checkbox" id="consent" />
+          <span>
+            <strong>I have permission to search this person.</strong>
+            <small>I confirm this is my information, or I have the subject's explicit consent to run this demonstration.</small>
+          </span>
+        </label>
+      </div>
+
+      <div class="actions">
+        <button id="demoBtn" class="primary" disabled>Run safe demo</button>
+        <label class="uploadBtn disabled" id="uploadLabel" aria-disabled="true">Analyze evidence JSON<input id="fileInput" type="file" accept="application/json" hidden disabled /></label>
+        <a class="photoDemoLaunch" href="presenter.html"><span class="photoDemoLaunchIcon">◎</span><span><strong>Photo Demo</strong><small>Launch live QR experience</small></span></a>
+      </div>
+      <p class="fineprint">Search controls unlock only after consent is checked. Demo mode uses synthetic data. Evidence mode sends data to a no-store server-side summarizer that returns counts and masked fragments only.</p>
+    </section>
+
+    <section class="scan panel hidden" id="scanPanel" aria-live="polite">
+      <div class="spinner" aria-hidden="true"></div>
+      <div>
+        <div class="scanTitle" id="scanTitle">Analyzing public footprint…</div>
+        <div class="scanSub" id="scanSub">Sensitive values will be partially masked before display.</div>
+      </div>
+    </section>
+
+    <section id="results" class="hidden">
+      <section class="scoreCard panel">
+        <div>
+          <div class="eyebrow">PUBLIC FOOTPRINT</div>
+          <h2 id="subjectName">Demo Subject</h2>
+          <p id="summaryLine">Publicly discoverable information spans multiple categories.</p>
+        </div>
+        <div class="scoreWrap">
+          <div class="score" id="score">0</div>
+          <div class="scoreLabel" id="scoreLabel">LOW</div>
+        </div>
+      </section>
+
+      <section class="stats" id="stats"></section>
+
+      <section class="panel findings">
+        <h3>What the system found</h3>
+        <div id="findingRows"></div>
+      </section>
+
+      <section class="panel accountMatchesPanel hidden" id="accountMatchesPanel">
+        <div class="coverageHeader">
+          <div>
+            <div class="eyebrow">MATCHED ACCOUNTS</div>
+            <h3>Recognizable account names, without giving them away</h3>
+            <p class="fineprint">Only the beginning and end of each public handle/name are shown. The middle portion is masked before results reach this screen.</p>
+          </div>
+          <div class="privacyChip">MIDDLE 50%+ MASKED</div>
+        </div>
+        <div class="accountMatchesGrid" id="accountMatchesGrid"></div>
+      </section>
+
+      <section class="panel sourceCoveragePanel hidden" id="sourceCoveragePanel">
+        <div class="coverageHeader">
+          <div>
+            <div class="eyebrow">SOURCE COVERAGE</div>
+            <h3>How broad was the public search?</h3>
+            <p class="fineprint">The demo distinguishes sources that were checked from sources that actually produced matching public material. Private messages, closed groups, private servers and non-public accounts are excluded.</p>
+          </div>
+          <div class="coverageNumbers">
+            <div><strong id="sourceSearched">0</strong><span>sources checked</span></div>
+            <div><strong id="sourceMatched">0</strong><span>with matches</span></div>
+          </div>
+        </div>
+        <div class="sourceCoverageGrid" id="sourceCoverageGrid"></div>
+      </section>
+
+      <section class="panel profileSignalsPanel hidden" id="profileSignalsPanel">
+        <div class="coverageHeader">
+          <div>
+            <div class="eyebrow">AI PROFILE SYNTHESIS</div>
+            <h3>What could someone learn from all of this?</h3>
+            <p class="fineprint">The goal is to show how ordinary public fragments combine into a much richer profile. Sensitive-trait inference is deliberately disabled.</p>
+          </div>
+          <div class="privacyChip">SUMMARY ONLY</div>
+        </div>
+        <div class="profileSignalsGrid" id="profileSignalsGrid"></div>
+      </section>
+
+      <section class="panel exposureDetailPanel hidden" id="exposureDetailPanel">
+        <div class="coverageHeader">
+          <div>
+            <div class="eyebrow">WHAT WAS ACTUALLY SHARED?</div>
+            <h3>Content-level exposure</h3>
+            <p class="fineprint">Instead of displaying the private detail itself, the report counts and classifies what public material revealed. Image categories are descriptive only; the demo does not identify people from faces.</p>
+          </div>
+          <div class="activityHero"><strong id="activityTotal">0</strong><span>public posts, comments & mentions</span></div>
+        </div>
+        <div class="exposureColumns">
+          <section class="detailCard">
+            <h4><span id="imageTotal">0</span> public images — what they showed</h4>
+            <div class="breakdownList" id="imageBreakdown"></div>
+          </section>
+          <section class="detailCard">
+            <h4>Public activity discovered</h4>
+            <div class="breakdownList" id="activityTypes"></div>
+          </section>
+        </div>
+        <section class="detailCard themeCard">
+          <div class="detailTitleRow">
+            <h4>Non-sensitive themes repeatedly shared or discussed</h4>
+            <span class="badge">SENSITIVE TRAIT INFERENCE OFF</span>
+          </div>
+          <div class="themeGrid" id="themeBreakdown"></div>
+          <p class="fineprint detailNote">The educational profile can summarize ordinary interests, routines and topics. It intentionally does not infer or score political beliefs, religion, health, sexual orientation, race, or other sensitive personal traits.</p>
+        </section>
+      </section>
+
+      <section class="panel mapPanel hidden" id="mapPanel">
+        <div class="mapHeader">
+          <div>
+            <h3>Approximate image-location exposure</h3>
+            <p class="fineprint">Precise GPS coordinates are reduced server-side. The display uses only a coarse 50 km privacy zone with no exact pin.</p>
+          </div>
+          <div class="badge">50 KM RADIUS</div>
+        </div>
+        <div class="mapGrid" id="mapGrid"></div>
+      </section>
+
+
+      <section class="panel privacyCoachPanel">
+        <div class="coachHead">
+          <div>
+            <div class="eyebrow">PHASE 3 · FIX THE EXPOSURE</div>
+            <h3>Zoom inside each platform</h3>
+            <p class="fineprint">Click an app. The presentation zooms into a phone-style settings walkthrough. One clicker press equals one tap on the phone. There is no fixed slide limit: each platform uses as many screens as the real setup needs, and every setting ends with an explanation of what it controls, why it matters, what changes, and any trade-off.</p>
+          </div>
+          <div class="privacyChip">CLICKER READY</div>
+        </div>
+        <div class="hubLegend"><span><i class="legendDot found"></i> commonly found in public searches</span><span><i class="legendDot"></i> privacy controls worth reviewing</span></div>
+        <div class="platformGrid platformWall" id="platformGrid"></div>
+      </section>
+
+      <section class="panel parentSafetyPanel" id="parentSafetyPanel">
+        <div class="parentHero">
+          <div>
+            <div class="eyebrow">PHASE 4 · PARENT MODE</div>
+            <h3>Protect the child, not just the account.</h3>
+            <p>Platform supervision is only half the job. This section walks parents through the controls inside social apps, then goes much deeper into iPhone Screen Time and Android Family Link. These deep dives are intentionally long and step-by-step, with no artificial slide cap.</p>
+          </div>
+          <div class="parentShield" aria-hidden="true"><span>◆</span><small>FAMILY
+SAFETY</small></div>
+        </div>
+        <div class="parentSectionLabel"><span>Social platforms with teen / family safety controls</span><small>Tap any platform to zoom in</small></div>
+        <div class="platformGrid parentPlatformGrid" id="parentPlatformGrid"></div>
+        <div class="parentSectionLabel deviceLabel"><span>Device parental controls · deep dive</span><small>These are the big sections</small></div>
+        <div class="deviceParentGrid" id="deviceParentGrid"></div>
+        <div class="parentAccuracyNote"><strong>Important:</strong> controls vary by age, region, app version and device OS. The walkthroughs are written for current 2026 guidance and link to the platform’s official help page on every deck.</div>
+      </section>
+
+      <section class="panel message">
+        <h3>Why this matters</h3>
+        <p id="takeaway"></p>
+        <p class="privacyNote">Complete home addresses, telephone numbers, personal email addresses, exact school names, family identities, image URLs, and precise locations are intentionally excluded. Only limited masked fragments are shown for recognition.</p>
+      </section>
+
+      <section class="panel erasePanel">
+        <div class="eraseCopy">
+          <div class="stepPill dangerStep">END DEMO</div>
+          <h3>Erase this demo</h3>
+          <p>Deletes the app's active report, masked results, map state, form values, and browser-stored demo data. The tool does not maintain a database of searches.</p>
+        </div>
+        <button id="eraseBtn" class="danger">Erase Demo Data</button>
+      </section>
+    </section>
+
+    <section class="eraseNotice hidden" id="eraseNotice" role="status" aria-live="polite">
+      <div class="eraseCheck">✓</div>
+      <div><strong>Demo data erased.</strong><br><span>This session is back to a clean state. Consent is required for another search.</span></div>
+    </section>
+  </main>
+
+
+  <div class="coachModal hidden" id="coachModal" role="dialog" aria-modal="true" aria-labelledby="coachTitle">
+    <div class="coachBackdrop" data-close-coach="true"></div>
+    <section class="coachDeck">
+      <div class="coachTopbar">
+        <button class="iconBtn" id="coachClose" aria-label="Close privacy guide">×</button>
+        <div class="coachBrand" id="coachBrand">Privacy Coach</div>
+        <div class="coachCounter" id="coachCounter">1 / 4</div>
+      </div>
+      <div class="coachProgress" id="coachProgress"></div>
+      <div class="coachSlide" id="coachSlide"></div>
+      <div class="coachNav">
+        <button class="secondaryBtn" id="coachPrev">Back</button>
+        <a class="officialLink" id="coachOfficial" href="#" target="_blank" rel="noopener noreferrer">Official help ↗</a>
+        <button class="primary coachNext" id="coachNext">Next</button>
+      </div>
+    </section>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
