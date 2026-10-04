@@ -1,4 +1,16 @@
 (() => {
+  try {
+    const resetKey = "pfLastHardReset";
+    const last = Number(localStorage.getItem(resetKey) || 0);
+    const now = Date.now();
+    if (!last || now - last >= 24 * 60 * 60 * 1000) {
+      sessionStorage.clear();
+      localStorage.removeItem("pfPhotoPresenter");
+      localStorage.setItem(resetKey, String(now));
+    }
+  } catch {}
+
+
   "use strict";
 
   const $ = (id) => document.getElementById(id);
