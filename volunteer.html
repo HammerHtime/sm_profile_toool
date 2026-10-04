@@ -14,8 +14,9 @@
     <form id="volunteerForm" class="panel volunteerForm">
       <div class="mobileStep"><b>1</b><span>About you</span></div>
       <label>First name<input id="vFirstName" required maxlength="40" autocomplete="given-name" placeholder="Alex" /></label>
-      <label>City <small>optional</small><input id="vCity" maxlength="80" autocomplete="address-level2" placeholder="Toronto" /></label>
-      <label>Public username <small>optional · improves public correlation</small><input id="vUsername" maxlength="80" autocomplete="off" placeholder="@alexm" /><span class="clueHint">If provided, the demo can check public/indexed pages for that handle. It does not identify you from your face.</span></label>
+      <label>Last name <small>optional · improves public correlation</small><input id="vLastName" maxlength="60" autocomplete="family-name" placeholder="Morgan" /></label>
+      <label>City <small>recommended for accurate matching</small><input id="vCity" maxlength="80" autocomplete="address-level2" placeholder="Toronto" /></label>
+      <label>Public username <small>optional · strongest public clue</small><input id="vUsername" maxlength="80" autocomplete="off" placeholder="@alexm" /><span class="clueHint">A username can be checked directly. A full name is only used for public correlation when a city is also supplied. The demo does not identify you from your face.</span></label>
 
       <div class="mobileStep"><b>2</b><span>Your photo</span></div>
       <div class="photoChoiceGrid">
@@ -72,7 +73,7 @@
       <label class="consentBox mobileConsent">
         <span class="consent">
           <input id="vConsent" type="checkbox" required />
-          <span><strong>I consent to this live privacy demonstration.</strong><small>I confirm this is my photo or I have permission to use it. I understand the presenter will see summarized or masked findings, not my raw photo. If I record the optional voice consent phrase, I consent to that original recording being temporarily sent to this demo session so the presenter can replay it. I understand the demo may use the recording duration to adjust the speaking pace of generic AI-generated example sentences, but it will not reproduce my vocal identity. The recording is removed when the demo session is erased. If I provide a public username, that handle may be sent to the configured public-search provider to check public/indexed webpages. The search provider may retain API query records under its own service and privacy terms. If I am under 18, my parent or guardian is present and consents.</small></span>
+          <span><strong>I consent to this live privacy demonstration.</strong><small>I confirm this is my photo or I have permission to use it. I understand the presenter will see summarized or masked findings, not my raw photo. If I record the optional voice consent phrase, I consent to that original recording being temporarily sent to this demo session so the presenter can replay it. I understand the demo may use the recording duration to adjust the speaking pace of generic AI-generated example sentences, but it will not reproduce my vocal identity. The recording is removed when the demo session is erased. If I provide identity clues such as my full name, city or public username, those supplied clues may be sent to the configured public-search provider to check public/indexed webpages and public image results. The search provider may retain API query records under its own service and privacy terms. If I am under 18, my parent or guardian is present and consents.</small></span>
         </span>
       </label>
 
