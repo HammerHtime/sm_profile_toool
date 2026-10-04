@@ -858,7 +858,7 @@ function setConsentState() {
     const hasExposure = (report.imageBreakdown || []).length || (report.activity || []).length || (report.themes || []).length;
     exposurePanel.classList.toggle("hidden", !hasExposure);
     if (hasExposure) {
-      $("imageTotal").textContent = (report.stats && report.stats[1]) ? report.stats[1].n : 0;
+      $("imageTotal").textContent = (report.imageBreakdown || []).reduce((sum,x)=>sum+Number(x[1]||0),0);
       $("activityTotal").textContent = (report.activity || []).reduce((sum, x) => sum + Number(x[1] || 0), 0);
       renderBreakdown("imageBreakdown", report.imageBreakdown || []);
       renderBreakdown("activityTypes", report.activity || []);
