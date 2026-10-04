@@ -90,6 +90,16 @@ else pass("Report deck viewport prevents content clipping");
 if(!css.includes(".copyFadeOut") || !css.includes(".copyFadeIn")) fail("Coach copy cross-fade styles are missing");
 else pass("Coach copy cross-fade styles exist");
 
+const photoCss=read("photo-demo.css");
+if(!/body\.photoPresentationMode \.revealSlide\s*\{[^}]*overflow-y:auto/s.test(photoCss)) fail("Presenter reveal slides still clip tall content");
+else pass("Presenter reveal slides scroll instead of clipping");
+if(!/\.impactSlide \.photoRevealControls\s*\{[^}]*position:sticky/s.test(photoCss)) fail("Impact controls can still overlay voice content");
+else pass("Impact controls reserve their own space");
+if(!photoCss.includes(".correlationDisclosure{") || !photoCss.includes("z-index:8")) fail("Breadcrumb disclosure separation is missing");
+else pass("Breadcrumb disclosure is separated from graph nodes");
+if(!presenter.includes("active.scrollTop=0")) fail("Presenter slide scroll reset is missing");
+else pass("Presenter slide scroll resets on navigation");
+
 const liveModule = await import(new URL("../netlify/functions/live-search.mjs", import.meta.url));
 const testPerson = {
   fullName:"Andrew Hammond",

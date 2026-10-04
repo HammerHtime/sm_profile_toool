@@ -1175,3 +1175,117 @@ body.photoPresentationMode .revealSlide{
   body.photoPresentationMode .revealSlide{height:auto;min-height:620px;overflow:visible}
   .photoRevealControls{position:sticky;bottom:8px}
 }
+
+
+/* RC17 presenter layout hardening */
+body.photoPresentationMode .revealDeck{
+  padding-bottom:0;
+  overflow:hidden;
+}
+body.photoPresentationMode .revealSlide{
+  height:100%;
+  min-height:0;
+  justify-content:flex-start;
+  overflow-x:hidden;
+  overflow-y:auto;
+  padding-top:clamp(22px,3vh,34px);
+  padding-bottom:28px;
+  scrollbar-gutter:stable;
+  overscroll-behavior:contain;
+}
+body.photoPresentationMode .revealSlide>h2{
+  flex:0 0 auto;
+}
+body.photoPresentationMode .impactSlide{
+  padding-bottom:20px;
+}
+body.photoPresentationMode .impactSlide .photoRevealControls{
+  position:sticky;
+  left:auto;
+  right:auto;
+  bottom:0;
+  margin-top:18px;
+  padding:12px 2px 2px;
+  background:linear-gradient(180deg,rgba(7,17,26,.15),rgba(7,17,26,.94) 34%);
+  backdrop-filter:blur(10px);
+}
+.photoFindingGrid{
+  grid-template-columns:repeat(6,minmax(0,1fr));
+  align-items:stretch;
+}
+.photoFindingCard{
+  grid-column:span 3;
+  min-width:0;
+}
+.photoFindingCard p,
+.photoFindingCard strong{
+  overflow-wrap:anywhere;
+}
+.photoFindingCard:last-child:nth-child(odd){
+  grid-column:3 / span 2;
+}
+.correlationStage{
+  min-height:500px;
+  margin-bottom:14px;
+}
+.correlationDisclosure{
+  position:relative;
+  z-index:8;
+  max-width:920px;
+  margin:12px auto 0;
+  padding:10px 14px;
+  border:1px solid rgba(82,214,255,.10);
+  border-radius:14px;
+  background:rgba(5,14,22,.78);
+  text-align:left;
+}
+.correlationDisclosure strong{
+  display:block;
+  margin-bottom:4px;
+}
+.correlationDisclosure span{
+  display:block;
+}
+.impactSlide .impactStats,
+.impactSlide .impactTeaching,
+.impactSlide .voiceRiskCard{
+  width:100%;
+  max-width:none;
+}
+.impactSlide .voiceRiskCard{
+  flex:0 0 auto;
+}
+.voicePlaybackFour{
+  align-items:stretch;
+}
+.voiceSamplePlayBtn{
+  min-width:0;
+}
+.voiceSamplePlayBtn span:last-child{
+  min-width:0;
+}
+.voiceSamplePlayBtn strong,
+.voiceSamplePlayBtn small{
+  overflow-wrap:anywhere;
+}
+@media(max-width:850px){
+  .photoFindingGrid{grid-template-columns:1fr}
+  .photoFindingCard,
+  .photoFindingCard:last-child:nth-child(odd){grid-column:auto}
+}
+@media(max-height:820px) and (min-width:851px){
+  body.photoPresentationMode .revealSlide{
+    padding-top:18px;
+    padding-bottom:20px;
+  }
+  body.photoPresentationMode .revealSlide h2{
+    font-size:clamp(2rem,4.2vw,3.65rem);
+    margin-bottom:18px;
+  }
+  .impactStats{margin-bottom:14px}
+  .teachingPoints div{padding:16px}
+  .voiceRiskCard{margin-top:16px;padding:16px}
+  .voiceRiskIntro{margin-top:11px}
+  .voicePlaybackGrid{margin-top:10px}
+  .voiceSamplePlayBtn{min-height:78px}
+}

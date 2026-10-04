@@ -145,7 +145,7 @@ function correlationMap(data){
   const w=data.webDetection||{};
   const publicNodes=normalizePublicNodes(data);
   const positions=[
-    {x:2,y:8},{x:77,y:8},{x:2,y:67},{x:77,y:67},{x:39,y:2},{x:39,y:77}
+    {x:3,y:7},{x:78,y:7},{x:3,y:58},{x:78,y:58},{x:40,y:1},{x:40,y:64}
   ];
 
   const nodes=[
@@ -169,7 +169,7 @@ function correlationMap(data){
     publicNodes.slice(0,4).forEach(n=>{
       nodes.push({
         title:n.name,
-        detail:n.count+' verified public match'+(n.count===1?'':'es')+' from the supplied handle',
+        detail:n.count+' verified public match'+(n.count===1?'':'es')+' from the supplied identity clues',
         icon:n.icon,
         tone:'safe'
       });
@@ -185,15 +185,14 @@ function correlationMap(data){
 
   nodes.slice(0,6).forEach((o,i)=>addNode(st,{...o,...positions[i]}));
 
-  const domains=(c.sourceDomains||[]).slice(0,5);
-  const visionDomains=(w.pageMatches||[]).map(page=>page.domain).filter(Boolean).slice(0,4);
-  const domainCopy=domains.length?' Sources included: '+domains.join(', ')+'.':'';
-  const visionCopy=visionDomains.length?' Reverse-image matching pages included: '+visionDomains.join(', ')+'.':'';
+  const domains=(c.sourceDomains||[]).slice(0,3);
+  const visionDomains=(w.pageMatches||[]).map(page=>page.domain).filter(Boolean).slice(0,2);
+  const sourceCopy=domains.length?' Source examples: '+domains.join(', ')+'.':'';
+  const visionCopy=visionDomains.length?' Image-match examples: '+visionDomains.join(', ')+'.':'';
   $('correlationDisclosure').innerHTML=
-    '<strong>Breadcrumb logic, not facial identification.</strong> '+
-    escapeHtml(c.basis||'Public correlations appear only when a real source match is returned.')+
-    escapeHtml(w.basis?(' '+w.basis):'')+
-    escapeHtml(domainCopy)+escapeHtml(visionCopy);
+    '<strong>Breadcrumb logic, not facial identification.</strong>'+
+    '<span>'+escapeHtml(c.basis||'Public correlations appear only when a real source match is returned.')+
+    escapeHtml(sourceCopy)+escapeHtml(visionCopy)+'</span>';
 }
 function impact(data){
   const f=data.findings||{},embedded=[f.gpsEmbedded,f.captureDateEmbedded,f.cameraMetadataEmbedded].filter(Boolean).length;
@@ -880,6 +879,11 @@ function showReveal(i){
   if($('photoRevealName'))$('photoRevealName').textContent=photoRevealNames[revealIndex]||'Findings';
   if($('photoPrev'))$('photoPrev').disabled=revealIndex===0;
   if($('photoNext'))$('photoNext').textContent=revealIndex===slides.length-1?'Done':'Next →';
+
+  const active=slides[revealIndex];
+  requestAnimationFrame(()=>{
+    if(active) active.scrollTop=0;
+  });
 }
 async function poll(){
   if(!session)return;

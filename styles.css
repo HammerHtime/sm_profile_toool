@@ -2079,3 +2079,62 @@ body.reportDeckActive{overflow:hidden}
 @media(max-width:820px){
   .reportDeck .storyPointGrid{grid-template-columns:1fr}
 }
+
+
+/* RC17 report density repair */
+.reportDeck .exposureDetailPanel .coverageHeader{
+  align-items:center;
+}
+.reportDeck .activityHero{
+  min-width:116px;
+  padding:9px 11px;
+  border:1px solid rgba(255,255,255,.07);
+  border-radius:14px;
+  background:rgba(5,15,23,.46);
+}
+.reportDeck .activityHero strong{
+  font-size:1.7rem;
+  line-height:1;
+}
+.reportDeck .activityHero span{
+  display:block;
+  max-width:105px;
+  margin-top:4px;
+  line-height:1.25;
+}
+.reportDeck .exposureColumns{
+  align-items:start;
+}
+.reportDeck .detailCard{
+  min-width:0;
+}
+.reportDeck .breakdownRow{
+  min-width:0;
+}
+.reportDeck .breakdownRow>span{
+  min-width:0;
+  overflow-wrap:anywhere;
+}
+.reportDeck .detailTitleRow{
+  align-items:flex-start;
+  flex-wrap:wrap;
+}
+.reportDeck .themeGrid{
+  gap:6px;
+  align-items:center;
+}
+.reportDeck .themePill{
+  padding:6px 8px;
+  font-size:.68rem;
+  line-height:1.1;
+}
+.reportDeck .profileSignalsGrid{
+  grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+}
+.reportDeck .signalCard{
+  min-width:0;
+}
+.reportDeck .signalCard strong,
+.reportDeck .signalCard p{
+  overflow-wrap:anywhere;
+}
