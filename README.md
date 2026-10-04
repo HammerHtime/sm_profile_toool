@@ -8,7 +8,7 @@ Production is designed for Netlify deployment from the `main` branch.
 
 - Publish directory: repository root
 - Functions directory: `netlify/functions`
-- Node: 20+
+- Node: 22.12+
 - Netlify Blobs: temporary QR/photo-demo session and consent-audio storage
 - Primary live-search provider: Brave Search API
 
