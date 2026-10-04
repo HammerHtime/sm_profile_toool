@@ -733,12 +733,96 @@ function setConsentState() {
     window.addEventListener("keydown", keyHandler);
   }
 
+  let activeAppPortal = null;
+
+  function closeAppPortal() {
+    if (!activeAppPortal) return;
+    const { element, keyHandler } = activeAppPortal;
+    if (keyHandler) window.removeEventListener("keydown", keyHandler);
+    element.classList.add("portalClosing");
+    setTimeout(() => element.remove(), 260);
+    activeAppPortal = null;
+    document.body.style.overflow = "";
+  }
+
+  function openAppPortal(p, parentMode, originEl) {
+    if (activeAppPortal) closeAppPortal();
+
+    const rect = originEl?.getBoundingClientRect();
+    const portal = document.createElement("div");
+    portal.className = "appPortal";
+    portal.style.setProperty("--brand", p.brand || "#52d6ff");
+
+    portal.innerHTML =
+      '<div class="appPortalBackdrop"></div>' +
+      '<div class="appPortalHud">' +
+        '<div class="devicePortalKicker">' + (parentMode ? "PARENT SAFETY GUIDE" : "PRIVACY GUIDE") + '</div>' +
+        '<h2>Enter ' + p.name + '</h2>' +
+        '<p>Scroll down or click the app icon to open its privacy controls.</p>' +
+      '</div>' +
+      '<button type="button" class="appPortalCore" aria-label="Open ' + p.name + '">' +
+        '<span class="appPortalRing ringA"></span>' +
+        '<span class="appPortalRing ringB"></span>' +
+        '<span class="appPortalIcon">' + p.icon + '</span>' +
+        '<strong>' + p.name + '</strong>' +
+        '<small>' + (parentMode ? "SAFETY CONTROLS" : "PRIVACY CONTROLS") + '</small>' +
+      '</button>' +
+      '<div class="portalInstruction"><span class="portalMouse">↕</span><strong>SCROLL TO ENTER</strong><small>or click the glowing app icon</small></div>' +
+      '<div class="portalFlash"></div>';
+
+    const core = portal.querySelector(".appPortalCore");
+    if (rect) {
+      core.style.left = (rect.left + rect.width / 2) + "px";
+      core.style.top = (rect.top + rect.height / 2) + "px";
+    }
+
+    document.body.appendChild(portal);
+    document.body.style.overflow = "hidden";
+    activeAppPortal = { element:portal, keyHandler:null };
+    requestAnimationFrame(() => portal.classList.add("active"));
+
+    let entering = false;
+    const enter = () => {
+      if (entering) return;
+      entering = true;
+      portal.classList.add("entering");
+      setTimeout(() => {
+        const keyHandler = activeAppPortal?.keyHandler;
+        if (keyHandler) window.removeEventListener("keydown", keyHandler);
+        portal.remove();
+        activeAppPortal = null;
+        openGuideDirect(p, parentMode, 0);
+      }, 650);
+    };
+
+    core.addEventListener("click", enter);
+    portal.addEventListener("wheel", (e) => {
+      if (Math.abs(e.deltaY) < 18) return;
+      e.preventDefault();
+      if (e.deltaY > 0) enter();
+      else closeAppPortal();
+    }, { passive:false });
+
+    const keyHandler = (e) => {
+      if (!activeAppPortal) return;
+      if (["ArrowRight","ArrowDown","PageDown"," ","Enter"].includes(e.key)) {
+        e.preventDefault();
+        enter();
+      } else if (["Escape","ArrowLeft","ArrowUp"].includes(e.key)) {
+        e.preventDefault();
+        closeAppPortal();
+      }
+    };
+    activeAppPortal.keyHandler = keyHandler;
+    window.addEventListener("keydown", keyHandler);
+  }
+
   function openGuide(p, parentMode, originEl = null) {
     if (p.device) {
       openDevicePortal(p, parentMode, originEl);
       return;
     }
-    openGuideDirect(p, parentMode, 0);
+    openAppPortal(p, parentMode, originEl);
   }
 
   function closeGuide() {
