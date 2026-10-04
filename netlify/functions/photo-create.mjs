@@ -45,3 +45,14 @@ export default async (req) => {
     return jsonResponse({ error: "Could not create the live photo session.", detail: error?.message || "Unknown error" }, 500);
   }
 };
+
+
+export const config = {
+  path:"/api/photo-create",
+  rateLimit:{
+    action:"rate_limit",
+    aggregateBy:["ip","domain"],
+    windowSize:60,
+    windowLimit:10
+  }
+};
