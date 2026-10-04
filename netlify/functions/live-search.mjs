@@ -1,4 +1,5 @@
 import { synthesizePublicProfile } from "./profile-intelligence.mjs";
+import { googleGeocodingConfigured, normalizeBroadPlace, normalizeStoryLocations } from "./google-geocoding.mjs";
 const BRAVE_ENDPOINT = "https://api.search.brave.com/res/v1/web/search";
 const BRAVE_IMAGE_ENDPOINT = "https://api.search.brave.com/res/v1/images/search";
 
@@ -607,6 +608,16 @@ export default async (req) => {
     recurringThemes:themeTerms
   });
 
+  const [enteredPlaceResult, storyLocations] = await Promise.all([
+    city ? normalizeBroadPlace(city) : Promise.resolve({place:null}),
+    normalizeStoryLocations(intelligence.locations || [],4)
+  ]);
+  const locationIntelligence = {
+    configured:googleGeocodingConfigured(),
+    searchAnchor:enteredPlaceResult?.place || null,
+    storyLocations
+  };
+
   return respond({
     dataMode:"verified",
     synthetic:false,
@@ -631,6 +642,7 @@ export default async (req) => {
     cluesUsed:searchClues,
     signals,
     intelligence,
+    locationIntelligence,
     imageBreakdown:visualPhotos.length ? [["Public image search thumbnails",visualPhotos.length]] : [],
     activity:quoteSnippets.length ? [["Public excerpts surfaced",quoteSnippets.length]] : [],
     themes:themeTerms.map(item=>item.term),
