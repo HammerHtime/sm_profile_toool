@@ -226,6 +226,14 @@ function clueVariants(clue = "") {
     variants.push("toronto police service");
     variants.push("tps");
   }
+  if (/\btherapist\b|\btherapy\b|\bpsychotherapist\b/.test(key)) {
+    variants.push(
+      "therapist","therapy","psychotherapist","psychotherapy",
+      "counsellor","counselor","counselling","counseling",
+      "clinical counsellor","clinical counselor","registered clinical counsellor",
+      "registered clinical counselor","rcc"
+    );
+  }
   return [...new Set(variants.filter(Boolean))];
 }
 
@@ -244,21 +252,28 @@ function cityIdentitySupport(raw = "", city = "") {
   const hay=normalize(raw);
   const mentioned=hay.includes(key);
   if (!mentioned) return { mentioned:false, anchored:false };
-
-  const anchors=[
-    "based in "+key,
-    "based "+key,
-    "from "+key,
-    "lives in "+key,
-    "located in "+key,
-    key+" ontario",
-    key+" on canada",
-    key+" canada",
-    key+" police",
-    key+" university",
-    key+" based"
+  const provinceTerms=[
+    "bc","british columbia","ab","alberta","sk","saskatchewan","mb","manitoba",
+    "on","ontario","qc","quebec","nb","new brunswick","ns","nova scotia",
+    "pei","prince edward island","nl","newfoundland","newfoundland and labrador",
+    "yt","yukon","nt","northwest territories","nu","nunavut"
   ];
-  return { mentioned:true, anchored:anchors.some(anchor=>hay.includes(anchor)) };
+  const provinceAnchor=provinceTerms.some(term=>hay.includes(key+" "+term));
+  const tokens=hay.split(/\s+/);
+  const keyTokens=key.split(/\s+/);
+  let postalAnchor=false;
+  for(let i=0;i<=tokens.length-keyTokens.length-1;i++){
+    if(keyTokens.every((part,j)=>tokens[i+j]===part)){
+      const next=tokens[i+keyTokens.length]||"";
+      if(/^[a-z]\d[a-z]$/.test(next)){ postalAnchor=true; break; }
+    }
+  }
+  const contextualAnchor=[
+    "based in "+key,"based "+key,"from "+key,"lives in "+key,"located in "+key,
+    "location "+key,"locations "+key,key+" canada",key+" police",key+" university",
+    key+" clinic",key+" counselling",key+" counseling",key+" therapist",key+" psychotherapist",key+" based"
+  ].some(anchor=>hay.includes(anchor));
+  return { mentioned:true, anchored:provinceAnchor || postalAnchor || contextualAnchor };
 }
 
 function matchResult(result, person) {
@@ -267,19 +282,16 @@ function matchResult(result, person) {
   const full = normalize(person.fullName);
   const username = normalize(person.username.replace(/^@/, ""));
   const reasons = [];
-
   const fullName = full && hay.includes(full);
   const city = cityIdentitySupport(raw, person.city);
   const cityRequired = !!normalize(person.city);
   const usernameUrl = username && normalize(result.url).includes(username);
   const usernameAny = username && hay.includes(username);
   const age = ageAssessment(raw, person.ageContext);
-
   const clueMatches = (person.searchClues || []).filter(clue =>
     clueVariants(clue).some(variant => variantMatches(hay,variant))
   );
   const clueGateActive = (person.searchClues || []).length > 0;
-
   if (usernameUrl) reasons.push("username in URL");
   else if (usernameAny) reasons.push("username match");
   if (fullName) reasons.push("full name");
@@ -288,48 +300,22 @@ function matchResult(result, person) {
   if (age.supported) reasons.push(age.reason);
   if (age.conflict) reasons.push(age.reason);
   clueMatches.slice(0,4).forEach(clue => reasons.push("clue: " + clue));
-
-  // An exact user-supplied username in an account URL is an independent identifier.
   if (usernameUrl) return { confidence:"strong", reasons };
-
-  // Explicit age/birth-year contradictions beat a same-name hit.
-  if (age.conflict && fullName) {
+  if (age.conflict && fullName) return { confidence:"discard", reasons, identityRejected:true };
+  if (!fullName && !usernameAny) return { confidence:"discard", reasons:[] };
+  if (cityRequired && fullName && !city.anchored && !usernameAny) {
+    return { confidence:"discard", reasons, identityRejected:true, geographyRejected:city.mentioned };
+  }
+  if (clueGateActive && fullName) {
+    if (cityRequired && city.anchored && clueMatches.length >= 1) return { confidence:"strong", reasons };
+    if (!cityRequired && clueMatches.length >= 1) return { confidence:"strong", reasons };
+    if (cityRequired && city.anchored) return { confidence:"possible", reasons };
     return { confidence:"discard", reasons, identityRejected:true };
   }
-
-  // When the user supplies identity clues, name-only results must overlap at least
-  // one clue. This is the key protection against common-name collisions.
-  if (clueGateActive && fullName && !usernameAny && clueMatches.length === 0) {
-    return {
-      confidence:"discard",
-      reasons,
-      identityRejected:true,
-      geographyRejected:cityRequired && !city.anchored
-    };
-  }
-
-  // A city appearing incidentally in an article is not enough. It needs profile-like
-  // geographic context unless another supplied clue independently ties the result.
-  if (cityRequired && fullName && !city.anchored && clueMatches.length === 0 && !usernameAny) {
-    return { confidence:"discard", reasons, geographyRejected:city.mentioned };
-  }
-
-  if (
-    (fullName && clueMatches.length >= 1) ||
-    (usernameAny && clueMatches.length >= 1) ||
-    (fullName && city.anchored) ||
-    (usernameAny && city.anchored) ||
-    (fullName && age.supported && !cityRequired)
-  ) {
+  if ((fullName && city.anchored) || (usernameAny && city.anchored) || (fullName && age.supported && !cityRequired)) {
     return { confidence:"strong", reasons };
   }
-
-  // If the search has no extra identity anchors, retain a plain name hit only for
-  // human review. Once city/clues are supplied, weak name-only results stay out.
-  if ((fullName || usernameAny) && !cityRequired && !clueGateActive) {
-    return { confidence:"possible", reasons };
-  }
-
+  if ((fullName || usernameAny) && !cityRequired) return { confidence:"possible", reasons };
   return { confidence:"discard", reasons:[] };
 }
 
@@ -530,30 +516,22 @@ export default async (req) => {
   const quotedName = '"' + fullName.replaceAll('"',"") + '"';
   const quotedCity = city ? '"' + city.replaceAll('"',"") + '"' : "";
   const nameWithCity = [quotedName, quotedCity].filter(Boolean).join(" ");
-
-  // Do not put exact age into the main search queries. Age is a soft local ranking signal only.
-  // If a city is supplied, carry it through every name-based search pass so geography is
-  // enforced both at the provider-query stage and again by the local match filter.
+  const expandedClues=[...new Set(searchClues.flatMap(clue=>clueVariants(clue)))].slice(0,10);
+  const clueExpression=expandedClues.length
+    ? "(" + expandedClues.map(clue=>'"'+clue.replaceAll('"',"")+'"').join(" OR ") + ")"
+    : "";
+  const identityQuery=[nameWithCity,clueExpression].filter(Boolean).join(" ");
   const queries = [
-    { group:"Open web", q:nameWithCity },
-    { group:"Professional", q:nameWithCity + " site:linkedin.com/in" },
-    { group:"Social", q:nameWithCity + " (site:instagram.com OR site:facebook.com OR site:tiktok.com OR site:threads.net)" },
-    { group:"Discussion", q:nameWithCity + " (site:reddit.com OR site:x.com OR site:twitter.com)" },
-    { group:"Video", q:nameWithCity + " site:youtube.com" },
-    { group:"Activity", q:nameWithCity + " (site:strava.com OR site:github.com OR site:medium.com OR site:substack.com)" },
-    { group:"News & organizations", q:[nameWithCity, "(news OR bio OR event OR conference OR organization)"].filter(Boolean).join(" ") }
+    { group:"Open web", q:identityQuery || nameWithCity },
+    { group:"LinkedIn", q:(identityQuery || nameWithCity) + " (site:linkedin.com/in OR site:linkedin.com/posts)" },
+    { group:"Facebook", q:(identityQuery || nameWithCity) + " site:facebook.com" },
+    { group:"Social", q:(identityQuery || nameWithCity) + " (site:instagram.com OR site:tiktok.com OR site:threads.net)" },
+    { group:"Discussion", q:(identityQuery || nameWithCity) + " (site:reddit.com OR site:x.com OR site:twitter.com)" },
+    { group:"Video", q:(identityQuery || nameWithCity) + " site:youtube.com" },
+    { group:"Professional directories", q:(identityQuery || nameWithCity) + " (profile OR bio OR practice OR clinic OR directory OR association)" },
+    { group:"News & organizations", q:(identityQuery || nameWithCity) + " (news OR event OR conference OR organization OR interview)" }
   ];
   if (username) queries.push({ group:"Username", q:'"' + username.replaceAll('"',"") + '"' });
-
-  for (let i = 0; i < searchClues.length; i += 3) {
-    const group = searchClues.slice(i, i + 3);
-    const clueExpression = group.map(clue => '"' + clue.replaceAll('"',"") + '"').join(" OR ");
-    queries.push({
-      group:"Clues: " + group.join(", "),
-      q:nameWithCity + " (" + clueExpression + ")"
-    });
-  }
-
   const person = { fullName, city, username, ageContext, searchClues };
   const byUrl = new Map();
   let geographyRejected = 0;
@@ -695,6 +673,7 @@ export default async (req) => {
     const imageQuery = [
       quotedName,
       city && '"' + city.replaceAll('"',"") + '"',
+      expandedClues.slice(0,5).map(clue=>'"'+clue.replaceAll('"',"")+'"').join(" "),
       username && '"' + username.replaceAll('"',"") + '"'
     ].filter(Boolean).join(" ");
     const imageResults = await searchImages(apiKey,imageQuery);
