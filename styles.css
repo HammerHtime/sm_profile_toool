@@ -182,3 +182,31 @@ button{border:0;cursor:pointer}
   .coachEnterForward .coachVisual,.coachEnterForward .coachCopy,.coachEnterBack .coachVisual,.coachEnterBack .coachCopy,
   .coachDeck.coachZoomOut,.settingSuccess,.tapRipple{animation:none!important}
 }
+
+
+.dataModeBanner{
+  display:flex;
+  gap:16px;
+  align-items:center;
+  justify-content:space-between;
+  padding:14px 18px;
+  border-radius:16px;
+  border:1px solid rgba(255,209,102,.38);
+  background:linear-gradient(90deg,rgba(255,209,102,.12),rgba(255,93,115,.06));
+  box-shadow:0 0 34px rgba(255,209,102,.06);
+}
+.dataModeBanner strong{
+  color:#ffe39a;
+  letter-spacing:.08em;
+  font-size:.78rem;
+  white-space:nowrap;
+}
+.dataModeBanner span{
+  color:#d8cba8;
+  line-height:1.45;
+  font-size:.84rem;
+}
+@media(max-width:700px){
+  .dataModeBanner{flex-direction:column;align-items:flex-start}
+  .dataModeBanner strong{white-space:normal}
+}
