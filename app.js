@@ -1289,6 +1289,7 @@ function setConsentState() {
 
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
+          if (res.status === 429) throw new Error("Too many live searches were started in a short period. Wait about one minute, then try again.");
           throw new Error((data.error || "Live search failed.") + (data.detail ? " " + data.detail : ""));
         }
 
