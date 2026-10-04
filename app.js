@@ -679,6 +679,65 @@ async function checkLiveSearchReady() {
     });
   }
 
+  function renderIntelligence(report,modeClass){
+    const panel=$("profileStoryPanel");
+    if(!panel)return;
+    const intel=report?.intelligence;
+    const usable=!!(intel && (intel.overview || (intel.storyPoints||[]).length || (intel.timeline||[]).length));
+    panel.classList.toggle("hidden",!usable);
+    if(!usable)return;
+
+    $("intelligenceHeadline").textContent=intel.headline || "What the fragments say together";
+    $("intelligenceOverview").textContent=intel.overview || "";
+    $("intelligenceCaveat").textContent=intel.caveat || "";
+
+    const badge=$("intelligenceMode");
+    if(badge) badge.textContent=intel.aiUsed ? "AI SYNTHESIS • SOURCED" : "SOURCED FALLBACK";
+
+    const grid=$("storyPointGrid");
+    grid.replaceChildren();
+    (intel.storyPoints||[]).slice(0,5).forEach(point=>{
+      const card=document.createElement("article");
+      card.className="storyPointCard";
+      const title=document.createElement("strong");
+      title.textContent=point.title || "Connected finding";
+      const summary=document.createElement("p");
+      summary.textContent=point.summary || "";
+      const meta=document.createElement("div");
+      meta.className="storyPointMeta";
+      const confidence=document.createElement("span");
+      confidence.textContent=String(point.confidence||"possible").toUpperCase();
+      const anchors=document.createElement("span");
+      const count=Array.isArray(point.evidenceIds)?point.evidenceIds.length:0;
+      anchors.textContent=count ? (count+" SOURCE ANCHOR"+(count===1?"":"S")) : "HIGH-LEVEL SYNTHESIS";
+      meta.append(confidence,anchors);
+      card.append(title,summary,meta);
+      grid.appendChild(card);
+    });
+
+    const timelineWrap=$("intelligenceTimelineWrap");
+    const timeline=$("intelligenceTimeline");
+    const items=(intel.timeline||[]).slice(0,5);
+    timelineWrap.classList.toggle("hidden",!items.length);
+    timeline.replaceChildren();
+    items.forEach(item=>{
+      const row=document.createElement("article");
+      row.className="intelligenceTimelineItem";
+      const period=document.createElement("div");
+      period.className="timelinePeriod";
+      period.textContent=item.period || "Broad period";
+      const copy=document.createElement("div");
+      const summary=document.createElement("p");
+      summary.textContent=item.summary || "";
+      const confidence=document.createElement("span");
+      confidence.className="timelineConfidence";
+      confidence.textContent=String(item.confidence||"possible").toUpperCase();
+      copy.append(summary,confidence);
+      row.append(period,copy);
+      timeline.appendChild(row);
+    });
+  }
+
   function updatePlatformGuideHits(report){
     const found=new Set((report?.publicSources||[]).map(source=>source.platform).filter(Boolean));
     document.querySelectorAll("#platformGrid .platformCard").forEach(card=>{
@@ -808,10 +867,10 @@ function setConsentState() {
 
     $("subjectName").textContent = report.subject || "Search Subject";
     $("summaryLine").textContent = mode === "verified"
-      ? ("Verified public-source findings, privacy-masked before display." +
+      ? (report.intelligence?.overview || ("Verified public-source findings, privacy-masked before display." +
           (report.searchHealth?.failed
             ? " " + report.searchHealth.completed + " of " + report.searchHealth.attempted + " search passes completed."
-            : ""))
+            : "")))
       : mode === "synthetic"
         ? "Synthetic fallback presentation. No live public search produced these values."
         : "Summary of user-supplied evidence. Not independently verified by this build.";
@@ -963,6 +1022,7 @@ function setConsentState() {
         });
     }
 
+    renderIntelligence(report,modeClass);
     renderPublicVoice(report,modeClass);
     updatePlatformGuideHits(report);
 
