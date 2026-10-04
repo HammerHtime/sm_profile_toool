@@ -18,9 +18,28 @@
       <label>Public username <small>optional</small><input id="vUsername" maxlength="80" autocomplete="off" placeholder="@alexm" /></label>
 
       <div class="mobileStep"><b>2</b><span>Your photo</span></div>
-      <label class="photoUploadChoice">Take or choose a photo<input id="vPhoto" type="file" required accept="image/jpeg,image/png,image/webp,image/heic,image/heif" capture="user" /></label>
-      <div id="photoPreviewWrap" class="photoPreviewWrap hidden"><img id="photoPreview" alt="Your selected photo" /><div id="photoMeta" class="fineprint"></div></div>
-      <p class="fineprint">Choose a photo of yourself that you are comfortable using in this live demonstration. Maximum 4 MB.</p>
+      <div class="photoChoiceGrid">
+        <button type="button" id="takePhotoBtn" class="photoChoiceCard">
+          <span class="photoChoiceIcon">◉</span>
+          <strong>Take a Photo</strong>
+          <small>Open your camera</small>
+        </button>
+        <button type="button" id="choosePhotoBtn" class="photoChoiceCard">
+          <span class="photoChoiceIcon">▧</span>
+          <strong>Choose from Library</strong>
+          <small>Pick an existing photo</small>
+        </button>
+      </div>
+      <input id="vPhotoCamera" class="hiddenFileInput" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" capture="user" />
+      <input id="vPhotoLibrary" class="hiddenFileInput" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" />
+      <div id="photoPreviewWrap" class="photoPreviewWrap hidden">
+        <div class="photoPreviewImageWrap"><img id="photoPreview" alt="Your selected photo" /><div class="photoPreviewBadge" id="photoSourceBadge">PHOTO SELECTED</div></div>
+        <div class="photoPreviewFooter">
+          <div id="photoMeta" class="fineprint"></div>
+          <button type="button" id="changePhotoBtn" class="changePhotoBtn">Change photo</button>
+        </div>
+      </div>
+      <p class="fineprint">Use a photo of yourself that you are comfortable using in this live demonstration. Maximum 4 MB.</p>
 
       <div class="mobileStep"><b>3</b><span>Consent</span></div>
       <label class="consentBox mobileConsent">
@@ -30,14 +49,14 @@
         </span>
       </label>
 
-      <button id="submitVolunteer" class="primary mobileSubmit" disabled>Send to live demo</button>
+      <button id="submitVolunteer" class="primary mobileSubmit" disabled>Consent & Start Live Search</button>
       <div id="volunteerError" class="error hidden"></div>
     </form>
 
     <section id="volunteerDone" class="panel volunteerDone hidden">
       <div class="doneCheck">✓</div>
-      <h2>You're connected.</h2>
-      <p>The presenter can now reveal the privacy findings. Your raw image was not stored by the demo.</p>
+      <h2>Submitted.</h2>
+      <p>The presentation screen has automatically started analyzing your photo. No further action is required on your phone.</p>
       <p class="fineprint">When the presenter presses Erase Demo Data, the temporary session record is deleted.</p>
     </section>
   </main>
