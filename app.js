@@ -500,19 +500,19 @@ async function checkLiveSearchReady() {
       if (res.ok && data.liveSearchConfigured) {
         status.classList.add("liveConfigured");
         status.classList.remove("liveUnconfigured");
-        status.innerHTML = '<span class="statusDot"></span><strong>Live Search ready.</strong> Real public/indexed searches are configured. Synthetic Demo remains available as a clearly labelled fallback.';
+        status.innerHTML = '<span class="statusDot"></span><strong>Live Search ready.</strong>';
         liveSearchBtn.dataset.configured = "true";
         setConsentState();
       } else {
         status.classList.add("liveUnconfigured");
         status.classList.remove("liveConfigured");
-        status.innerHTML = '<span class="statusDot"></span><strong>Live Search needs configuration.</strong> Add <b>BRAVE_SEARCH_API_KEY</b> in Netlify environment variables. Synthetic Demo and the privacy walkthroughs still work.';
+        status.innerHTML = '<span class="statusDot"></span><strong>Live Search unavailable.</strong>';
         liveSearchBtn.dataset.configured = "false";
         setConsentState();
       }
     } catch (e) {
       status.classList.add("liveUnconfigured");
-      status.innerHTML = '<span class="statusDot"></span><strong>Live Search readiness could not be confirmed.</strong> Synthetic Demo and the privacy walkthroughs remain available.';
+      status.innerHTML = '<span class="statusDot"></span><strong>Live Search status unavailable.</strong>';
       liveSearchBtn.dataset.configured = "unknown";
       setConsentState();
     }
