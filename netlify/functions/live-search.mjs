@@ -1,11 +1,23 @@
 const BRAVE_ENDPOINT = "https://api.search.brave.com/res/v1/web/search";
 const BRAVE_IMAGE_ENDPOINT = "https://api.search.brave.com/res/v1/images/search";
 
+function normalizeBraveApiKey(value = "") {
+  let candidate = String(value || "").trim();
+  if (!candidate) return "";
+  const assignment = candidate.match(/^(?:BRAVE_SEARCH_API_KEY|BRAVE_API_KEY|BRAVE_SEARCH_KEY)\s*=\s*(.+)$/i);
+  if (assignment) candidate = assignment[1].trim();
+  const quoted = (candidate.startsWith('"') && candidate.endsWith('"')) || (candidate.startsWith("'") && candidate.endsWith("'"));
+  if (quoted && candidate.length >= 2) candidate = candidate.slice(1, -1).trim();
+  return candidate.replace(/^Bearer\s+/i, "").trim();
+}
+
 function getBraveApiKey() {
-  return process.env.BRAVE_SEARCH_API_KEY ||
+  return normalizeBraveApiKey(
+    process.env.BRAVE_SEARCH_API_KEY ||
     process.env.BRAVE_API_KEY ||
     process.env.BRAVE_SEARCH_KEY ||
-    "";
+    ""
+  );
 }
 
 function braveKeySource() {
