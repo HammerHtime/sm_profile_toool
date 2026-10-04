@@ -77,6 +77,8 @@ else pass("Presenter erase confirmation exists");
 if(!app.includes("SYNTHETIC DEMONSTRATION DATA")) fail("Synthetic provenance banner is missing");
 else pass("Synthetic provenance banner exists");
 
+if(!app.includes("APPLE_LOGO_SVG") || !app.includes("ANDROID_LOGO_SVG")) fail("Apple/Android device logos are missing");
+else pass("Apple and Android device logos are present");
 if(!app.includes("function platformRowsFor(")) fail("Social privacy walkthrough row renderer is missing");
 else pass("Social privacy walkthrough row renderer exists");
 if(!app.includes("const APP_SETTING_DETAILS = {") || !app.includes("function settingDetailFor(")) fail("App privacy detail-screen model is missing");
