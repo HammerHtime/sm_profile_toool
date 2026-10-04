@@ -1212,7 +1212,7 @@ function setConsentState() {
         const res = await fetch("/.netlify/functions/summarize", {
           method:"POST",
           headers:{"Content-Type":"application/json"},
-          body:JSON.stringify(evidence),
+          body:JSON.stringify({ consent:true, evidence }),
           cache:"no-store"
         });
         if (!res.ok) throw new Error("summarizer");
