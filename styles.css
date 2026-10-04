@@ -463,6 +463,112 @@ button{border:0;cursor:pointer}
   color:#6f8797;
   font-size:.64rem
 }
+.publicSourceGroup{display:flex;flex-direction:column}
+.publicSourceGroup .publicSourceTop{flex-wrap:wrap}
+.sourceGroupCount{
+  margin-left:auto;
+  padding:5px 8px;
+  border-radius:999px;
+  border:1px solid rgba(82,214,255,.22);
+  background:rgba(82,214,255,.06);
+  color:#9ee8ff;
+  font-size:.52rem;
+  font-weight:950;
+  letter-spacing:.08em
+}
+.sourceGroupStats{
+  display:flex;
+  gap:8px;
+  margin-top:12px;
+  color:#9db2c1;
+  font-size:.66rem;
+  font-weight:800;
+  text-transform:uppercase;
+  letter-spacing:.05em
+}
+.sourceGroupStats span{
+  padding:5px 8px;
+  border-radius:999px;
+  background:rgba(255,255,255,.035);
+  border:1px solid rgba(255,255,255,.06)
+}
+.sourceGroupStats .strongStat{
+  color:#8ff0bd;
+  border-color:rgba(85,227,156,.18);
+  background:rgba(85,227,156,.05)
+}
+.publicSourceDetails{
+  margin-top:14px;
+  border-top:1px solid rgba(255,255,255,.07);
+  padding-top:10px
+}
+.publicSourceDetails summary{
+  cursor:pointer;
+  list-style:none;
+  color:#8fdcff;
+  font-size:.64rem;
+  font-weight:950;
+  letter-spacing:.08em;
+  user-select:none
+}
+.publicSourceDetails summary::-webkit-details-marker{display:none}
+.publicSourceDetails summary::after{
+  content:" +";
+  color:#6f8797
+}
+.publicSourceDetails[open] summary::after{content:" −"}
+.publicSourceLinks{
+  display:grid;
+  gap:7px;
+  margin-top:10px
+}
+.publicSourceLink{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto auto;
+  align-items:center;
+  gap:10px;
+  padding:10px 11px;
+  border-radius:12px;
+  border:1px solid rgba(255,255,255,.06);
+  background:rgba(2,10,16,.38);
+  color:inherit;
+  text-decoration:none
+}
+.publicSourceLink:hover{
+  border-color:rgba(82,214,255,.25);
+  background:rgba(82,214,255,.035)
+}
+.publicSourceLink span{min-width:0}
+.publicSourceLink b{
+  display:block;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  color:#d9edf7;
+  font-size:.72rem
+}
+.publicSourceLink small{
+  display:block;
+  margin-top:2px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  color:#6f8797;
+  font-size:.6rem
+}
+.publicSourceLink em{
+  font-style:normal;
+  font-size:.5rem;
+  font-weight:950;
+  letter-spacing:.06em
+}
+.publicSourceLink em.strong{color:#8ff0bd}
+.publicSourceLink em.possible{color:#ffe39a}
+.publicSourceLink i{
+  color:#8fdcff;
+  font-style:normal;
+  font-weight:900
+}
 @media(max-width:760px){
   .publicSourcesGrid{grid-template-columns:1fr}
   .publicSourceMeta{flex-direction:column}
