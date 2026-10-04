@@ -1,6 +1,20 @@
 const BRAVE_ENDPOINT = "https://api.search.brave.com/res/v1/web/search";
 const BRAVE_IMAGE_ENDPOINT = "https://api.search.brave.com/res/v1/images/search";
 
+function getBraveApiKey() {
+  return process.env.BRAVE_SEARCH_API_KEY ||
+    process.env.BRAVE_API_KEY ||
+    process.env.BRAVE_SEARCH_KEY ||
+    "";
+}
+
+function braveKeySource() {
+  if (process.env.BRAVE_SEARCH_API_KEY) return "BRAVE_SEARCH_API_KEY";
+  if (process.env.BRAVE_API_KEY) return "BRAVE_API_KEY";
+  if (process.env.BRAVE_SEARCH_KEY) return "BRAVE_SEARCH_KEY";
+  return null;
+}
+
 const clean = (v, max = 120) =>
   typeof v === "string" ? v.trim().replace(/[\u0000-\u001f]/g, "").slice(0, max) : "";
 
@@ -296,7 +310,7 @@ async function searchWeb(apiKey, q) {
 }
 
 export default async (req) => {
-  const apiKey = process.env.BRAVE_SEARCH_API_KEY;
+  const apiKey = getBraveApiKey();
 
   if (req.method !== "POST") return respond({ error:"POST required" }, 405);
 

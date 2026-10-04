@@ -8,6 +8,20 @@ const MAX_VOICE_BYTES = 150 * 1024;
 const MAX_VOICE_MS = 10000;
 const allowedAudio = new Set(["audio/webm","audio/webm;codecs=opus","audio/mp4","audio/mpeg","audio/ogg","audio/ogg;codecs=opus"]);
 
+function getBraveApiKey() {
+  return process.env.BRAVE_SEARCH_API_KEY ||
+    process.env.BRAVE_API_KEY ||
+    process.env.BRAVE_SEARCH_KEY ||
+    "";
+}
+
+function braveKeySource() {
+  if (process.env.BRAVE_SEARCH_API_KEY) return "BRAVE_SEARCH_API_KEY";
+  if (process.env.BRAVE_API_KEY) return "BRAVE_API_KEY";
+  if (process.env.BRAVE_SEARCH_KEY) return "BRAVE_SEARCH_KEY";
+  return null;
+}
+
 function maskHandle(v = "") {
   const s = cleanText(v, 80);
   if (!s) return "";
@@ -113,7 +127,7 @@ async function braveSearch(apiKey, q) {
 
 async function publicHandleCorrelation(username, firstName, city) {
   const handle = cleanText(String(username || "").replace(/^@/, ""), 80);
-  const apiKey = process.env.BRAVE_SEARCH_API_KEY;
+  const apiKey = getBraveApiKey();
 
   if (!handle) {
     return {
@@ -330,7 +344,7 @@ export default async (req) => {
       console.error("photo public correlation failed", correlationError);
       record.correlation = {
         attempted:true,
-        configured:!!process.env.BRAVE_SEARCH_API_KEY,
+        configured:!!getBraveApiKey(),
         basis:"Public correlation failed. No public matches were displayed.",
         totalMatches:0,
         platforms:[],
