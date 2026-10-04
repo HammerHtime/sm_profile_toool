@@ -1,4 +1,4 @@
 {
-  "release": "public-footprint-rc2-smoke-v1",
-  "purpose": "Production deployment marker for automated Netlify smoke testing"
+  "release": "public-footprint-rc2-smoke-v2",
+  "purpose": "Production deployment marker after BRAVE_SEARCH_API_KEY configuration"
 }
