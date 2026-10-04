@@ -361,7 +361,7 @@ async function poll(){
     if(d.status==='submitted'&&latestStatus?.submittedAt!==d.submittedAt)startAutoSearch(d);
   }catch(e){if(/expired|not found/i.test(e.message)){clearInterval(pollTimer);$('liveTitle').textContent='Session expired';$('liveMessage').textContent='Create a new QR code for another volunteer.';}}
 }
-function startPolling(){clearInterval(pollTimer);poll();pollTimer=setInterval(poll,1500);}
+function startPolling(){clearInterval(pollTimer);poll();pollTimer=setInterval(poll,650);}
 async function erase(){
   if(!session)return;$('erasePhotoDemo').disabled=true;
   try{
