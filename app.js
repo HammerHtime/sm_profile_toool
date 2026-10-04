@@ -1489,6 +1489,42 @@ function setConsentState() {
     return guidePlatform?.name || "Privacy Guide";
   }
 
+  function platformRowsFor(name, target) {
+    const guide = genericGuide[name] || fallbackGuide(name);
+    const controls = [];
+    const seen = new Set();
+
+    for (const step of guide) {
+      const label = String(step?.[2] || "").trim();
+      if (!label || label === "EXPLAIN" || seen.has(label)) continue;
+      seen.add(label);
+      controls.push(label);
+    }
+
+    if (!controls.length) return ["Profile","Settings","Privacy","Discoverability","Location","Messages"];
+
+    const index = Math.max(0, controls.indexOf(target));
+    const start = Math.max(0, Math.min(index - 2, Math.max(0, controls.length - 7)));
+    const windowRows = controls.slice(start, start + 7);
+    if (target && target !== "EXPLAIN" && !windowRows.includes(target)) {
+      windowRows.splice(Math.min(2, windowRows.length), 0, target);
+    }
+    return windowRows.slice(0,7);
+  }
+
+  function platformHeaderFor(name, target) {
+    const settingsTargets = /settings|privacy|visibility|discover|account|safety|security|controls|audience|messages|location|contacts|history|profile/i;
+    if (settingsTargets.test(String(target || ""))) {
+      if (/privacy|audience|discover|visibility|location|contacts/i.test(String(target || ""))) return "Privacy";
+      return "Settings";
+    }
+    return name || "Privacy";
+  }
+
+  function targetUsesToggle(target) {
+    return /private account|protect.*post|quick add|precise location|subscriptions private|search engine|downloads|contact sync|sync contacts|ghost mode|activity sharing|location services|tracking|public visibility|allow.*search engine/i.test(String(target || ""));
+  }
+
   function phoneSceneHtml(title, target, explanation) {
     if (explanation) {
       return '<div class="phoneScreen phoneTeachingScreen">' +
@@ -1516,8 +1552,11 @@ function setConsentState() {
 
     rows.forEach((r) => {
       const isTarget = target !== "EXPLAIN" && r === target;
+      const control = isTarget && targetUsesToggle(target)
+        ? '<span class="toggle on"></span>'
+        : '<span class="phoneChevron">›</span>';
       html += '<div class="phoneRow' + (isTarget ? " target" : "") + '"><span>' + r + '</span>' +
-        (isTarget ? '<span class="toggle on"></span>' : '<span>›</span>') +
+        control +
         '</div>';
     });
 
@@ -1566,11 +1605,15 @@ function setConsentState() {
       return;
     }
 
-    copy.classList.remove("copySwapForward","copySwapBack");
+    copy.classList.remove("copyFadeOut","copyFadeIn");
     void copy.offsetWidth;
-    copy.classList.add(direction > 0 ? "copySwapForward" : "copySwapBack");
-    setTimeout(() => { copy.innerHTML = html; }, 120);
-    setTimeout(() => copy.classList.remove("copySwapForward","copySwapBack"), 390);
+    copy.classList.add("copyFadeOut");
+    setTimeout(() => {
+      copy.innerHTML = html;
+      copy.classList.remove("copyFadeOut");
+      copy.classList.add("copyFadeIn");
+    }, 135);
+    setTimeout(() => copy.classList.remove("copyFadeIn"), 430);
   }
 
   function updatePhoneScene(title, target, isExplain, direction = 0) {
@@ -1586,19 +1629,19 @@ function setConsentState() {
       return;
     }
 
-    newScene.classList.add(direction > 0 ? "phoneSceneIncomingRight" : "phoneSceneIncomingLeft");
+    newScene.classList.add(direction > 0 ? "phoneSceneNativeIncoming" : "phoneSceneNativeBackIncoming");
     viewport.appendChild(newScene);
 
     requestAnimationFrame(() => {
-      oldScene.classList.add(direction > 0 ? "phoneSceneExitLeft" : "phoneSceneExitRight");
-      newScene.classList.remove(direction > 0 ? "phoneSceneIncomingRight" : "phoneSceneIncomingLeft");
+      oldScene.classList.add(direction > 0 ? "phoneSceneNativeUnder" : "phoneSceneNativeBackOut");
+      newScene.classList.remove(direction > 0 ? "phoneSceneNativeIncoming" : "phoneSceneNativeBackIncoming");
       newScene.classList.add("phoneSceneActive");
     });
 
     setTimeout(() => {
       if (oldScene.isConnected) oldScene.remove();
       newScene.classList.remove("phoneSceneActive");
-    }, 430);
+    }, 470);
   }
 
   function renderGuideSlide(direction = 0) {
