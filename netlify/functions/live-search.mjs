@@ -291,7 +291,12 @@ function matchResult(result, person) {
   // When the user supplies identity clues, name-only results must overlap at least
   // one clue. This is the key protection against common-name collisions.
   if (clueGateActive && fullName && !usernameAny && clueMatches.length === 0) {
-    return { confidence:"discard", reasons, identityRejected:true };
+    return {
+      confidence:"discard",
+      reasons,
+      identityRejected:true,
+      geographyRejected:cityRequired && !city.anchored
+    };
   }
 
   // A city appearing incidentally in an article is not enough. It needs profile-like
