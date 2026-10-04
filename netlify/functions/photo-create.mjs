@@ -25,8 +25,7 @@ export default async (req) => {
 
     const origin = new URL(req.url).origin;
     const joinUrl = new URL("/volunteer.html", origin);
-    joinUrl.searchParams.set("session", id);
-    joinUrl.searchParams.set("token", joinToken);
+    joinUrl.hash = new URLSearchParams({ session:id, token:joinToken }).toString();
 
     const qrDataUrl = await QRCode.toDataURL(joinUrl.toString(), {
       width: 720,
