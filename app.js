@@ -966,6 +966,52 @@ function setConsentState() {
     return ["Security & privacy","Privacy dashboard","Permission manager","Location","Apps"];
   }
 
+  function platformRowsFor(name, target) {
+    const rowsByPlatform = {
+      "Instagram":["Account privacy","Close Friends","Tags and mentions","Comments","Sharing and remixes","Messages and story replies","Hidden Words","Blocked","Contact syncing"],
+      "Facebook":["Privacy Checkup","Audience and visibility","How people find and contact you","Profile and tagging","Blocking","Location","Apps and websites","Off-Facebook activity"],
+      "TikTok":["Privacy","Private account","Suggest your account to others","Sync contacts","Downloads","Comments","Mentions and tags","Direct messages","Location Services"],
+      "LinkedIn":["Visibility","Public profile visibility","Email discovery","Phone discovery","Email visibility","Data privacy","Advertising data","Sign in & security"],
+      "Reddit":["Account settings","Profile","Chat and messaging","Followers","Personalization","Safety & Privacy","Blocked accounts","Public activity"],
+      "Snapchat":["Contact Me","View My Story","Quick Add","My Location","Snap Map","Blocked","Activity Indicator","Ads preferences"],
+      "Discord":["Content & Social","Privacy & Safety","Server DMs","Message requests","Friend requests","Activity privacy","Blocked users","Authorized Apps"],
+      "YouTube":["Privacy","Subscriptions","Playlists","History","Comments","Connected apps","Notifications","Playback"],
+      "X / Twitter":["Privacy and safety","Audience, media and tagging","Protect posts","Discoverability and contacts","Direct Messages","Location information","Mute and block","Content you see"],
+      "WhatsApp":["Privacy","Last seen & online","Profile photo","About","Status","Groups","Live location","Calls","Blocked contacts"],
+      "Telegram":["Privacy and Security","Phone Number","Last Seen & Online","Profile Photos","Forwarded Messages","Calls","Groups & Channels","People Nearby","Blocked Users"],
+      "Twitch":["Security and Privacy","Whispers","Blocked users","Activity","Connections","Notifications","Channel and Videos","Moderation"],
+      "Strava":["Privacy Controls","Profile Page","Activities","Map Visibility","Group Activities","Flyby","Blocked Athletes","Data Permissions"],
+      "GitHub":["Public profile","Emails","Email privacy","Repositories","Contributions","Applications","Sessions","Security log"],
+      "Pinterest":["Profile visibility","Search privacy","Boards","Personalization","Connected accounts","Social permissions","Notifications","Privacy and data"]
+    };
+
+    const base = (rowsByPlatform[name] || ["Account","Privacy","Safety","Discoverability","Location","Messages","Content controls"]).slice();
+    if (target && target !== "EXPLAIN" && !base.includes(target)) {
+      const insertion = Math.min(2, base.length);
+      base.splice(insertion, 0, target);
+    }
+    return base.slice(0, 9);
+  }
+
+  function platformHeaderFor(name, target) {
+    if (name === "Instagram") return ["Profile","Menu"].includes(target) ? "Instagram" : "Settings and activity";
+    if (name === "Facebook") return target === "Privacy Checkup" ? "Privacy Checkup" : "Settings & privacy";
+    if (name === "TikTok") return target === "Privacy" || ["Private account","Suggest account","Sync contacts","Downloads","Direct messages","Location"].includes(target) ? "Privacy" : "Settings and privacy";
+    if (name === "LinkedIn") return ["Public profile","Public profile visibility","Email discovery","Phone discovery","Email visibility"].includes(target) ? "Visibility" : "Settings";
+    if (name === "Reddit") return "Settings";
+    if (name === "Snapchat") return "Privacy Controls";
+    if (name === "Discord") return "Content & Social";
+    if (name === "YouTube") return "Settings";
+    if (name === "X / Twitter") return "Privacy and safety";
+    if (name === "WhatsApp") return "Privacy";
+    if (name === "Telegram") return "Privacy and Security";
+    if (name === "Twitch") return "Security and Privacy";
+    if (name === "Strava") return "Privacy Controls";
+    if (name === "GitHub") return "Settings";
+    if (name === "Pinterest") return "Privacy and data";
+    return name || "Privacy Guide";
+  }
+
   function deviceRowsFor(target) {
     if (guidePlatform?.device === "ios") return iosRowsFor(target);
     if (guidePlatform?.device === "android") return androidRowsFor(target);
@@ -1004,15 +1050,11 @@ function setConsentState() {
     }
 
     const deviceRows = deviceRowsFor(target);
-    const rows = deviceRows || ["Account","Privacy","Safety","Discoverability","Location","Messages","Content controls"];
-    if (!deviceRows && target && target !== "EXPLAIN") {
-      const i = Math.abs(hashCode(target)) % rows.length;
-      rows[i] = target;
-    }
+    const rows = deviceRows || platformRowsFor(guidePlatform?.name, target);
     if (deviceRows && target && target !== "EXPLAIN" && !rows.includes(target)) rows.push(target);
 
     const phoneIcon = guidePlatform?.device ? "⚙" : guidePlatform.icon;
-    const phoneHeader = guidePlatform?.device ? phoneHeaderFor(target) : guidePlatform.name;
+    const phoneHeader = guidePlatform?.device ? phoneHeaderFor(target) : platformHeaderFor(guidePlatform?.name, target);
 
     let html = '<div class="phoneScreen">' +
       '<div class="phoneTitle"><span class="phoneTitleIcon">' + phoneIcon + '</span><span>' + phoneHeader + '</span></div>' +
