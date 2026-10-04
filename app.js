@@ -738,6 +738,57 @@ async function checkLiveSearchReady() {
     });
   }
 
+  function broadMapUrl(place){
+    const center=place?.mapCenter;
+    const lat=Number(center?.lat),lon=Number(center?.lon);
+    if(!Number.isFinite(lat)||!Number.isFinite(lon))return "";
+    const radiusKm=Math.max(45,Number(center?.radiusKm)||50);
+    const dlat=(radiusKm*1.35)/111.32;
+    const cos=Math.max(Math.cos(lat*Math.PI/180),.2);
+    const dlon=(radiusKm*1.35)/(111.32*cos);
+    const bbox=[lon-dlon,lat-dlat,lon+dlon,lat+dlat].map(n=>n.toFixed(4)).join("%2C");
+    return "https://www.openstreetmap.org/export/embed.html?bbox="+bbox+"&layer=mapnik";
+  }
+
+  function renderLocationIntelligence(report){
+    const panel=$("mapPanel");
+    const grid=$("mapGrid");
+    if(!panel||!grid)return;
+    const locations=Array.isArray(report?.locationIntelligence?.storyLocations)
+      ? report.locationIntelligence.storyLocations.slice(0,4)
+      : [];
+    panel.classList.toggle("hidden",!locations.length);
+    grid.replaceChildren();
+    locations.forEach(location=>{
+      const card=document.createElement("article");
+      card.className="mapCard";
+      const map=broadMapUrl(location);
+      if(map){
+        const viewport=document.createElement("div");
+        viewport.className="mapViewport";
+        const frame=document.createElement("iframe");
+        frame.src=map;
+        frame.loading="lazy";
+        frame.referrerPolicy="no-referrer";
+        frame.title="Broad map for "+String(location.label||"location");
+        viewport.appendChild(frame);
+        card.appendChild(viewport);
+      }
+      const meta=document.createElement("div");
+      meta.className="mapMeta";
+      const title=document.createElement("strong");
+      title.textContent=location.label || location.requestedLabel || "Broad location";
+      const context=document.createElement("p");
+      context.textContent=location.context || "Broad geographic context supported by public evidence.";
+      const confidence=document.createElement("span");
+      confidence.className="timelineConfidence";
+      confidence.textContent=String(location.confidence||"possible").toUpperCase()+" • CITY/REGION ONLY";
+      meta.append(title,context,confidence);
+      card.appendChild(meta);
+      grid.appendChild(card);
+    });
+  }
+
   function updatePlatformGuideHits(report){
     const found=new Set((report?.publicSources||[]).map(source=>source.platform).filter(Boolean));
     document.querySelectorAll("#platformGrid .platformCard").forEach(card=>{
@@ -1024,6 +1075,7 @@ function setConsentState() {
 
     renderIntelligence(report,modeClass);
     renderPublicVoice(report,modeClass);
+    renderLocationIntelligence(report);
     updatePlatformGuideHits(report);
 
     $("profileSignalsPanel").classList.toggle("hidden", !(report.signals || []).length);
