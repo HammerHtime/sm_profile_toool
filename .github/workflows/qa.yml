@@ -18,3 +18,62 @@ jobs:
         run: npm install --ignore-scripts --no-audit --no-fund
       - name: Run static release QA
         run: npm run qa
+
+  production-smoke:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: static-qa
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      SITE_URL: https://sm-profile-tool.netlify.app
+      RELEASE_MARKER: public-footprint-rc2-smoke-v1
+    steps:
+      - name: Wait for this release to reach Netlify
+        shell: bash
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 36); do
+            body="$(curl -fsS --max-time 12 "$SITE_URL/release.json" 2>/dev/null || true)"
+            if printf '%s' "$body" | grep -q "$RELEASE_MARKER"; then
+              echo "Release marker is live on attempt $attempt."
+              exit 0
+            fi
+            echo "Waiting for Netlify deployment ($attempt/36)..."
+            sleep 10
+          done
+          echo "Timed out waiting for the expected Netlify release marker."
+          exit 1
+
+      - name: Check production pages
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsS --max-time 15 "$SITE_URL/" >/dev/null
+          curl -fsS --max-time 15 "$SITE_URL/presenter.html" >/dev/null
+          curl -fsS --max-time 15 "$SITE_URL/volunteer.html" >/dev/null
+
+      - name: Check backend health and Brave configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          health="$(curl -fsS --max-time 20 "$SITE_URL/.netlify/functions/health")"
+          HEALTH_JSON="$health" node - <<'NODE'
+          const data = JSON.parse(process.env.HEALTH_JSON || "{}");
+          if (!data.ok) throw new Error("Production health endpoint did not report ok=true");
+          if (!data.blobs?.ok) throw new Error("Netlify Blobs round-trip is not healthy");
+          if (!data.liveSearchConfigured) throw new Error("BRAVE_SEARCH_API_KEY is not visible to production functions");
+          console.log("Health OK, Blobs OK, Brave configured.");
+          NODE
+
+      - name: Exercise live search provider with synthetic smoke identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          result="$(curl -fsS --max-time 45             -H 'content-type: application/json'             -d '{"consent":true,"firstName":"QzzxPublicFootprint","lastName":"SmokeTest20261004","age":"30","city":"","username":"","clues":""}'             "$SITE_URL/api/live-search")"
+          SEARCH_JSON="$result" node - <<'NODE'
+          const data = JSON.parse(process.env.SEARCH_JSON || "{}");
+          if (data.dataMode !== "verified") throw new Error("Live search route did not return live public-search mode");
+          if (data.provider !== "Brave Search API") throw new Error("Live search did not confirm Brave Search API");
+          if (!data.searchHealth || data.searchHealth.completed < 1) throw new Error("No Brave search pass completed");
+          console.log("Live Search API completed with Brave.");
+          NODE
