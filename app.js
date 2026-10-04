@@ -94,7 +94,8 @@
       ["Messages and story replies","Open Messages and story replies.","Messages and story replies"],
       ["Limit message requests","Reduce who can send requests or add you to group chats.","Message controls"],
       ["Contacts syncing","Find Follow and invite friends / contacts syncing and turn off ongoing contact upload if not needed.","Contact syncing"],
-      ["Why this matters","Contact uploads can help platforms suggest you to people who already have your phone number or email.","EXPLAIN"]
+      ["Location permission","At the phone level, review Instagram's location permission and use While Using or Never unless a feature genuinely needs it.","Location"],
+      ["Why this matters","Contact uploads and device permissions can make your account easier to discover and can expose more context than your profile alone.","EXPLAIN"]
     ],
     "Facebook":[
       ["Open Facebook","Tap Menu.","Menu"],
@@ -189,7 +190,8 @@
       ["About and Status","Review both audiences.","About / Status"],
       ["Groups","Limit who can add you to groups.","Groups"],
       ["Live location","Review and stop any active live-location shares.","Live location"],
-      ["Why this matters","WhatsApp can expose presence, profile imagery, group connections and live location to broader audiences than intended.","EXPLAIN"]
+      ["Phone location permission","Open the phone's app permissions for WhatsApp and review Location access.","Location"],
+      ["Why this matters","WhatsApp can expose presence, profile imagery, group connections and live location. Live Location is shared only to chats you choose; device permission controls whether WhatsApp can access location at all.","EXPLAIN"]
     ],
     "Telegram":[
       ["Open Telegram","Open Settings.","Settings"],
@@ -1521,33 +1523,199 @@ function setConsentState() {
     return name || "Privacy";
   }
 
+  const APP_SETTING_DETAILS = {
+    "Instagram":{
+      "Private account":{kind:"toggle",section:"Account privacy",label:"Private account",value:"On",recommended:"On",why:"Only approved followers can see future private-account posts. Existing followers remain until you remove them."},
+      "Tags / Mentions":{kind:"choices",section:"Tags and mentions",options:["Allow tags from everyone","Allow tags from people you follow","Don't allow tags"],recommended:"People you follow / Don't allow",why:"Tags and mentions can publicly connect your account to other people, events and places."},
+      "Message controls":{kind:"choices",section:"Messages and story replies",options:["Requests from everyone","People you follow","Don't receive requests"],recommended:"People you follow",why:"Restricting requests reduces unsolicited contact and the chance strangers can connect your account to other identities."},
+      "Contact syncing":{kind:"toggle",section:"Follow and invite friends",label:"Connect contacts",value:"Off",recommended:"Off",why:"Contact syncing can make your account discoverable to people who already have your phone number or email."},
+      "Location":{kind:"location",section:"Instagram location permission",recommended:"While Using or Never",why:"Location permission can let Instagram use device location for location-based features. Turning it off limits device-location access but does not remove locations you already added to posts."}
+    },
+    "Facebook":{
+      "Audience":{kind:"choices",section:"Who can see what you share",options:["Public","Friends","Friends except…","Specific friends","Only me"],recommended:"Friends",why:"Audience controls decide who can see profile details, posts and stories. Public content can be indexed, reshared and linked over time."},
+      "Future posts":{kind:"choices",section:"Future posts",options:["Public","Friends","Friends except…","Specific friends","Only me"],recommended:"Friends",why:"This sets the default audience for new posts. Choosing Friends reduces accidental public posting."},
+      "How people find you":{kind:"choices",section:"How people find and contact you",options:["Everyone","Friends of friends","Friends"],recommended:"Friends of friends / Friends",why:"Tighter discovery settings reduce how easily strangers can connect your name to your account."},
+      "Search engines":{kind:"toggle",section:"Search engines outside Facebook",label:"Allow search engines to link to your profile",value:"Off",recommended:"Off",why:"Turning this off reduces direct search-engine linking to your Facebook profile. It does not guarantee removal of pages already indexed elsewhere."},
+      "Location":{kind:"location",section:"Facebook location permission",recommended:"While Using or Never",why:"Location permission can let Facebook use device location for location-aware features. Turning it off limits device-location access but does not erase locations already posted."}
+    },
+    "TikTok":{
+      "Private account":{kind:"toggle",section:"Privacy",label:"Private account",value:"On",recommended:"On",why:"Only people you approve can follow you and view private-account content."},
+      "Suggest account":{kind:"toggles",section:"Suggest your account to others",items:[["Contacts","Off"],["Facebook friends","Off"],["People who open/send links","Off"],["People with mutual connections","Off"]],recommended:"Turn off suggestions you do not need",why:"Suggestion controls can connect your account to contacts, friends and people who interact with links."},
+      "Sync contacts":{kind:"toggle",section:"Sync contacts and Facebook friends",label:"Sync contacts",value:"Off",recommended:"Off",why:"Turning off syncing stops new contact uploads. Remove previously synced contacts separately where available."},
+      "Downloads":{kind:"toggle",section:"Downloads",label:"Video downloads",value:"Off",recommended:"Off",why:"Disabling downloads makes it harder for other users to save clean copies of your videos through TikTok."},
+      "Direct messages":{kind:"choices",section:"Direct messages",options:["Everyone","Suggested friends","Friends","No one"],recommended:"Friends / No one",why:"Restricting direct messages limits unsolicited contact."},
+      "Location":{kind:"location",section:"TikTok location permission",recommended:"While Using or Never",why:"TikTok can use device location for location-based features and recommendations. Turning permission off limits device-location access."}
+    },
+    "LinkedIn":{
+      "Public profile visibility":{kind:"toggle",section:"Edit your public profile",label:"Your profile's public visibility",value:"Off / limited",recommended:"Limit to what you intentionally want public",why:"Public-profile fields can appear in search-engine results outside LinkedIn."},
+      "Email discovery":{kind:"choices",section:"Profile discovery using email",options:["Everyone on LinkedIn","2nd-degree connections","Nobody"],recommended:"Nobody / 2nd-degree",why:"Restricting email discovery makes it harder to connect a private email address to your professional profile."},
+      "Phone discovery":{kind:"choices",section:"Profile discovery using phone",options:["Everyone on LinkedIn","2nd-degree connections","Nobody"],recommended:"Nobody / 2nd-degree",why:"Restricting phone discovery reduces account matching from your mobile number."},
+      "Email visibility":{kind:"choices",section:"Who can see your email address",options:["Only visible to me","1st-degree connections","1st and 2nd-degree connections","Anyone on LinkedIn"],recommended:"Only visible to me",why:"Your email address can bridge your professional profile to other public accounts and directories."}
+    },
+    "Reddit":{
+      "Chat requests":{kind:"choices",section:"Chat and messaging",options:["Everyone","Accounts older than 30 days","Nobody"],recommended:"Nobody / established accounts",why:"Restricting chat requests reduces unsolicited contact from unknown accounts."},
+      "Followers":{kind:"toggle",section:"Followers",label:"Allow people to follow you",value:"Off",recommended:"Off if you do not need followers",why:"Followers can make it easier to monitor new public activity from your account."},
+      "Personalization":{kind:"toggles",section:"Personalization",items:[["Personalized recommendations","Off"],["Activity-based recommendations","Off"]],recommended:"Off where not needed",why:"Turning off optional personalization reduces use of activity for recommendations and account discovery."},
+      "Public activity":{kind:"status",section:"Profile activity",status:"Posts and comments remain public unless removed",recommended:"Review old posts/comments",why:"A long comment history can reveal interests, locations, routines and identity clues even under a pseudonym."}
+    },
+    "Snapchat":{
+      "Contact Me":{kind:"choices",section:"Contact Me",options:["Friends","Friends and Contacts"],recommended:"Friends",why:"Limiting contact reduces unsolicited messages and calls."},
+      "Story audience":{kind:"choices",section:"View My Story",options:["My Friends","Custom"],recommended:"My Friends / Custom",why:"Story audience determines who can see time-sensitive photos, places and activities."},
+      "Quick Add":{kind:"toggle",section:"See Me in Quick Add",label:"Show me in Quick Add",value:"Off",recommended:"Off",why:"Turning this off reduces broad friend suggestions based on mutual connections and other signals."},
+      "Snap Map":{kind:"toggle",section:"Snap Map",label:"Ghost Mode",value:"On",recommended:"On unless actively sharing",why:"Ghost Mode stops your live Snap Map location from being visible to friends you have not explicitly chosen."},
+      "Precise Location":{kind:"location",section:"Snapchat location permission",recommended:"Approximate / While Using",why:"Disabling precise location reduces location accuracy available to Snapchat. Snap Map sharing is controlled separately inside Snapchat."}
+    },
+    "Discord":{
+      "Server DMs":{kind:"toggle",section:"Content & Social",label:"Allow direct messages from server members",value:"Off",recommended:"Off for unfamiliar servers",why:"Turning this off reduces unsolicited DMs from people who merely share a server with you."},
+      "Message requests":{kind:"choices",section:"Message requests",options:["Everyone","Friends of friends","Server members","Friends only"],recommended:"Friends / trusted groups",why:"Restricting requests reduces contact from unknown users."},
+      "Friend requests":{kind:"toggles",section:"Friend requests",items:[["Everyone","Off"],["Friends of Friends","On"],["Server Members","Off"]],recommended:"Only sources you trust",why:"This reduces broad friend discovery from shared servers."},
+      "Activity privacy":{kind:"toggle",section:"Activity Privacy",label:"Share your detected activities with others",value:"Off",recommended:"Off if not needed",why:"Activity sharing can reveal games, apps and usage patterns to other users."}
+    },
+    "YouTube":{
+      "Subscriptions":{kind:"toggle",section:"Privacy",label:"Keep all my subscriptions private",value:"On",recommended:"On",why:"Private subscriptions stop your channel from publicly listing what you follow."},
+      "Playlists":{kind:"choices",section:"Playlist visibility",options:["Public","Unlisted","Private"],recommended:"Private / Unlisted",why:"Playlists can reveal interests, routines, travel plans or other personal patterns."},
+      "History":{kind:"toggles",section:"Manage all history",items:[["Save watch history","Off / Auto-delete"],["Save search history","Off / Auto-delete"]],recommended:"Use auto-delete or pause if desired",why:"History settings affect what Google stores and uses for recommendations. They do not change comments you already posted publicly."},
+      "Comments":{kind:"status",section:"Your public comments",status:"Review and delete comments you no longer want public",recommended:"Audit old comments",why:"Years of comments can reveal identity, interests and activity patterns."}
+    },
+    "X / Twitter":{
+      "Audience / tagging":{kind:"toggles",section:"Audience, media and tagging",items:[["Protect your posts","On"],["Photo tagging","Off / people you follow"]],recommended:"Protect posts if you do not need a public account",why:"These controls limit who can see posts and who can publicly attach your identity to photos."},
+      "Protect posts":{kind:"toggle",section:"Audience and tagging",label:"Protect your posts",value:"On",recommended:"On for a private account",why:"Protected posts are visible only to approved followers and are less broadly searchable."},
+      "Discoverability":{kind:"toggles",section:"Discoverability and contacts",items:[["Let people find you by email","Off"],["Let people find you by phone","Off"],["Sync address book contacts","Off"]],recommended:"Off unless needed",why:"These switches can connect your account to people who have your contact information."},
+      "Discovery":{kind:"toggles",section:"Discoverability and contacts",items:[["Find by email","Off"],["Find by phone","Off"]],recommended:"Off",why:"Turning these off reduces contact-based matching to your account."},
+      "Location":{kind:"toggle",section:"Location information",label:"Add location information to posts",value:"Off",recommended:"Off",why:"Turning this off prevents new posts from intentionally including location metadata through X. It does not remove place names or clues you type into posts."}
+    },
+    "WhatsApp":{
+      "Last seen":{kind:"choices",section:"Last seen and online",options:["Everyone","My contacts","My contacts except…","Nobody"],recommended:"My contacts / Nobody",why:"This controls who can see when you last used WhatsApp. Online visibility has a separate linked choice."},
+      "Profile photo":{kind:"choices",section:"Profile photo",options:["Everyone","My contacts","My contacts except…","Nobody"],recommended:"My contacts",why:"Limiting your photo reduces what unknown numbers can use to confirm your identity."},
+      "About / Status":{kind:"choices",section:"Status privacy",options:["My contacts","My contacts except…","Only share with…"],recommended:"Choose the smallest intended audience",why:"Status updates can expose activities, places and relationships to saved contacts."},
+      "Groups":{kind:"choices",section:"Groups",options:["Everyone","My contacts","My contacts except…"],recommended:"My contacts / My contacts except…",why:"This limits who can add you to groups. Group membership can expose your phone number to other members."},
+      "Live location":{kind:"status",section:"Live location",status:"Review every chat currently receiving live location",recommended:"Stop sharing when you no longer need it",why:"Live Location shares your real-time location only with the individual or group chats you selected, for the chosen duration. Turning off phone location permission prevents WhatsApp from accessing device location, but it does not erase a static location you already sent."},
+      "Location":{kind:"location",section:"WhatsApp location permission",recommended:"While Using / Never when not needed",why:"Allowing location lets WhatsApp access device location for location-sharing features. It does not automatically show your location to everyone. Live Location must still be shared to a chat."}
+    },
+    "Telegram":{
+      "Phone Number":{kind:"choices",section:"Phone Number",options:["Everybody","My Contacts","Nobody"],recommended:"Nobody / My Contacts",why:"Phone-number visibility can directly connect a Telegram account to your real-world identity."},
+      "Last seen":{kind:"choices",section:"Last Seen & Online",options:["Everybody","My Contacts","Nobody"],recommended:"My Contacts / Nobody",why:"This controls who can see your recent activity status."},
+      "Forwarded messages":{kind:"choices",section:"Forwarded Messages",options:["Everybody","My Contacts","Nobody"],recommended:"My Contacts / Nobody",why:"Restricting forwarded-message links makes it harder for forwarded content to point back to your account."},
+      "Groups & Channels":{kind:"choices",section:"Groups & Channels",options:["Everybody","My Contacts"],recommended:"My Contacts",why:"This limits who can add you to groups and channels."},
+      "People Nearby":{kind:"status",section:"People Nearby",status:"Nearby discovery should remain off unless you intentionally use it",recommended:"Off",why:"Nearby discovery can expose physical proximity to other Telegram users."}
+    },
+    "Twitch":{
+      "Blocked users":{kind:"status",section:"Blocked users",status:"Review blocked accounts",recommended:"Block accounts that should not contact you",why:"Blocking is the strongest direct control for unwanted contact."},
+      "Whispers":{kind:"choices",section:"Whispers",options:["Allow from everyone","Block whispers from strangers"],recommended:"Block whispers from strangers",why:"This reduces unsolicited private messages."},
+      "Activity":{kind:"toggle",section:"Activity sharing",label:"Share activity",value:"Off",recommended:"Off if not needed",why:"Activity sharing can connect viewing or gaming behaviour to your public Twitch identity."},
+      "Connections":{kind:"status",section:"Connections",status:"Review linked accounts and revoke unused services",recommended:"Keep only services you actively use",why:"Connected accounts can create cross-platform identity links."}
+    },
+    "GitHub":{
+      "Public profile":{kind:"status",section:"Public profile",status:"Name, bio, company, location and website may be public",recommended:"Remove fields you do not need public",why:"These fields can directly tie a username to your employer, city and other profiles."},
+      "Public email":{kind:"toggle",section:"Public profile",label:"Public email",value:"Hidden",recommended:"Hidden",why:"A public email address is a strong cross-platform identity key."},
+      "Email privacy":{kind:"toggles",section:"Emails",items:[["Keep my email addresses private","On"],["Block command-line pushes that expose my email","On"]],recommended:"On",why:"Using GitHub's no-reply address can prevent commits from exposing your private email."},
+      "Public repositories":{kind:"status",section:"Repositories",status:"Review public repositories, issues, pull requests and comments",recommended:"Make sensitive projects private",why:"Repository history can expose employers, projects, usernames and long-term activity patterns."},
+      "Contributions":{kind:"toggle",section:"Contribution settings",label:"Show private contributions on my profile",value:"Off / limited",recommended:"Limit if activity patterns are sensitive",why:"Contribution graphs can reveal work cadence and periods of activity even without file contents."},
+      "Applications":{kind:"status",section:"Applications",status:"Review authorized OAuth apps and GitHub Apps",recommended:"Revoke unused access",why:"Third-party applications can retain account access until you revoke them."}
+    },
+    "Pinterest":{
+      "Search privacy":{kind:"toggle",section:"Profile visibility",label:"Search privacy",value:"On",recommended:"On if you do not want search-engine discovery",why:"This reduces search-engine visibility of your Pinterest profile."},
+      "Boards":{kind:"choices",section:"Board visibility",options:["Public","Secret"],recommended:"Secret for sensitive boards",why:"Public boards can reveal interests, purchases, travel plans and home projects."},
+      "Personalization":{kind:"toggles",section:"Personalization",items:[["Use sites you visit","Off"],["Use partner information","Off"]],recommended:"Off if you do not want personalized tracking",why:"These options affect how off-Pinterest activity is used for recommendations and advertising."},
+      "Connected accounts":{kind:"status",section:"Connected accounts",status:"Review linked services and sign-in connections",recommended:"Remove unused connections",why:"Linked accounts create cross-platform identity paths."},
+      "Discoverability":{kind:"toggle",section:"Contacts and discovery",label:"Sync contacts",value:"Off",recommended:"Off",why:"Contact syncing can expose your account to people who already have your contact information."}
+    },
+    "Strava":{
+      "Profile Page":{kind:"choices",section:"Profile Page",options:["Everyone","Followers"],recommended:"Followers",why:"This limits who can see profile details and social connections."},
+      "Activities":{kind:"choices",section:"Activities",options:["Everyone","Followers","Only You"],recommended:"Followers / Only You",why:"Activity visibility determines who can see routes, times and workout details."},
+      "Map Visibility":{kind:"toggles",section:"Map Visibility",items:[["Hide start/end around a specific address","On"],["Hide start/end everywhere","On where appropriate"]],recommended:"Hide sensitive start/end points",why:"Route start and end points can reveal home, school or work locations."},
+      "Group Activities":{kind:"choices",section:"Group Activities",options:["Everyone","Followers","No One"],recommended:"Followers / No One",why:"Group activities can reveal who you train or travel with."},
+      "Flyby":{kind:"choices",section:"Flyby",options:["Everyone","No One"],recommended:"No One",why:"Flyby can reveal proximity to other athletes at a specific time and place."}
+    }
+  };
+
+  function settingDetailFor(name,target) {
+    return APP_SETTING_DETAILS[name]?.[target] || null;
+  }
+
+  function detailRowsHtml(detail) {
+    if (!detail) return "";
+    const recommended=String(detail.recommended||"").toLowerCase();
+    const optionRow=(label,selected=false,meta="") =>
+      '<div class="phoneSettingOption' + (selected ? ' selected' : '') + '">' +
+        '<span class="phoneRadio">' + (selected ? '✓' : '') + '</span>' +
+        '<span class="phoneOptionCopy"><strong>' + escapeHtml(label) + '</strong>' +
+          (meta ? '<small>' + escapeHtml(meta) + '</small>' : '') +
+        '</span>' +
+      '</div>';
+
+    if (detail.kind === "choices") {
+      const chosen=(detail.options||[]).find(option=>recommended.includes(String(option).toLowerCase())) || detail.options?.[0];
+      return '<div class="phoneSettingGroup">' + (detail.options||[]).map(option=>optionRow(option,option===chosen)).join("") + '</div>';
+    }
+    if (detail.kind === "toggle") {
+      const on=/on|enabled|hidden|limited/i.test(String(detail.value||""));
+      return '<div class="phoneSettingGroup"><div class="phoneSettingToggleRow"><span><strong>' + escapeHtml(detail.label||detail.section) + '</strong><small>' + escapeHtml(detail.value||"") + '</small></span><span class="toggle ' + (on ? 'on' : '') + '"></span></div></div>';
+    }
+    if (detail.kind === "toggles") {
+      return '<div class="phoneSettingGroup">' + (detail.items||[]).map(([label,value])=>{
+        const on=/on|enabled/i.test(String(value||""));
+        return '<div class="phoneSettingToggleRow"><span><strong>' + escapeHtml(label) + '</strong><small>' + escapeHtml(value||"") + '</small></span><span class="toggle ' + (on ? 'on' : '') + '"></span></div>';
+      }).join("") + '</div>';
+    }
+    if (detail.kind === "location") {
+      return '<div class="phoneSettingGroup phoneLocationPermission">' +
+        optionRow("Never",/never/i.test(detail.recommended||"")) +
+        optionRow("Ask Next Time / Every Time",false) +
+        optionRow("While Using the App",!/never/i.test(detail.recommended||"")) +
+        optionRow("Always",false) +
+        '<div class="phoneSettingToggleRow"><span><strong>Precise Location</strong><small>Use only when the feature genuinely needs exact location</small></span><span class="toggle"></span></div>' +
+      '</div>';
+    }
+    if (detail.kind === "status") {
+      return '<div class="phoneStatusCard"><span class="phoneStatusDot"></span><strong>' + escapeHtml(detail.status||"Review this setting") + '</strong><small>' + escapeHtml(detail.recommended||"") + '</small></div>';
+    }
+    return "";
+  }
+
   function targetUsesToggle(target) {
     return /private account|protect.*post|quick add|precise location|subscriptions private|search engine|downloads|contact sync|sync contacts|ghost mode|activity sharing|location services|tracking|public visibility|allow.*search engine/i.test(String(target || ""));
   }
 
   function phoneSceneHtml(title, target, explanation) {
+    const phoneIcon = guidePlatform?.device ? "⚙" : guidePlatform.icon;
+    const appName = guidePlatform?.name || "Privacy";
+    const identity = '<div class="phoneAppIdentity" style="--app-brand:' + escapeHtml(guidePlatform?.brand || "#52d6ff") + '">' +
+      '<span class="phoneAppLogo">' + phoneIcon + '</span><span><strong>' + escapeHtml(appName) + '</strong><small>' + (guidePlatform?.device ? 'DEVICE SETTINGS' : 'PRIVACY SETTINGS') + '</small></span>' +
+    '</div>';
+
     if (explanation) {
       return '<div class="phoneScreen phoneTeachingScreen">' +
-        '<div class="phoneTitle"><span class="phoneTitleIcon">' + (guidePlatform?.device ? "⚙" : guidePlatform.icon) + '</span><span>' + (guidePlatform?.device ? phoneHeaderFor(title) : guidePlatform.name) + '</span></div>' +
+        identity +
         '<div class="settingSuccess">' +
           '<div class="settingSuccessIcon">✓</div>' +
           '<div class="settingSuccessKicker">SETTING REVIEWED</div>' +
-          '<strong>' + title + '</strong>' +
+          '<strong>' + escapeHtml(title) + '</strong>' +
           '<span>Pause here and explain what this control changes.</span>' +
         '</div>' +
       '</div>';
     }
 
+    const detail = guidePlatform?.device ? null : settingDetailFor(appName,target);
+    if (detail) {
+      return '<div class="phoneScreen phoneDetailScreen">' +
+        identity +
+        '<div class="phoneDetailHeader"><span class="phoneBackChevron">‹</span><span><small>' + escapeHtml(detail.section||title) + '</small><strong>' + escapeHtml(title) + '</strong></span></div>' +
+        detailRowsHtml(detail) +
+        '<div class="phoneRecommendation"><strong>PRIVACY BASELINE</strong><span>' + escapeHtml(detail.recommended||"Review this setting") + '</span></div>' +
+      '</div>';
+    }
+
     const deviceRows = deviceRowsFor(target);
-    const rows = deviceRows || platformRowsFor(guidePlatform?.name, target);
+    const rows = deviceRows || platformRowsFor(appName, target);
     if (deviceRows && target && target !== "EXPLAIN" && !rows.includes(target)) rows.push(target);
 
-    const phoneIcon = guidePlatform?.device ? "⚙" : guidePlatform.icon;
-    const phoneHeader = guidePlatform?.device ? phoneHeaderFor(target) : platformHeaderFor(guidePlatform?.name, target);
+    const phoneHeader = guidePlatform?.device ? phoneHeaderFor(target) : platformHeaderFor(appName, target);
 
     let html = '<div class="phoneScreen">' +
-      '<div class="phoneTitle"><span class="phoneTitleIcon">' + phoneIcon + '</span><span>' + phoneHeader + '</span></div>' +
-      '<div class="phoneCurrentScreen">' + title + '</div>' +
+      identity +
+      '<div class="phoneTitle"><span class="phoneTitleIcon">' + phoneIcon + '</span><span>' + escapeHtml(phoneHeader) + '</span></div>' +
+      '<div class="phoneCurrentScreen">' + escapeHtml(title) + '</div>' +
       '<div class="phoneRows">';
 
     rows.forEach((r) => {
@@ -1555,7 +1723,7 @@ function setConsentState() {
       const control = isTarget && targetUsesToggle(target)
         ? '<span class="toggle on"></span>'
         : '<span class="phoneChevron">›</span>';
-      html += '<div class="phoneRow' + (isTarget ? " target" : "") + '"><span>' + r + '</span>' +
+      html += '<div class="phoneRow' + (isTarget ? " target" : "") + '"><span>' + escapeHtml(r) + '</span>' +
         control +
         '</div>';
     });
@@ -1589,16 +1757,21 @@ function setConsentState() {
 
   function updateCoachCopy(title, body, target, isExplain, direction = 0) {
     const copy = $("coachSlide").querySelector(".coachCopy");
+    const detail = !guidePlatform?.device ? settingDetailFor(guidePlatform?.name,target) : null;
     const bullets = isExplain
       ? ["What this control changes","What exposure or risk it reduces","What the child/user will notice","Any trade-off or limitation to understand"]
       : ["Follow this exact path on the device","The highlighted row is the next tap","Use the presentation clicker to advance one action at a time"];
 
+    const actionBlock = isExplain
+      ? '<div class="explainBox"><strong>What to explain to the audience</strong><ul>' + bullets.map((b)=>"<li>"+escapeHtml(b)+"</li>").join("") + "</ul></div>"
+      : detail
+        ? '<div class="settingWhyCard"><div><strong>WHY THIS SETTING MATTERS</strong><p>' + escapeHtml(detail.why||body) + '</p></div><div><strong>PRIVACY BASELINE</strong><p>' + escapeHtml(detail.recommended||"Review this setting") + '</p></div></div>'
+        : '<div class="tapCallout"><strong>Next action:</strong>&nbsp; ' + escapeHtml(target) + "</div>";
+
     const html =
+      '<div class="coachAppBadge" style="--brand:' + escapeHtml(guidePlatform?.brand || "#52d6ff") + '"><span>' + (guidePlatform?.device ? "⚙" : guidePlatform.icon) + '</span><strong>' + escapeHtml(guidePlatform?.name || "Privacy") + '</strong></div>' +
       '<div class="eyebrow">' + (isExplain ? "WHY THIS SETTING MATTERS" : "STEP " + (guideIndex + 1)) + '</div>' +
-      "<h2>" + title + "</h2><p>" + body + "</p>" +
-      (isExplain
-        ? '<div class="explainBox"><strong>What to explain to the audience</strong><ul>' + bullets.map((b)=>"<li>"+b+"</li>").join("") + "</ul></div>"
-        : '<div class="tapCallout"><strong>Next action:</strong>&nbsp; ' + target + "</div>");
+      "<h2>" + escapeHtml(title) + "</h2><p>" + escapeHtml(body) + "</p>" + actionBlock;
 
     if (!direction) {
       copy.innerHTML = html;
