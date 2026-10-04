@@ -1,4 +1,7 @@
 const $ = (id) => document.getElementById(id);
+const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (ch) => ({
+  "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+})[ch]);
 let session=null,pollTimer=null,revealIndex=0,latestStatus=null,searchRunning=false,searchComplete=false;
 const startView=$('startView'),sessionView=$('sessionView'),revealDeck=$('revealDeck');
 
@@ -35,7 +38,7 @@ async function checkPresenterHealth(){
     button.disabled=false;
   }catch(err){
     health.className='presenterHealth failed';
-    health.innerHTML='<span></span><strong>QR system not ready</strong><small>'+String(err.message||'Health check failed')+'</small>';
+    health.innerHTML='<span></span><strong>QR system not ready</strong><small>'+escapeHtml(err.message||'Health check failed')+'</small>';
     button.disabled=true;
   }
 }
@@ -102,7 +105,7 @@ function setProgress(status){
 function formatBytes(n){n=Number(n)||0;if(n<1024)return n+' B';if(n<1048576)return(n/1024).toFixed(1)+' KB';return(n/1048576).toFixed(1)+' MB';}
 function findingCard(title,value,copy,tone=''){
   const d=document.createElement('article');d.className='photoFindingCard '+tone;
-  d.innerHTML='<div class="provenanceMini verified">VERIFIED FROM PHOTO</div><div class="findingLabel">'+title+'</div><strong>'+value+'</strong><p>'+copy+'</p>';return d;
+  d.innerHTML='<div class="provenanceMini verified">VERIFIED FROM PHOTO</div><div class="findingLabel">'+escapeHtml(title)+'</div><strong>'+escapeHtml(value)+'</strong><p>'+escapeHtml(copy)+'</p>';return d;
 }
 function mapUrl(z){
   const lat=Number(z.lat),lon=Number(z.lon),r=Number(z.radiusKm)||50,dlat=Math.max(r*1.25,60)/111.32,cos=Math.max(Math.cos(lat*Math.PI/180),.2),dlon=Math.max(r*1.25,60)/(111.32*cos);
@@ -115,7 +118,7 @@ function addPhotoCore(stage,compact=false){
 }
 function addNode(stage,o){
   const n=document.createElement('div');n.className='crumbNode '+(o.tone||'')+(o.dashed?' next':'');n.style.left=o.x+'%';n.style.top=o.y+'%';
-  n.innerHTML='<div class="crumbIcon">'+o.icon+'</div><strong>'+o.title+'</strong><span>'+o.detail+'</span>';stage.appendChild(n);
+  n.innerHTML='<div class="crumbIcon">'+escapeHtml(o.icon)+'</div><strong>'+escapeHtml(o.title)+'</strong><span>'+escapeHtml(o.detail)+'</span>';stage.appendChild(n);
 }
 function metadataMap(data){
   const st=$('breadcrumbStageMetadata');if(!st)return;st.replaceChildren();addPhotoCore(st);
@@ -165,14 +168,14 @@ function correlationMap(data){
   const domainCopy=domains.length?' Sources included: '+domains.join(', ')+'.':'';
   $('correlationDisclosure').innerHTML=
     '<strong>Breadcrumb logic, not facial identification.</strong> '+
-    (c.basis||'Public correlations appear only when a real source match is returned.')+
-    domainCopy;
+    escapeHtml(c.basis||'Public correlations appear only when a real source match is returned.')+
+    escapeHtml(domainCopy);
 }
 function impact(data){
   const f=data.findings||{},embedded=[f.gpsEmbedded,f.captureDateEmbedded,f.cameraMetadataEmbedded].filter(Boolean).length;
   const publicMatches=Number(data.correlation?.totalMatches)||0;
   const vals=[[embedded,'embedded signals'],[f.gpsEmbedded?'50 km':'—','location privacy zone'],[publicMatches,'verified public matches'],[data.participant?.usernameMasked?1:0,'supplied public handle']];
-  $('impactStats').innerHTML=vals.map(v=>'<div class="impactStat"><strong>'+v[0]+'</strong><span>'+v[1]+'</span></div>').join('');
+  $('impactStats').innerHTML=vals.map(v=>'<div class="impactStat"><strong>'+escapeHtml(v[0])+'</strong><span>'+escapeHtml(v[1])+'</span></div>').join('');
 }
 
 function sleep(ms){return new Promise(resolve=>setTimeout(resolve,ms));}
@@ -278,10 +281,10 @@ function addSearchNode(node,index,total){
   el.style.left=pos.x+'%';
   el.style.top=pos.y+'%';
   el.innerHTML=
-    '<div class="searchNodeIcon">'+node.icon+'</div>'+
-    '<strong class="searchNodeCount">'+node.count+'</strong>'+
-    '<span class="searchNodeName">'+node.name+'</span>'+
-    '<small>'+node.subtitle+'</small>'+
+    '<div class="searchNodeIcon">'+escapeHtml(node.icon)+'</div>'+
+    '<strong class="searchNodeCount">'+escapeHtml(node.count)+'</strong>'+
+    '<span class="searchNodeName">'+escapeHtml(node.name)+'</span>'+
+    '<small>'+escapeHtml(node.subtitle)+'</small>'+
     '<em>VERIFIED</em>';
   stage.appendChild(el);
   requestAnimationFrame(()=>el.classList.add('visible'));
