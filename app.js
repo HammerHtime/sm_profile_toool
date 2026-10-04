@@ -328,15 +328,21 @@
     ["Open Settings","On the parent's iPhone, open Settings.","Settings"],
     ["Open Family","Tap Family.","Family"],
     ["Select your child","Tap the child's name in the Family group.","Child"],
-    ["Open Screen Time","Tap Screen Time. In iOS 27, this opens the updated parental-control experience.","Screen Time"],
-    ["Apps & Websites","Review which apps and websites the child can access. This is also where Ask to Buy and Ask to Browse protections can apply.","Apps & Websites"],
-    ["Allowed Contacts","Review who the child can communicate with in Messages, FaceTime and Phone, including approval for new contacts where supported.","Allowed Contacts"],
+    ["Open Screen Time","Tap Screen Time to open the child's current parental-control settings.","Screen Time"],
+    ["Apps & Websites","Review which apps and websites the child can access.","Apps & Websites"],
+    ["Ask to Buy","Inside Apps & Websites restrictions, require approval for eligible new app purchases and downloads.","Ask to Buy"],
+    ["Ask to Browse","Review website filtering and Ask to Browse so new websites can require parent approval.","Ask to Browse"],
+    ["Allowed Contacts","Choose who the child can communicate with in supported Phone, Messages and FaceTime experiences, including approval for new contacts.","Allowed Contacts"],
+    ["Always Allowed","Choose essential apps and contacts that remain available even when other Screen Time limits are active.","Always Allowed"],
     ["Time Allowances","Set daily time budgets for categories such as entertainment, games and social media.","Time Allowances"],
     ["Screen Time Schedules","Create school, after-school, evening or weekend routines for when apps can be used.","Screen Time Schedules"],
-    ["Content & Privacy Restrictions","Manage age ratings, apps, content and whether the child can change sensitive device settings.","Content & Privacy Restrictions"],
+    ["Content & Privacy Restrictions","Open Content & Privacy Restrictions to manage age ratings, built-in features and sensitive settings.","Content & Privacy Restrictions"],
+    ["App Store purchases","Review installing apps, deleting apps and in-app purchase restrictions.","iTunes & App Store Purchases"],
+    ["Age-appropriate content","Review App Store, Media, Web & Games restrictions and age ratings.","App Store, Media, Web & Games"],
+    ["Allow changes to settings","Review whether the child can change Accounts, Contacts, Photos, Location Services and other protected settings.","Allow Changes to Settings"],
     ["Communication Safety","Open Communication Safety and review the protection for the child account.","Communication Safety"],
     ["What Communication Safety does","On supported Apple services, on-device detection can warn and blur sensitive photos or videos before they are viewed or sent. Apple does not receive the image merely because sensitive content was detected.","EXPLAIN"],
-    ["Extra protection for younger children","With a Screen Time passcode, children under 13 can require a parent or guardian to enter the passcode before viewing detected sensitive content. This is not a system that simply forwards the child's image to the parent.","EXPLAIN"],
+    ["Extra protection for younger children","With a Screen Time passcode, younger child accounts can require parent or guardian approval before viewing certain detected sensitive content. This is not a system that simply forwards the child's image to the parent.","EXPLAIN"],
     ["Open Privacy & Security","On the child's iPhone, return to Settings and open Privacy & Security.","Privacy & Security"],
     ["Location Services","Open Location Services and review which apps can use the child's location.","Location Services"],
     ["Precise Location","For apps that only need a general area, turn off Precise Location where appropriate.","Precise Location"],
@@ -346,28 +352,27 @@
   ];
 
   const androidParent = [
-    ["Install / open Family Link","Parent opens Google Family Link and confirms the child's supervised Google Account.","Family Link"],
+    ["Open Family Link","Open Google Family Link on the parent's device.","Family Link"],
     ["Select the child","Choose the child's profile.","Child profile"],
-    ["Controls","Open Controls.","Controls"],
-    ["Daily limit","Set the total daily device limit.","Daily limit"],
-    ["Downtime","Set bedtime / school-night downtime.","Downtime"],
-    ["App limits","Set individual limits or block specific apps.","App limits"],
-    ["Google Play controls","Open Content restrictions → Google Play.","Google Play"],
-    ["App approvals","Require parent approval for app downloads or purchases.","App approvals"],
-    ["Purchase approvals","Choose which purchases need approval.","Purchases"],
-    ["Chrome","Open Content restrictions → Google Chrome.","Chrome"],
-    ["Website controls","Try to block explicit sites or allow only approved sites for younger children.","Websites"],
-    ["Google Search","Enable SafeSearch controls where supervision supports them.","SafeSearch"],
-    ["YouTube","Choose a supervised YouTube experience / content setting.","YouTube"],
-    ["Contacts","Review communication / contacts controls available for the child's device and apps.","Contacts"],
-    ["Location","Open Location in Family Link.","Location"],
-    ["Device location","Choose whether the parent can see the child's supervised device location.","Device location"],
-    ["App permissions","Review location, camera, microphone, contacts, photos/files permissions app by app.","App permissions"],
-    ["Precise location","On Android app permissions, disable precise location where an approximate location is enough.","Precise location"],
-    ["Unknown apps / sideloading","Keep installation from unknown sources off unless you intentionally need it.","Unknown apps"],
-    ["Account changes","Keep the supervised account linked and protect parent settings.","Account supervision"],
-    ["Notifications","Choose which Family Link notifications the parent should receive, including app requests and account changes.","Parent alerts"],
-    ["Why it matters","Family Link combines device limits, app approval, web/content controls, location and permission review in one parent dashboard.","EXPLAIN"]
+    ["Screen time","Open Screen time to review limits and schedules.","Screen time"],
+    ["Daily limit","Open Time limits and set the daily device limit.","Daily limit"],
+    ["Downtime / schedule","Set school-night or bedtime downtime and any schedule that fits the family.","Downtime"],
+    ["App limits","Under Screen time → Time limits → App limits, set individual app limits, block apps or allow unlimited-time apps.","App limits"],
+    ["Google Play controls","Open Controls and review Google Play restrictions.","Google Play"],
+    ["App and download approvals","Require approval for eligible app downloads where appropriate.","App approvals"],
+    ["Purchase approvals","Choose which Google Play purchases or downloads require parent approval.","Purchases"],
+    ["Chrome and Web","Open Controls → Google Chrome and Web.","Chrome"],
+    ["Website controls","Choose Allow all sites, Try to block explicit sites, or Only allow approved sites, and review approved/blocked sites.","Websites"],
+    ["Google Search","Review SafeSearch and Search settings available for the supervised account.","SafeSearch"],
+    ["YouTube","Review the supervised YouTube experience and content settings for the child.","YouTube"],
+    ["Contacts, calls & text","Open Controls → Contacts, calls & text. Review parent-managed contacts and who the child may call or text on supported apps/devices.","Contacts"],
+    ["Location sharing","Open Family Link's Location tab and review whether the parent's device can see the child's supported Android device location.","Device location"],
+    ["Location settings","Review Location settings and Location Accuracy when appropriate.","Precise location"],
+    ["App permissions","Review sensitive app permissions such as location, camera, microphone, contacts, photos and videos. Where supported, set permission changes to require the parent.","App permissions"],
+    ["Unknown apps / sideloading","Keep installation from unknown sources off unless there is a specific reason to allow it.","Unknown apps"],
+    ["Account privacy settings","Open Controls → Account settings → Privacy settings and review the child's Google activity and account privacy choices.","Account supervision"],
+    ["Family Link notifications","Review notifications for app requests, website requests, activity-control changes and location changes.","Parent alerts"],
+    ["Why it matters","Family Link combines screen-time limits, app approval, web and search controls, approved contacts, location and app-permission review in one parent dashboard. Exact options vary by Android version and device.","EXPLAIN"]
   ];
 
   function syntheticReport() {
@@ -935,12 +940,16 @@ function setConsentState() {
   }
 
   function iosRowsFor(target) {
-    const screenTimeRows = ["Apps & Websites","Allowed Contacts","Time Allowances","Screen Time Schedules","Content & Privacy Restrictions","Communication Safety"];
+    const screenTimeRows = ["Apps & Websites","Allowed Contacts","Always Allowed","Time Allowances","Screen Time Schedules","Content & Privacy Restrictions","Communication Safety"];
     const privacyRows = ["Location Services","Tracking","Contacts","Calendars","Photos","Bluetooth","Local Network","Microphone","Camera","Safety Check"];
 
     if (target === "Family") return ["Airplane Mode","Wi-Fi","Bluetooth","Cellular","Notifications","Sounds & Haptics","Family","Screen Time","General","Privacy & Security"];
     if (target === "Child") return ["Family Checklist","Subscriptions","Purchase Sharing","Location Sharing","Child","Parents / Guardians"];
     if (target === "Screen Time") return ["Personal Information","Purchases","Subscriptions","Location Sharing","Screen Time"];
+    if (["Ask to Buy","Ask to Browse"].includes(target)) return ["Apps & Websites","Restrictions","Ask to Buy","Websites","Ask to Browse","Allowed","Blocked"];
+    if (["iTunes & App Store Purchases","App Store, Media, Web & Games","Allow Changes to Settings"].includes(target)) {
+      return ["Content & Privacy Restrictions","iTunes & App Store Purchases","App Store, Media, Web & Games","Other Features","Allow Changes to Settings"];
+    }
     if (screenTimeRows.includes(target)) return screenTimeRows;
     if (target === "Privacy & Security") return ["General","Accessibility","Action Button","Camera","Control Centre","Apps","Privacy & Security"];
     if (privacyRows.includes(target)) return privacyRows;
@@ -961,12 +970,13 @@ function setConsentState() {
     const personal = guidePlatform?.name === "Android Privacy";
     if (!personal) {
       if (target === "Family Link") return ensureTarget(["Google","Security & privacy","Digital Wellbeing","Family Link","Apps","Location"]);
-      if (target === "Child profile") return ensureTarget(["Family","Child profile","Controls","Highlights","Location","Devices"]);
-      if (["Google Play","App approvals","Purchases"].includes(target)) return ensureTarget(["Google Play","Purchases & download approvals","App approvals","Content restrictions","Purchase approvals"]);
+      if (target === "Child profile") return ensureTarget(["Family","Child profile","Screen time","Controls","Location","Highlights"]);
+      if (["Screen time","Daily limit","Downtime","App limits"].includes(target)) return ensureTarget(["Screen time","Time limits","Daily limit","Downtime","School time","App limits","Bonus time"]);
+      if (["Google Play","App approvals","Purchases"].includes(target)) return ensureTarget(["Controls","Google Play","Purchase & download approvals","App approvals","Content restrictions","Purchases"]);
       if (["Chrome","Websites"].includes(target)) return ensureTarget(["Google Chrome","Try to block explicit sites","Only allow approved sites","Manage sites","Blocked sites"]);
       if (target === "SafeSearch") return ensureTarget(["Google Search","SafeSearch","Personal results","Search settings"]);
       if (target === "YouTube") return ensureTarget(["YouTube","Content settings","YouTube Kids","Search","Watch history","Autoplay"]);
-      if (target === "Contacts") return ensureTarget(["Contacts, calls & text","Contacts","Calls","Text messages","Approved contacts"]);
+      if (target === "Contacts") return ensureTarget(["Controls","Contacts, calls & text","Parent-managed contacts","Allowed calls & texts","Contact requests"]);
       if (["Device location","Precise location"].includes(target)) return ensureTarget(["Location","Device location","Location accuracy","Location permissions","Precise location"]);
       if (target === "App permissions") return ensureTarget(["App permissions","Location","Camera","Microphone","Contacts","Photos and videos"]);
       if (target === "Unknown apps") return ensureTarget(["Apps","App limits","Blocked apps","Unknown apps","App permissions"]);
@@ -1001,6 +1011,7 @@ function setConsentState() {
     }
     if (guidePlatform?.device === "android") {
       if (guidePlatform?.name === "Android / Family Link") {
+        if (["Screen time","Daily limit","Downtime","App limits"].includes(target)) return "Screen time";
         if (["Google Play","App approvals","Purchases"].includes(target)) return "Google Play";
         if (["Chrome","Websites"].includes(target)) return "Google Chrome";
         if (target === "SafeSearch") return "Google Search";
