@@ -74,6 +74,11 @@
           </aside>
 
           <div class="searchNetworkWrap">
+            <div id="photoAmbientLayer" class="photoAmbientLayer" aria-hidden="true">
+              <div id="photoAmbientPhotos" class="photoAmbientPhotos"></div>
+              <div id="photoAmbientQuotes" class="photoAmbientQuotes"></div>
+              <div id="photoAmbientWords" class="photoAmbientWords"></div>
+            </div>
             <div class="searchRadar"></div>
             <svg id="searchConnections" class="searchConnections" viewBox="0 0 1000 620" preserveAspectRatio="none" aria-hidden="true"></svg>
             <div id="searchNetwork" class="searchNetwork">
@@ -93,7 +98,7 @@
         </div>
 
         <div class="searchMetrics" id="searchMetrics">
-          <div><strong id="metricSignals">0</strong><span>verified signals</span></div>
+          <div><strong id="metricSignals">0</strong><span>verified / supplied signals</span></div>
           <div><strong id="metricPlatforms">0</strong><span>public sources</span></div>
           <div><strong id="metricLocations">0</strong><span>location signals</span></div>
           <div><strong id="metricMatches">0</strong><span>verified matches</span></div>
@@ -217,8 +222,23 @@
         </div>
         <button type="button" id="erasePhotoDemo" class="danger">Erase Demo Data</button>
       </section>
-      <div id="erasePhotoNotice" class="eraseNotice hidden"><div class="eraseCheck">✓</div><div><strong>Live demo erased.</strong><br><span>The temporary session record has been deleted.</span></div></div>
+      <div id="eraseSequenceOverlay" class="eraseSequenceOverlay hidden" role="status" aria-live="assertive">
+        <div class="eraseSequenceCard">
+          <div class="eraseSequenceIcon" id="eraseSequenceIcon">⌫</div>
+          <div class="eyebrow">SECURE DEMO CLEANUP</div>
+          <h2 id="eraseSequenceTitle">Deleting temporary demo data…</h2>
+          <p id="eraseSequenceCopy">Please keep this screen open while the temporary session is cleared.</p>
+          <div class="eraseSequenceSteps" id="eraseSequenceSteps">
+            <div data-erase-step="0"><span>1</span><strong>Photo analysis</strong><em>waiting</em></div>
+            <div data-erase-step="1"><span>2</span><strong>Voice recording</strong><em>waiting</em></div>
+            <div data-erase-step="2"><span>3</span><strong>Search session</strong><em>waiting</em></div>
+            <div data-erase-step="3"><span>4</span><strong>Presenter cache</strong><em>waiting</em></div>
+          </div>
+          <div class="eraseSequenceBar"><span id="eraseSequenceBar"></span></div>
+        </div>
+      </div>
     </section>
+    <div id="erasePhotoNotice" class="eraseNotice hidden"><div class="eraseCheck">✓</div><div><strong>ALL DEMO DATA DELETED</strong><br><span>All temporary data held by this demo system has been cleared. External search-provider query records are governed by that provider's own retention terms.</span></div></div>
   </main>
   <script src="presenter.js"></script>
 </body>

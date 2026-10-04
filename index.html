@@ -50,7 +50,7 @@
           <input type="checkbox" id="consent" />
           <span>
             <strong>I have permission to search this person.</strong>
-            <small>I confirm this is my information, or I have the subject's explicit consent to run this demonstration. Live Search sends the entered identity clues to the configured public-search provider to find public/indexed webpages.</small>
+            <small>I confirm this is my information, or I have the subject's explicit consent to run this demonstration. Live Search sends the entered identity clues to the configured public-search provider to find public/indexed webpages. The search provider may retain API query records under its own service and privacy terms.</small>
           </span>
         </label>
       </div>
@@ -64,15 +64,41 @@
       <div class="buildStatus publicReady"><span class="statusDot"></span><strong>Choose a mode:</strong> <b>Live Search</b> returns real public/indexed sources with links and match confidence. <b>Synthetic Demo</b> generates clearly labelled fake data for presentation purposes when a live search produces little or nothing.</div><p class="fineprint">Search controls unlock only after consent is checked. Every live result includes its public source URL and an identity-match confidence label. If nothing can be verified, the app will say so rather than substitute sample data.</p>
     </section>
 
-    <section class="scan panel hidden" id="scanPanel" aria-live="polite">
-      <div class="spinner" aria-hidden="true"></div>
-      <div>
-        <div class="scanTitle" id="scanTitle">Analyzing public footprint…</div>
-        <div class="scanSub" id="scanSub">Sensitive values will be partially masked before display.</div>
+    <section class="scan panel hidden cinematicScan" id="scanPanel" aria-live="polite">
+      <div class="scanBackdrop" aria-hidden="true">
+        <div id="scanPhotoLayer" class="scanPhotoLayer"></div>
+        <div id="scanQuoteLayer" class="scanQuoteLayer"></div>
+        <div id="scanWordCloud" class="scanWordCloud"></div>
+        <div class="scanGridGlow"></div>
+      </div>
+      <div class="scanHud">
+        <div class="scanHudTop">
+          <div>
+            <div class="eyebrow">LIVE PUBLIC SEARCH</div>
+            <div class="scanTitle" id="scanTitle">Analyzing public footprint…</div>
+            <div class="scanSub" id="scanSub">Sensitive values will be partially masked before display.</div>
+          </div>
+          <div class="scanProgressOrb" id="scanProgressOrb"><strong id="scanProgressValue">0%</strong><span>SEARCHING</span></div>
+        </div>
+        <div class="scanTargetStage">
+          <div class="scanRadarRing ringA"></div>
+          <div class="scanRadarRing ringB"></div>
+          <div class="scanTargetCard">
+            <div class="scanTargetIcon">◎</div>
+            <strong id="scanTargetName">SEARCH SUBJECT</strong>
+            <span id="scanTargetMeta">Public/indexed sources only</span>
+          </div>
+          <div id="scanPlatformNodes" class="scanPlatformNodes"></div>
+        </div>
+        <div class="scanFooterLine">
+          <span><i class="liveDot"></i><b id="scanDiscoveryCount">0</b> public signals staged</span>
+          <span id="scanStageLabel">Initializing search</span>
+        </div>
       </div>
     </section>
 
-    <section id="results" class="hidden">\n      <section id="dataModeBanner" class="dataModeBanner hidden" role="status"></section>
+    <section id="results" class="hidden">
+      <section id="dataModeBanner" class="dataModeBanner hidden" role="status"></section>
       <section id="zeroResultFallback" class="zeroResultFallback hidden">
         <div>
           <strong>No verified public matches were returned.</strong>
@@ -137,6 +163,19 @@
           <div class="privacyChip">SOURCE LINKS INCLUDED</div>
         </div>
         <div class="publicSourcesGrid" id="publicSourcesGrid"></div>
+      </section>
+
+      <section class="panel publicVoicePanel hidden" id="publicVoicePanel">
+        <div class="coverageHeader">
+          <div>
+            <div class="eyebrow">PUBLIC EXCERPTS & RECURRING TERMS</div>
+            <h3>What appeared around the matching public pages?</h3>
+            <p class="fineprint">Short search-result excerpts are masked and truncated. Recurring terms are frequency-based only, not sensitive-trait inference.</p>
+          </div>
+          <div class="privacyChip">SHORT • MASKED • SOURCED</div>
+        </div>
+        <div id="resultQuoteGrid" class="resultQuoteGrid"></div>
+        <div id="resultWordCloud" class="resultWordCloud"></div>
       </section>
 
       <section class="panel profileSignalsPanel hidden" id="profileSignalsPanel">

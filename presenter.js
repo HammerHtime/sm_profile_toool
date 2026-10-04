@@ -340,6 +340,127 @@ function updateSearchMetrics(metaNodes,publicNodes){
   $('metricMatches').textContent=verifiedMatches;
 }
 
+const photoAmbientPositions=[
+  [4,8,-6],[76,5,5],[82,54,-3],[7,58,5],[59,69,-2],[26,5,3],[70,31,6],[16,33,-4]
+];
+const photoQuotePositions=[
+  [5,22,-2],[66,18,2],[62,72,-1],[8,76,1],[36,8,-2],[35,72,2]
+];
+
+function clearPhotoAmbient(){
+  ['photoAmbientPhotos','photoAmbientQuotes','photoAmbientWords'].forEach(id=>{
+    const el=$(id); if(el)el.replaceChildren();
+  });
+}
+
+function hydratePhotoAmbient(data){
+  clearPhotoAmbient();
+  const p=data?.correlation?.presentation||{};
+  const photos=Array.isArray(p.photos)?p.photos.slice(0,8):[];
+  const quotes=Array.isArray(p.quotes)?p.quotes.slice(0,6):[];
+  const themes=Array.isArray(p.themes)?p.themes.slice(0,10):[];
+
+  const photoRoot=$('photoAmbientPhotos');
+  photos.forEach((photo,index)=>{
+    if(!photo?.src||!photoRoot)return;
+    const card=document.createElement('figure');
+    card.className='photoAmbientCard';
+    const [x,y,r]=photoAmbientPositions[index%photoAmbientPositions.length];
+    card.style.setProperty('--x',x+'%');
+    card.style.setProperty('--y',y+'%');
+    card.style.setProperty('--r',r+'deg');
+    card.style.setProperty('--delay',(index*.17)+'s');
+    const img=document.createElement('img');
+    img.src=photo.src;
+    img.alt='';
+    img.loading='eager';
+    img.referrerPolicy='no-referrer';
+    img.addEventListener('error',()=>card.remove(),{once:true});
+    const cap=document.createElement('figcaption');
+    cap.textContent=photo.platform||photo.domain||'Public image';
+    card.append(img,cap);
+    photoRoot.appendChild(card);
+  });
+
+  const quoteRoot=$('photoAmbientQuotes');
+  quotes.forEach((quote,index)=>{
+    if(!quote?.text||!quoteRoot)return;
+    const card=document.createElement('div');
+    card.className='photoAmbientQuote';
+    const [x,y,r]=photoQuotePositions[index%photoQuotePositions.length];
+    card.style.setProperty('--x',x+'%');
+    card.style.setProperty('--y',y+'%');
+    card.style.setProperty('--r',r+'deg');
+    card.style.setProperty('--delay',(index*.2+.25)+'s');
+    const strong=document.createElement('strong');
+    strong.textContent=quote.platform||'Public source';
+    const span=document.createElement('span');
+    span.textContent='“'+quote.text+'”';
+    card.append(strong,span);
+    quoteRoot.appendChild(card);
+  });
+
+  const wordRoot=$('photoAmbientWords');
+  themes.forEach((item,index)=>{
+    if(!wordRoot)return;
+    const term=typeof item==='string'?item:item.term;
+    const count=typeof item==='object'?Number(item.count)||1:1;
+    if(!term)return;
+    const span=document.createElement('span');
+    span.textContent=term;
+    span.style.setProperty('--scale',String(Math.min(1.55,1+count*.1)));
+    span.style.setProperty('--delay',(index*.1+.45)+'s');
+    wordRoot.appendChild(span);
+  });
+}
+
+function setEraseSequenceStep(index,state){
+  document.querySelectorAll('[data-erase-step]').forEach((step,i)=>{
+    step.classList.toggle('active',i===index&&state==='active');
+    step.classList.toggle('done',i<index||(i===index&&state==='done'));
+    const em=step.querySelector('em');
+    if(em){
+      if(i<index||(i===index&&state==='done'))em.textContent='deleted';
+      else if(i===index&&state==='active')em.textContent='deleting…';
+      else em.textContent='waiting';
+    }
+  });
+  const bar=$('eraseSequenceBar');
+  if(bar){
+    const value=state==='done'?((index+1)/4)*100:(index/4)*100+8;
+    bar.style.width=Math.min(100,value)+'%';
+  }
+}
+
+async function runEraseSequence(){
+  const overlay=$('eraseSequenceOverlay');
+  if(!overlay)return;
+  overlay.classList.remove('hidden');
+  $('eraseSequenceIcon').textContent='⌫';
+  $('eraseSequenceTitle').textContent='Deleting temporary demo data…';
+  $('eraseSequenceCopy').textContent='Please keep this screen open while the temporary session is cleared.';
+  $('eraseSequenceBar').style.width='0%';
+  document.querySelectorAll('[data-erase-step]').forEach(step=>{
+    step.classList.remove('active','done');
+    const em=step.querySelector('em'); if(em)em.textContent='waiting';
+  });
+  setEraseSequenceStep(0,'active');
+  await sleep(220);
+}
+
+async function finishEraseSequence(){
+  for(let i=0;i<4;i++){
+    setEraseSequenceStep(i,'done');
+    await sleep(i===3?250:180);
+  }
+  $('eraseSequenceIcon').textContent='✓';
+  $('eraseSequenceTitle').textContent='ALL DEMO DATA DELETED';
+  $('eraseSequenceCopy').textContent='Temporary session data, audio, search-state and presenter cache have been cleared.';
+  $('eraseSequenceBar').style.width='100%';
+  await sleep(1500);
+  $('eraseSequenceOverlay').classList.add('hidden');
+}
+
 async function startAutoSearch(data){
   if(searchRunning)return;
   const searchStartedAt=Date.now();
@@ -348,6 +469,7 @@ async function startAutoSearch(data){
   latestStatus=data;
 
   renderSubmitted(data);
+  hydratePhotoAmbient(data);
   preloadVoiceSamples(data);
 
   const presenterGrid=document.querySelector('.presenterGrid');
@@ -430,13 +552,13 @@ async function startAutoSearch(data){
   $('searchStageTitle').textContent='Search complete';
   const publicCount=publicNodes.reduce((sum,n)=>sum+n.count,0);
   $('searchStageSubtitle').textContent=publicNodes.length
-    ? ('Verified photo signals plus '+publicCount+' public match'+(publicCount===1?'':'es')+' are displayed.')
+    ? ('Verified photo signals, participant-supplied signals and '+publicCount+' public match'+(publicCount===1?'':'es')+' are displayed.')
     : 'Verified photo metadata is displayed. No public-platform matches were verified.';
   $('searchCompleteText').textContent=publicNodes.length
-    ? 'Every glowing node represents a verified finding returned by the backend.'
+    ? 'Every glowing node represents a verified backend finding or a participant-supplied signal.'
     : 'Only verified photo findings are shown. No fake platform matches were added.';
   $('searchCompleteBanner').classList.remove('hidden');
-  setPulse('Search complete — verified results only');
+  setPulse('Search complete — verified and supplied results only');
   searchComplete=true;
   searchRunning=false;
 }
@@ -456,7 +578,11 @@ function resetVoicePlaybackUi(){
     activeVoiceButton.classList.remove('playing');
     activeVoiceButton.querySelector('.voicePlayGlyph').textContent='▶';
     const strong=activeVoiceButton.querySelector('strong');
-    if(strong) strong.textContent='Play Sample '+(index+1);
+    if(strong){
+      if(activeVoiceButton.id==='playOriginalConsent') strong.textContent='Play Original Consent';
+      else if(activeVoiceButton.id.startsWith('playGeneratedVoice')) strong.textContent='Generated Sample '+(index+1);
+      else strong.textContent='Play Sample '+(Number.isFinite(index)?index+1:'');
+    }
     activeVoiceButton=null;
   }
 }
@@ -536,7 +662,7 @@ function renderVoiceRisk(data){
 
 async function playOriginalVoiceSample(index){
   if(!session)return;
-  const button=$('playVoiceSample'+index);
+  const button=index===0 ? $('playOriginalConsent') : $('playVoiceSample'+index);
   if(!button||button.disabled)return;
 
   resetVoicePlaybackUi();
@@ -545,7 +671,7 @@ async function playOriginalVoiceSample(index){
     button.classList.add('playing');
     button.querySelector('.voicePlayGlyph').textContent='■';
     const strong=button.querySelector('strong');
-    if(strong) strong.textContent='Loading Sample '+(index+1)+'…';
+    if(strong) strong.textContent=index===0?'Loading Original Consent…':('Loading Sample '+(index+1)+'…');
     activeVoiceButton=button;
 
     const cached=preloadedVoiceSamples.get(index);
@@ -576,7 +702,7 @@ async function playOriginalVoiceSample(index){
     activeVoiceAudioUrl='';
     activeVoiceAudio=new Audio(blobUrl);
 
-    if(strong) strong.textContent='Playing Sample '+(index+1);
+    if(strong) strong.textContent=index===0?'Playing Original Consent':('Playing Sample '+(index+1));
     activeVoiceAudio.onended=resetVoicePlaybackUi;
     activeVoiceAudio.onerror=()=>{
       resetVoicePlaybackUi();
@@ -677,21 +803,53 @@ async function poll(){
 }
 function startPolling(){clearInterval(pollTimer);poll();pollTimer=setInterval(poll,650);}
 async function erase(){
-  if(!session)return;$('erasePhotoDemo').disabled=true;
+  if(!session)return;
+  $('erasePhotoDemo').disabled=true;
+  await runEraseSequence();
+
   try{
-    await request('/.netlify/functions/photo-erase',{method:'POST',body:JSON.stringify({id:session.id,presenterToken:session.presenterToken})});
+    setEraseSequenceStep(0,'done');
+    setEraseSequenceStep(1,'active');
+
+    await request('/.netlify/functions/photo-erase',{
+      method:'POST',
+      body:JSON.stringify({id:session.id,presenterToken:session.presenterToken})
+    });
+
+    setEraseSequenceStep(1,'done');
+    setEraseSequenceStep(2,'active');
     clearInterval(pollTimer);
+    await sleep(180);
+    setEraseSequenceStep(2,'done');
+    setEraseSequenceStep(3,'active');
+
+    resetVoicePlaybackUi();
+    clearPreloadedVoiceSamples();
+    clearPhotoAmbient();
     sessionStorage.removeItem('pfPhotoPresenter');
-    session=null;latestStatus=null;searchRunning=false;searchComplete=false;
+    session=null;
+    latestStatus=null;
+    searchRunning=false;
+    searchComplete=false;
     revealDeck.classList.add('hidden');
     $('liveSearchStage').classList.add('hidden');
     $('qrImage').removeAttribute('src');
     $('copyLink').dataset.url='';
+
+    setEraseSequenceStep(3,'done');
+    await finishEraseSequence();
+
+    $('erasePhotoNotice').classList.remove('hidden');
+    setTimeout(()=>$('erasePhotoNotice').classList.add('hidden'),5000);
     $('erasePhotoDemo').disabled=false;
-    $('erasePhotoDemo').textContent='Erase session';
+    $('erasePhotoDemo').textContent='Erase Demo Data';
     setSessionUi(false);
     await checkPresenterHealth();
-  }catch(e){alert(e.message);$('erasePhotoDemo').disabled=false;}
+  }catch(e){
+    $('eraseSequenceOverlay').classList.add('hidden');
+    alert(e.message);
+    $('erasePhotoDemo').disabled=false;
+  }
 }
 $('startSession').addEventListener('click',createSession);
 $('copyLink').addEventListener('click',async()=>{const u=$('copyLink').dataset.url;if(!u)return;await navigator.clipboard.writeText(u);$('copyLink').textContent='Copied ✓';setTimeout(()=>$('copyLink').textContent='Copy volunteer link',1200);});
@@ -730,4 +888,5 @@ restorePresenterSession();
 window.addEventListener('pagehide',()=>{
   resetVoicePlaybackUi();
   clearPreloadedVoiceSamples();
+  clearPhotoAmbient();
 });

@@ -16,6 +16,7 @@ let activeVoiceIndex = -1;
 let voiceChunks = [];
 let voiceStartedAt = 0;
 let voiceTimerId = null;
+let discardVoiceOnStop = false;
 const voiceSamples = Array.from({length:VOICE_SAMPLE_COUNT}, () => ({
   blob:null,
   url:'',
@@ -64,7 +65,8 @@ async function markJoined() {
 }
 
 function syncGate() {
-  const ok = sessionReady && $('vConsent').checked && $('vFirstName').value.trim() && selectedFile;
+  const voiceIdle = !voiceRecorder || voiceRecorder.state !== 'recording';
+  const ok = sessionReady && $('vConsent').checked && $('vFirstName').value.trim() && selectedFile && voiceIdle;
   $('submitVolunteer').disabled = !ok;
 }
 
@@ -203,6 +205,7 @@ function clearVoiceSample(index) {
   if (!sample) return;
 
   if (activeVoiceIndex === index && voiceRecorder?.state === 'recording') {
+    discardVoiceOnStop = true;
     try { voiceRecorder.stop(); } catch {}
   }
 
@@ -220,6 +223,7 @@ function clearVoiceSample(index) {
   $('voiceTimer' + index).textContent = '0:00';
   $('voiceRecordBtn' + index).classList.remove('recording');
   $('voiceRecordBtn' + index).innerHTML = '<span>●</span> Record consent phrase';
+  syncGate();
 }
 
 function resetAllVoiceSamples() {
@@ -257,6 +261,7 @@ async function startVoiceRecording(index) {
   try {
     voiceStream = await navigator.mediaDevices.getUserMedia({ audio:true });
     voiceChunks = [];
+    discardVoiceOnStop = false;
     activeVoiceIndex = index;
 
     const preferred = ['audio/webm;codecs=opus','audio/webm','audio/mp4'];
@@ -283,6 +288,15 @@ async function startVoiceRecording(index) {
       voiceStartedAt = 0;
       activeVoiceIndex = -1;
 
+      if (discardVoiceOnStop) {
+        discardVoiceOnStop = false;
+        stopVoiceStream();
+        voiceChunks = [];
+        voiceRecorder = null;
+        syncGate();
+        return;
+      }
+
       const type = voiceRecorder?.mimeType || voiceChunks[0]?.type || 'audio/webm';
       const blob = new Blob(voiceChunks, { type });
       const sample = voiceSamples[completedIndex];
@@ -304,6 +318,7 @@ async function startVoiceRecording(index) {
       stopVoiceStream();
       voiceChunks = [];
       voiceRecorder = null;
+      syncGate();
     });
 
     voiceRecorder.start();
@@ -318,6 +333,7 @@ async function startVoiceRecording(index) {
 
     $('voiceRecordBtn' + index).classList.add('recording');
     $('voiceRecordBtn' + index).innerHTML = '<span>■</span> Stop';
+    syncGate();
   } catch (err) {
     stopVoiceTimer();
     stopVoiceStream();

@@ -1019,3 +1019,437 @@ button{border:0;cursor:pointer}
   font-weight:950;
   letter-spacing:.11em
 }
+
+
+/* Cinematic live public-search experience */
+.cinematicScan{
+  position:relative;
+  display:block;
+  min-height:650px;
+  overflow:hidden;
+  padding:0;
+  border-color:rgba(82,214,255,.20);
+  background:
+    radial-gradient(circle at 50% 47%,rgba(82,214,255,.10),transparent 26%),
+    radial-gradient(circle at 18% 18%,rgba(91,111,255,.09),transparent 30%),
+    linear-gradient(145deg,#07131d,#040a10)
+}
+.scanBackdrop{
+  position:absolute;
+  inset:0;
+  overflow:hidden;
+  pointer-events:none
+}
+.scanBackdrop::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:
+    linear-gradient(180deg,rgba(4,10,16,.12),rgba(4,10,16,.42)),
+    radial-gradient(circle at center,transparent 0 25%,rgba(4,10,16,.36) 68%,rgba(4,10,16,.78) 100%);
+  z-index:4
+}
+.scanGridGlow{
+  position:absolute;
+  inset:-18%;
+  opacity:.22;
+  background-image:
+    linear-gradient(rgba(82,214,255,.08) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(82,214,255,.08) 1px,transparent 1px);
+  background-size:44px 44px;
+  transform:perspective(900px) rotateX(60deg) translateY(28%);
+  transform-origin:center 70%;
+  mask-image:linear-gradient(transparent 5%,#000 35%,#000 75%,transparent 100%)
+}
+.scanHud{
+  position:relative;
+  width:100%;
+  z-index:8;
+  min-height:650px;
+  padding:30px;
+  display:flex;
+  flex-direction:column
+}
+.scanHudTop{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  align-items:start;
+  gap:24px
+}
+.scanHudTop .scanTitle{
+  font-size:clamp(1.7rem,3.2vw,3rem);
+  font-weight:950;
+  letter-spacing:-.04em;
+  margin-top:5px
+}
+.scanHudTop .scanSub{
+  color:#94aabd;
+  max-width:760px;
+  line-height:1.55;
+  margin-top:7px
+}
+.scanProgressOrb{
+  --scan-progress:0deg;
+  width:94px;
+  height:94px;
+  border-radius:50%;
+  display:grid;
+  place-items:center;
+  align-content:center;
+  background:
+    radial-gradient(circle,#07131d 0 56%,transparent 58%),
+    conic-gradient(#52d6ff var(--scan-progress),rgba(255,255,255,.055) 0);
+  border:1px solid rgba(82,214,255,.16);
+  box-shadow:0 0 42px rgba(82,214,255,.10)
+}
+.scanProgressOrb strong{
+  font-size:1.28rem;
+  line-height:1;
+  font-variant-numeric:tabular-nums
+}
+.scanProgressOrb span{
+  margin-top:6px;
+  color:#6f8b9d;
+  font-size:.49rem;
+  font-weight:950;
+  letter-spacing:.14em
+}
+.scanTargetStage{
+  position:relative;
+  flex:1;
+  min-height:430px;
+  display:grid;
+  place-items:center;
+  isolation:isolate
+}
+.scanTargetCard{
+  position:relative;
+  z-index:8;
+  width:210px;
+  min-height:150px;
+  border-radius:28px;
+  display:grid;
+  place-items:center;
+  align-content:center;
+  text-align:center;
+  gap:7px;
+  padding:22px;
+  background:
+    radial-gradient(circle at 50% 0,rgba(82,214,255,.18),transparent 50%),
+    linear-gradient(145deg,rgba(12,35,50,.95),rgba(6,20,30,.96));
+  border:1px solid rgba(82,214,255,.34);
+  box-shadow:
+    0 0 0 12px rgba(82,214,255,.025),
+    0 0 70px rgba(82,214,255,.17),
+    0 28px 70px rgba(0,0,0,.35)
+}
+.scanTargetIcon{
+  width:44px;
+  height:44px;
+  border-radius:14px;
+  display:grid;
+  place-items:center;
+  background:rgba(82,214,255,.10);
+  border:1px solid rgba(82,214,255,.24);
+  color:#91e8ff;
+  font-size:1.3rem
+}
+.scanTargetCard strong{
+  font-size:.84rem;
+  letter-spacing:.08em
+}
+.scanTargetCard span{
+  color:#7895a7;
+  font-size:.66rem;
+  line-height:1.35
+}
+.scanRadarRing{
+  position:absolute;
+  z-index:2;
+  width:300px;
+  height:300px;
+  border-radius:50%;
+  border:1px solid rgba(82,214,255,.16);
+  box-shadow:0 0 50px rgba(82,214,255,.04);
+  animation:scanRingPulse 2.8s ease-in-out infinite
+}
+.scanRadarRing.ringB{
+  width:440px;
+  height:440px;
+  border-style:dashed;
+  opacity:.56;
+  animation-delay:-1.2s;
+  animation-duration:4s
+}
+@keyframes scanRingPulse{
+  0%,100%{transform:scale(.92);opacity:.28}
+  50%{transform:scale(1.06);opacity:.78}
+}
+.scanPlatformNodes{
+  position:absolute;
+  inset:0;
+  z-index:7;
+  pointer-events:none
+}
+.scanPlatformNode{
+  --angle:calc((360deg / var(--total)) * var(--i) - 90deg);
+  position:absolute;
+  left:50%;
+  top:50%;
+  min-width:76px;
+  max-width:120px;
+  padding:8px 10px;
+  border-radius:999px;
+  transform:
+    translate(-50%,-50%)
+    rotate(var(--angle))
+    translateX(205px)
+    rotate(calc(var(--angle) * -1));
+  background:rgba(7,21,31,.92);
+  border:1px solid rgba(82,214,255,.22);
+  color:#b9eefe;
+  font-size:.61rem;
+  font-weight:900;
+  text-align:center;
+  box-shadow:0 0 20px rgba(82,214,255,.08);
+  animation:scanNodeIn .55s cubic-bezier(.2,.8,.2,1) both
+}
+@keyframes scanNodeIn{
+  from{opacity:0;filter:blur(8px);scale:.6}
+  to{opacity:1;filter:blur(0);scale:1}
+}
+.scanPhotoLayer,.scanQuoteLayer,.scanWordCloud{
+  position:absolute;
+  inset:0
+}
+.scanPhotoLayer{z-index:1}
+.scanQuoteLayer{z-index:2}
+.scanWordCloud{
+  z-index:3;
+  display:flex;
+  align-content:flex-end;
+  align-items:flex-end;
+  justify-content:center;
+  flex-wrap:wrap;
+  gap:8px 16px;
+  padding:0 12% 28px
+}
+.scanFloatPhoto{
+  position:absolute;
+  left:var(--x);
+  top:var(--y);
+  width:138px;
+  height:172px;
+  margin:0;
+  overflow:hidden;
+  border-radius:18px;
+  transform:rotate(var(--r)) translateY(18px) scale(.9);
+  opacity:0;
+  border:1px solid rgba(255,255,255,.08);
+  background:#0b1620;
+  box-shadow:0 20px 60px rgba(0,0,0,.4);
+  animation:scanPhotoFloat 7s ease-in-out var(--delay) infinite alternate,scanFadeIn .8s ease var(--delay) forwards
+}
+.scanFloatPhoto img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  filter:blur(9px) saturate(.72) brightness(.58);
+  transform:scale(1.14)
+}
+.scanFloatPhoto figcaption{
+  position:absolute;
+  left:8px;
+  bottom:8px;
+  max-width:calc(100% - 16px);
+  padding:5px 7px;
+  border-radius:8px;
+  background:rgba(3,10,15,.76);
+  color:#c4eefd;
+  font-size:.52rem;
+  font-weight:850;
+  backdrop-filter:blur(8px)
+}
+@keyframes scanFadeIn{
+  to{opacity:.52}
+}
+@keyframes scanPhotoFloat{
+  from{transform:rotate(var(--r)) translateY(12px) scale(.94)}
+  to{transform:rotate(calc(var(--r) + 2deg)) translateY(-15px) scale(1.02)}
+}
+.scanQuoteCard{
+  position:absolute;
+  left:var(--x);
+  top:var(--y);
+  width:min(250px,26vw);
+  padding:11px 13px;
+  border-radius:15px;
+  transform:rotate(var(--r)) translateY(14px);
+  opacity:0;
+  background:rgba(8,24,35,.78);
+  border:1px solid rgba(255,255,255,.07);
+  box-shadow:0 18px 45px rgba(0,0,0,.28);
+  backdrop-filter:blur(10px);
+  animation:scanQuoteIn .7s ease var(--delay) forwards,scanQuoteDrift 8s ease-in-out calc(var(--delay) + .7s) infinite alternate
+}
+.scanQuoteCard strong{
+  display:block;
+  color:#79dcff;
+  font-size:.56rem;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  margin-bottom:5px
+}
+.scanQuoteCard span{
+  display:block;
+  color:#a9bbc6;
+  font-size:.67rem;
+  line-height:1.42
+}
+@keyframes scanQuoteIn{
+  to{opacity:.62;transform:rotate(var(--r)) translateY(0)}
+}
+@keyframes scanQuoteDrift{
+  to{transform:rotate(calc(var(--r) - 1deg)) translateY(-12px)}
+}
+.scanWordCloud span{
+  --scale:1;
+  opacity:0;
+  color:#7193a6;
+  font-size:calc(.56rem * var(--scale));
+  font-weight:850;
+  letter-spacing:.04em;
+  animation:wordCloudIn .65s ease var(--delay) forwards
+}
+.scanWordCloud span:nth-child(3n){color:#89dff7}
+.scanWordCloud span:nth-child(4n){color:#ac91ff}
+@keyframes wordCloudIn{
+  from{opacity:0;transform:translateY(8px) scale(.7)}
+  to{opacity:.64;transform:translateY(0) scale(1)}
+}
+.scanFooterLine{
+  display:flex;
+  justify-content:space-between;
+  gap:18px;
+  align-items:center;
+  padding-top:14px;
+  border-top:1px solid rgba(255,255,255,.06);
+  color:#7791a1;
+  font-size:.67rem
+}
+.scanFooterLine b{color:#d9f7ff;font-variant-numeric:tabular-nums}
+.liveDot{
+  display:inline-block;
+  width:7px;
+  height:7px;
+  border-radius:50%;
+  background:#55e39c;
+  box-shadow:0 0 12px rgba(85,227,156,.55);
+  margin-right:6px
+}
+
+/* Live result excerpts and recurring terms */
+.publicVoicePanel{
+  overflow:hidden;
+  background:
+    radial-gradient(circle at 88% 0,rgba(82,214,255,.08),transparent 28%),
+    linear-gradient(145deg,#0a1b27,#07131d)
+}
+.resultQuoteGrid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:12px;
+  margin-top:18px
+}
+.resultQuoteCard{
+  margin:0;
+  padding:16px;
+  border-radius:17px;
+  border:1px solid rgba(255,255,255,.07);
+  background:rgba(255,255,255,.018)
+}
+.resultQuoteCard p{
+  margin:0;
+  color:#d8e7ef;
+  font-size:.82rem;
+  line-height:1.55
+}
+.resultQuoteCard cite{
+  display:block;
+  margin-top:10px;
+  color:#6e8b9c;
+  font-size:.61rem;
+  font-style:normal;
+  text-transform:uppercase;
+  letter-spacing:.06em
+}
+.resultWordCloud{
+  display:flex;
+  flex-wrap:wrap;
+  gap:9px;
+  align-items:center;
+  margin-top:18px;
+  padding-top:16px;
+  border-top:1px solid rgba(255,255,255,.06)
+}
+.resultThemeWord{
+  display:inline-flex;
+  padding:7px 10px;
+  border-radius:999px;
+  border:1px solid rgba(82,214,255,.15);
+  color:#aeeeff;
+  background:rgba(82,214,255,.045);
+  font-weight:800
+}
+.resultThemeWord.synthetic{
+  color:#ffc789;
+  border-color:rgba(255,173,94,.18);
+  background:rgba(255,173,94,.045)
+}
+.platformCard.foundInSearch{
+  border-color:rgba(85,227,156,.35);
+  box-shadow:0 0 30px rgba(85,227,156,.06)
+}
+.platformCard.foundInSearch .platformStatus{
+  color:#77e7ad
+}
+
+@media(max-width:1050px){
+  .resultQuoteGrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .scanQuoteCard{width:min(220px,34vw)}
+}
+@media(max-width:760px){
+  .cinematicScan,.scanHud{min-height:610px}
+  .scanHud{padding:20px}
+  .scanHudTop{grid-template-columns:1fr}
+  .scanProgressOrb{width:76px;height:76px;position:absolute;right:18px;top:18px}
+  .scanHudTop>div:first-child{padding-right:84px}
+  .scanTargetStage{min-height:390px}
+  .scanRadarRing{width:245px;height:245px}
+  .scanRadarRing.ringB{width:340px;height:340px}
+  .scanPlatformNode{
+    transform:
+      translate(-50%,-50%)
+      rotate(var(--angle))
+      translateX(160px)
+      rotate(calc(var(--angle) * -1));
+    min-width:62px;
+    font-size:.52rem
+  }
+  .scanFloatPhoto{width:100px;height:126px}
+  .scanQuoteCard{width:180px}
+  .scanQuoteCard span{font-size:.58rem}
+  .resultQuoteGrid{grid-template-columns:1fr}
+}
+@media(max-width:520px){
+  .scanFloatPhoto:nth-child(n+5),.scanQuoteCard:nth-child(n+4){display:none}
+  .scanWordCloud{padding:0 7% 18px;gap:6px 10px}
+  .scanFooterLine{flex-direction:column;align-items:flex-start}
+}
+
+@media(prefers-reduced-motion:reduce){
+  .scanRadarRing,.scanFloatPhoto,.scanQuoteCard,.scanWordCloud span,.scanPlatformNode{
+    animation:none!important;
+    opacity:.65!important
+  }
+}
