@@ -56,11 +56,12 @@
       </div>
 
       <div class="actions">
-        <button id="liveSearchBtn" class="primary liveSearchBtn" disabled>Run Live Public Search</button>
+        <button id="liveSearchBtn" class="primary liveSearchBtn" disabled>Live Search</button>
+        <button id="syntheticDemoBtn" class="secondaryBtn syntheticDemoBtn" disabled>Synthetic Demo</button>
         <label class="uploadBtn disabled" id="uploadLabel" aria-disabled="true">Analyze evidence JSON<input id="fileInput" type="file" accept="application/json" hidden disabled /></label>
         <a class="photoDemoLaunch" href="presenter.html"><span class="photoDemoLaunchIcon">◎</span><span><strong>Photo Demo</strong><small>Launch live QR experience</small></span></a>
       </div>
-      <div class="buildStatus publicReady"><span class="statusDot"></span><strong>Live mode:</strong> searches public/indexed web sources using the information you entered. Results are returned with source links and match confidence. It does not search private accounts, private messages, closed groups or private servers.</div><p class="fineprint">Search controls unlock only after consent is checked. Every live result includes its public source URL and an identity-match confidence label. If nothing can be verified, the app will say so rather than substitute sample data.</p>
+      <div class="buildStatus publicReady"><span class="statusDot"></span><strong>Choose a mode:</strong> <b>Live Search</b> returns real public/indexed sources with links and match confidence. <b>Synthetic Demo</b> generates clearly labelled fake data for presentation purposes when a live search produces little or nothing.</div><p class="fineprint">Search controls unlock only after consent is checked. Every live result includes its public source URL and an identity-match confidence label. If nothing can be verified, the app will say so rather than substitute sample data.</p>
     </section>
 
     <section class="scan panel hidden" id="scanPanel" aria-live="polite">
