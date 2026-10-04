@@ -52,11 +52,12 @@
       </div>
 
       <div class="actions">
-        <button id="demoBtn" class="primary" disabled>Run Synthetic Demo</button>
+        <button id="liveSearchBtn" class="primary liveSearchBtn" disabled>Run Live Public Search</button>
+        <button id="demoBtn" class="secondaryBtn" disabled>Run Synthetic Demo</button>
         <label class="uploadBtn disabled" id="uploadLabel" aria-disabled="true">Analyze evidence JSON<input id="fileInput" type="file" accept="application/json" hidden disabled /></label>
         <a class="photoDemoLaunch" href="presenter.html"><span class="photoDemoLaunchIcon">◎</span><span><strong>Photo Demo</strong><small>Launch live QR experience</small></span></a>
       </div>
-      <div class="buildStatus"><span class="statusDot"></span><strong>Current build:</strong> live name + age public search is not connected yet. <b>Run Synthetic Demo</b> is fabricated presentation data. <b>Analyze evidence JSON</b> summarizes your supplied file only.</div><p class="fineprint">Search controls unlock only after consent is checked. The live photo demo can verify metadata from the uploaded image. Public-source search results will only receive a green VERIFIED label once a real collector returns and verifies them.</p>
+      <div class="buildStatus publicReady"><span class="statusDot"></span><strong>Live mode:</strong> searches public/indexed web sources using the information you entered. Results are returned with source links and match confidence. It does not search private accounts, private messages, closed groups or private servers.</div><p class="fineprint">Search controls unlock only after consent is checked. Live public results prove that a page was returned by the search provider. They do not by themselves prove that every namesake account belongs to the person searched.</p>
     </section>
 
     <section class="scan panel hidden" id="scanPanel" aria-live="polite">
@@ -112,6 +113,19 @@
           </div>
         </div>
         <div class="sourceCoverageGrid" id="sourceCoverageGrid"></div>
+      </section>
+
+
+      <section class="panel publicSourcesPanel hidden" id="publicSourcesPanel">
+        <div class="coverageHeader">
+          <div>
+            <div class="eyebrow">LIVE PUBLIC SOURCES</div>
+            <h3>Exactly what was returned</h3>
+            <p class="fineprint">Every card below links to the public page that produced the finding. Strong match means the returned page matched multiple supplied identifiers. Possible match means it needs human confirmation.</p>
+          </div>
+          <div class="privacyChip">SOURCE LINKS INCLUDED</div>
+        </div>
+        <div class="publicSourcesGrid" id="publicSourcesGrid"></div>
       </section>
 
       <section class="panel profileSignalsPanel hidden" id="profileSignalsPanel">
