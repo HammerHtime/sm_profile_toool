@@ -56,8 +56,8 @@
       </div>
 
       <div class="actions">
-        <button id="liveSearchBtn" class="primary liveSearchBtn" disabled>Live Search</button>
-        <button id="syntheticDemoBtn" class="secondaryBtn syntheticDemoBtn" disabled>Synthetic Demo</button>
+        <button type="button" id="liveSearchBtn" class="primary liveSearchBtn" disabled>Live Search</button>
+        <button type="button" id="syntheticDemoBtn" class="secondaryBtn syntheticDemoBtn" disabled>Synthetic Demo</button>
         <label class="uploadBtn disabled" id="uploadLabel" aria-disabled="true">Analyze evidence JSON<input id="fileInput" type="file" accept="application/json" hidden disabled /></label>
         <a class="photoDemoLaunch" href="presenter.html"><span class="photoDemoLaunchIcon">◎</span><span><strong>Photo Demo</strong><small>Launch live QR experience</small></span></a>
       </div>
@@ -227,7 +227,7 @@ SAFETY</small></div>
           <h3>Erase this demo</h3>
           <p>Deletes the app's active report, masked results, map state, form values, and browser-stored demo data. The tool does not maintain a database of searches.</p>
         </div>
-        <button id="eraseBtn" class="danger">Erase Demo Data</button>
+        <button type="button" id="eraseBtn" class="danger">Erase Demo Data</button>
       </section>
     </section>
 
@@ -238,20 +238,20 @@ SAFETY</small></div>
   </main>
 
 
-  <div class="coachModal hidden" id="coachModal" role="dialog" aria-modal="true" aria-labelledby="coachTitle">
+  <div class="coachModal hidden" id="coachModal" role="dialog" aria-modal="true" aria-labelledby="coachBrand">
     <div class="coachBackdrop" data-close-coach="true"></div>
     <section class="coachDeck">
       <div class="coachTopbar">
-        <button class="iconBtn" id="coachClose" aria-label="Close privacy guide">×</button>
+        <button type="button" class="iconBtn" id="coachClose" aria-label="Close privacy guide">×</button>
         <div class="coachBrand" id="coachBrand">Privacy Coach</div>
         <div class="coachCounter" id="coachCounter">1 / 4</div>
       </div>
       <div class="coachProgress" id="coachProgress"></div>
       <div class="coachSlide" id="coachSlide"></div>
       <div class="coachNav">
-        <button class="secondaryBtn" id="coachPrev">Back</button>
+        <button type="button" class="secondaryBtn" id="coachPrev">Back</button>
         <a class="officialLink" id="coachOfficial" href="#" target="_blank" rel="noopener noreferrer">Official help ↗</a>
-        <button class="primary coachNext" id="coachNext">Next</button>
+        <button type="button" class="primary coachNext" id="coachNext">Next</button>
       </div>
     </section>
   </div>
