@@ -736,7 +736,7 @@ function setConsentState() {
 
     const isIOS = p.device === "ios";
     const deviceName = isIOS ? "iPhone" : "Android";
-    const portalTargetLabel = isIOS ? "Settings" : "Family Link";
+    const portalTargetLabel = isIOS ? "Settings" : (parentMode ? "Family Link" : "Settings");
     const appTiles = isIOS
       ? [
           ["✉","Messages"],["◉","Camera"],["▧","Photos"],["⌖","Find My"],
