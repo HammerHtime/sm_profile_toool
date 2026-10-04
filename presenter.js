@@ -150,7 +150,7 @@ function correlationMap(data){
 
   const nodes=[
     {title:'Embedded metadata',detail:'File-level privacy signals',icon:'◇',tone:'warn'},
-    {title:'Location clues',detail:data.findings?.gpsEmbedded?'GPS signal was present':'No embedded GPS detected',icon:'⌖',tone:data.findings?.gpsEmbedded?'risk':'safe'}
+    {title:'Location clues',detail:data.findings?.gpsEmbedded?(data.locationContext?.broadPlace?.label||'GPS signal was present'):'No embedded GPS detected',icon:'⌖',tone:data.findings?.gpsEmbedded?'risk':'safe'}
   ];
 
   const exactSignals=(Number(w.fullMatches)||0)+(Number(w.partialMatches)||0);
@@ -851,8 +851,13 @@ function renderSubmitted(data){
   );
   const wrap=$('photoMapWrap');wrap.replaceChildren();
   if(f.locationZone){
-    $('locationHeadline').textContent='The photo contained a location signal.';
-    $('locationCopy').textContent='The exact GPS coordinate is never returned to the presentation. It is reduced to a broad 50 km privacy zone.';
+    const broadLabel=data.locationContext?.broadPlace?.label||'';
+    $('locationHeadline').textContent=broadLabel
+      ? ('The photo points broadly to '+broadLabel+'.')
+      : 'The photo contained a location signal.';
+    $('locationCopy').textContent=broadLabel
+      ? ('The exact GPS coordinate is never returned. The image was first reduced to a 50 km privacy zone, then that broad zone was normalized to '+broadLabel+'.')
+      : 'The exact GPS coordinate is never returned to the presentation. It is reduced to a broad 50 km privacy zone.';
     const v=document.createElement('div');v.className='mapViewport bigPhotoMap';
     const frame=document.createElement('iframe');frame.src=mapUrl(f.locationZone);frame.loading='lazy';frame.referrerPolicy='no-referrer';frame.title='Approximate privacy zone';
     const c=document.createElement('div');c.className='privacyCircle';v.append(frame,c);wrap.appendChild(v);
