@@ -16,6 +16,30 @@ function updateExpiry(){
 }
 setInterval(updateExpiry,1000);
 
+async function checkPresenterHealth(){
+  const health=$('presenterHealth');
+  const button=$('startSession');
+  if(!health||!button)return;
+
+  try{
+    const r=await fetch('/.netlify/functions/health',{cache:'no-store'});
+    const data=await r.json().catch(()=>({}));
+    if(!r.ok||!data.blobs?.ok)throw new Error(data.blobs?.error||'Session storage is not ready');
+
+    health.className='presenterHealth ready';
+    health.innerHTML='<span></span><strong>QR session system ready</strong><small>' +
+      (data.liveSearchConfigured
+        ? 'Public-handle correlation is also configured.'
+        : 'Photo metadata works. Public-handle correlation needs the live-search API key.') +
+      '</small>';
+    button.disabled=false;
+  }catch(err){
+    health.className='presenterHealth failed';
+    health.innerHTML='<span></span><strong>QR system not ready</strong><small>'+String(err.message||'Health check failed')+'</small>';
+    button.disabled=true;
+  }
+}
+
 async function createSession(){
   $('startSession').disabled=true;
   try{
@@ -425,3 +449,5 @@ document.addEventListener('keydown',(e)=>{
     showReveal(3);
   }
 });
+
+checkPresenterHealth();
