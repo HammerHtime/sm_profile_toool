@@ -32,6 +32,8 @@
   const results = $("results");
   const eraseBtn = $("eraseBtn");
   const eraseNotice = $("eraseNotice");
+  const reportStageNames = ["Snapshot","Sources","What it means","Exposure","App privacy","Phone privacy","Parent controls","Child device controls","Takeaway"];
+  let reportStageIndex = 0;
 
   const SOURCE_NAMES = [
     "Instagram","Facebook","TikTok","LinkedIn","Reddit","X / Twitter","Threads","YouTube","Snapchat","Discord (public)",
@@ -750,6 +752,43 @@ function setConsentState() {
     }, 650);
   }
 
+  function reportStages() {
+    return [...document.querySelectorAll("[data-report-stage]")];
+  }
+
+  function showReportStage(index) {
+    const stages = reportStages();
+    if (!stages.length) return;
+    reportStageIndex = Math.max(0, Math.min(index, stages.length - 1));
+    stages.forEach((stage,i) => stage.classList.toggle("hidden", i !== reportStageIndex));
+
+    document.querySelectorAll("[data-report-target]").forEach((button) => {
+      button.classList.toggle("active", Number(button.dataset.reportTarget) === reportStageIndex);
+    });
+
+    if ($("reportStageCounter")) $("reportStageCounter").textContent = (reportStageIndex + 1) + " / " + stages.length;
+    if ($("reportStageName")) $("reportStageName").textContent = reportStageNames[reportStageIndex] || "Section";
+    if ($("reportPrev")) $("reportPrev").disabled = reportStageIndex === 0;
+    if ($("reportNext")) $("reportNext").textContent = reportStageIndex === stages.length - 1 ? "Finish" : "Next →";
+
+    const viewport = $("reportStageViewport");
+    if (viewport) viewport.scrollTop = 0;
+    stages[reportStageIndex]?.scrollTo?.({top:0,behavior:"instant"});
+  }
+
+  function openReportDeck(report) {
+    if ($("reportDeckSubject")) $("reportDeckSubject").textContent = report?.subject || "Presentation results";
+    document.body.classList.add("reportDeckActive");
+    results.classList.remove("hidden");
+    showReportStage(0);
+  }
+
+  function closeReportDeck() {
+    results.classList.add("hidden");
+    document.body.classList.remove("reportDeckActive");
+    reportStageIndex = 0;
+  }
+
   function renderReport(report) {
     const mode = report.dataMode === "verified" ? "verified" : report.dataMode === "synthetic" ? "synthetic" : "evidence";
     const banner = $("dataModeBanner");
@@ -964,8 +1003,7 @@ function setConsentState() {
     $("takeaway").textContent = mode === "synthetic"
       ? "Synthetic mode is a visual fallback only. Use it to demonstrate capabilities when a live search returns little or nothing. Do not present these values as findings."
       : "One post is a fragment. Hundreds of verified or supplied fragments can become a profile. Always check the provenance label and source before treating a value as a real finding.";
-    results.classList.remove("hidden");
-    results.scrollIntoView({behavior:"smooth",block:"start"});
+    openReportDeck(report);
   }
 
   function renderBreakdown(id, items) {
@@ -996,7 +1034,13 @@ function setConsentState() {
 
   function populateHubs() {
     $("platformGrid").innerHTML = "";
-    PLATFORMS.forEach((p) => $("platformGrid").appendChild(buildPlatformCard(p, false)));
+    PLATFORMS.filter((p) => !p.device).forEach((p) => $("platformGrid").appendChild(buildPlatformCard(p, false)));
+
+    const privacyDevices = $("devicePrivacyGrid");
+    if (privacyDevices) {
+      privacyDevices.innerHTML = "";
+      PLATFORMS.filter((p) => p.device).forEach((p) => privacyDevices.appendChild(buildPlatformCard(p, false)));
+    }
 
     $("parentPlatformGrid").innerHTML = "";
     PARENT_PLATFORMS.forEach((p) => $("parentPlatformGrid").appendChild(buildPlatformCard(p, true)));
@@ -1687,7 +1731,7 @@ function setConsentState() {
   });
 
   eraseBtn.addEventListener("click", () => {
-    results.classList.add("hidden");
+    closeReportDeck();
     scanPanel.classList.add("hidden");
     ["firstName","lastName","age","city","username","clues"].forEach((id) => { if ($(id)) $(id).value = ""; });
     consent.checked = false;
@@ -1697,6 +1741,32 @@ function setConsentState() {
     document.querySelectorAll("iframe").forEach((el) => el.remove());
     eraseNotice.classList.remove("hidden");
     window.scrollTo({top:0,behavior:"smooth"});
+  });
+
+  $("reportPrev")?.addEventListener("click", () => showReportStage(reportStageIndex - 1));
+  $("reportNext")?.addEventListener("click", () => {
+    const stages = reportStages();
+    if (reportStageIndex >= stages.length - 1) closeReportDeck();
+    else showReportStage(reportStageIndex + 1);
+  });
+  $("closeReportDeck")?.addEventListener("click", closeReportDeck);
+  document.querySelectorAll("[data-report-target]").forEach((button) => {
+    button.addEventListener("click", () => showReportStage(Number(button.dataset.reportTarget) || 0));
+  });
+
+  window.addEventListener("keydown", (e) => {
+    if (results.classList.contains("hidden") || !document.body.classList.contains("reportDeckActive")) return;
+    if (!$("coachModal")?.classList.contains("hidden")) return;
+    if (["ArrowRight","PageDown"].includes(e.key)) {
+      e.preventDefault();
+      showReportStage(reportStageIndex + 1);
+    } else if (["ArrowLeft","PageUp"].includes(e.key)) {
+      e.preventDefault();
+      showReportStage(reportStageIndex - 1);
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      closeReportDeck();
+    }
   });
 
   $("coachClose").addEventListener("click", closeGuide);
