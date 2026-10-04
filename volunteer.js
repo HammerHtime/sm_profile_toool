@@ -24,6 +24,12 @@ const voiceSamples = Array.from({length:VOICE_SAMPLE_COUNT}, () => ({
   mime:''
 }));
 
+function normalizeVoiceMime(value = '') {
+  const base = String(value || '').toLowerCase().trim().split(';')[0].trim();
+  if (base === 'audio/x-m4a') return 'audio/mp4';
+  return base || 'audio/webm';
+}
+
 function error(message) {
   $('volunteerError').textContent = message;
   $('volunteerError').classList.remove('hidden');
@@ -264,7 +270,7 @@ async function startVoiceRecording(index) {
     discardVoiceOnStop = false;
     activeVoiceIndex = index;
 
-    const preferred = ['audio/webm;codecs=opus','audio/webm','audio/mp4'];
+    const preferred = ['audio/webm;codecs=opus','audio/webm','audio/mp4;codecs=mp4a.40.2','audio/mp4'];
     const supported = preferred.find(type => MediaRecorder.isTypeSupported?.(type));
     const options = {
       ...(supported ? {mimeType:supported} : {}),
@@ -389,7 +395,7 @@ $('volunteerForm').addEventListener('submit', async (e) => {
       voicePayload.push({
         index,
         durationMs:Math.min(VOICE_MAX_MS, Math.max(0, Math.round(sample.durationMs))),
-        mime:sample.mime || sample.blob.type || 'audio/webm',
+        mime:normalizeVoiceMime(sample.mime || sample.blob.type || 'audio/webm'),
         audioData:await blobToBase64(sample.blob)
       });
     }
