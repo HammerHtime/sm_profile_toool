@@ -1,3 +1,4 @@
+import { synthesizePublicProfile } from "./profile-intelligence.mjs";
 const arr = (v) => Array.isArray(v) ? v : [];
 const clean = (v, max = 120) => typeof v === "string"
   ? v.trim().replace(/[\u0000-\u001f]/g, "").slice(0, max)
@@ -112,6 +113,52 @@ export default async (req) => {
     maskHandle(x.handle || x.username || x.value || "account")
   ]);
 
+  const intelligenceSources = [];
+  for (const item of content.slice(0, 30)) {
+    const text = typeof item === "string" ? item : clean(item?.text || item?.snippet || item?.description || "", 260);
+    const title = typeof item === "string" ? "Public activity" : clean(item?.title || item?.label || "Public activity", 160);
+    if (!text && !title) continue;
+    intelligenceSources.push({
+      platform:typeof item === "object" ? clean(item?.platform || item?.source || "Evidence file", 60) : "Evidence file",
+      domain:"",
+      confidence:"strong",
+      title,
+      snippet:text,
+      published:typeof item === "object" ? clean(item?.date || item?.publishedAt || item?.year || "", 50) : ""
+    });
+  }
+
+  for (const item of timeline.slice(0, 12)) {
+    const text = typeof item === "string" ? item : clean(item?.summary || item?.description || item?.event || item?.label || "", 260);
+    if (!text) continue;
+    intelligenceSources.push({
+      platform:"Timeline evidence",
+      domain:"",
+      confidence:"strong",
+      title:"Timeline item",
+      snippet:text,
+      published:typeof item === "object" ? clean(item?.date || item?.period || item?.year || "", 50) : ""
+    });
+  }
+
+  if (intelligenceSources.length < 2) {
+    social.slice(0, 6).forEach(item => intelligenceSources.push({
+      platform:clean(item?.platform || "Public account",60),
+      domain:"",
+      confidence:"possible",
+      title:"Public account match",
+      snippet:"A public account association was supplied in the evidence file.",
+      published:""
+    }));
+  }
+
+  const intelligence = await synthesizePublicProfile({
+    subject:input.subject?.displayName || "Consenting Participant",
+    city:input.subject?.city || "",
+    sources:intelligenceSources,
+    recurringThemes:[]
+  });
+
   return respond({
     dataMode:"evidence",
     synthetic:false,
@@ -121,10 +168,21 @@ export default async (req) => {
     stats,
     findings,
     accounts,
+    intelligence,
     sourceHits:null,
     imageBreakdown:[],
     activity:[],
     themes:[],
     signals:[]
   });
+};
+
+
+export const config = {
+  rateLimit:{
+    action:"rate_limit",
+    aggregateBy:["ip","domain"],
+    windowSize:60,
+    windowLimit:8
+  }
 };
