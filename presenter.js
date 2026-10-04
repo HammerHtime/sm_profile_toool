@@ -142,6 +142,7 @@ function correlationMap(data){
   const st=$('breadcrumbStageCorrelation');if(!st)return;st.replaceChildren();addPhotoCore(st,true);
   const p=data.participant||{};
   const c=data.correlation||{};
+  const w=data.webDetection||{};
   const publicNodes=normalizePublicNodes(data);
   const positions=[
     {x:2,y:8},{x:77,y:8},{x:2,y:67},{x:77,y:67},{x:39,y:2},{x:39,y:77}
@@ -151,6 +152,18 @@ function correlationMap(data){
     {title:'Embedded metadata',detail:'File-level privacy signals',icon:'◇',tone:'warn'},
     {title:'Location clues',detail:data.findings?.gpsEmbedded?'GPS signal was present':'No embedded GPS detected',icon:'⌖',tone:data.findings?.gpsEmbedded?'risk':'safe'}
   ];
+
+  const exactSignals=(Number(w.fullMatches)||0)+(Number(w.partialMatches)||0);
+  if(w.attempted){
+    nodes.push({
+      title:'Reverse-image web match',
+      detail:exactSignals
+        ? (exactSignals+' full/partial image signal'+(exactSignals===1?'':'s')+' across '+(Number(w.matchingPages)||0)+' matching page'+(Number(w.matchingPages)===1?'':'s'))
+        : ((Number(w.matchingPages)||0)+' matching web page'+(Number(w.matchingPages)===1?'':'s')+' returned'),
+      icon:'▧',
+      tone:exactSignals?'warn':'safe'
+    });
+  }
 
   if(publicNodes.length){
     publicNodes.slice(0,4).forEach(n=>{
@@ -173,16 +186,20 @@ function correlationMap(data){
   nodes.slice(0,6).forEach((o,i)=>addNode(st,{...o,...positions[i]}));
 
   const domains=(c.sourceDomains||[]).slice(0,5);
+  const visionDomains=(w.pageMatches||[]).map(page=>page.domain).filter(Boolean).slice(0,4);
   const domainCopy=domains.length?' Sources included: '+domains.join(', ')+'.':'';
+  const visionCopy=visionDomains.length?' Reverse-image matching pages included: '+visionDomains.join(', ')+'.':'';
   $('correlationDisclosure').innerHTML=
     '<strong>Breadcrumb logic, not facial identification.</strong> '+
     escapeHtml(c.basis||'Public correlations appear only when a real source match is returned.')+
-    escapeHtml(domainCopy);
+    escapeHtml(w.basis?(' '+w.basis):'')+
+    escapeHtml(domainCopy)+escapeHtml(visionCopy);
 }
 function impact(data){
   const f=data.findings||{},embedded=[f.gpsEmbedded,f.captureDateEmbedded,f.cameraMetadataEmbedded].filter(Boolean).length;
   const publicMatches=Number(data.correlation?.totalMatches)||0;
-  const vals=[[embedded,'embedded signals'],[f.gpsEmbedded?'50 km':'—','location privacy zone'],[publicMatches,'verified public matches'],[data.participant?.usernameMasked?1:0,'supplied public handle']];
+  const reversePages=Number(data.webDetection?.matchingPages)||0;
+  const vals=[[embedded,'embedded signals'],[f.gpsEmbedded?'50 km':'—','location privacy zone'],[publicMatches,'verified public matches'],[reversePages,'reverse-image matching pages']];
   $('impactStats').innerHTML=vals.map(v=>'<div class="impactStat"><strong>'+escapeHtml(v[0])+'</strong><span>'+escapeHtml(v[1])+'</span></div>').join('');
 }
 
@@ -823,10 +840,13 @@ function renderSubmitted(data){
   latestStatus=data;$('participantName').textContent=data.participant?.firstName||'Volunteer';
   const grid=$('photoFindingCards');grid.replaceChildren();const img=data.image||{},f=data.findings||{};
   metadataMap(data);correlationMap(data);impact(data);renderVoiceRisk(data);
+  const w=data.webDetection||{};
+  const reverseSignals=(Number(w.fullMatches)||0)+(Number(w.partialMatches)||0);
   grid.append(
     findingCard('Embedded GPS',f.gpsEmbedded?'FOUND':'NOT FOUND',f.gpsEmbedded?'The original file contained GPS coordinates. They were reduced before display.':'No embedded GPS coordinates were detected.',f.gpsEmbedded?'risk':'safe'),
     findingCard('Capture date',f.captureDateEmbedded?('YEAR '+(f.capturedAtYear||'FOUND')):'NOT FOUND',f.captureDateEmbedded?'The file contained original capture-time metadata.':'No readable original capture date was detected.',f.captureDateEmbedded?'warn':'safe'),
     findingCard('Camera metadata',f.cameraMetadataEmbedded?'FOUND':'NOT FOUND',f.cameraMetadataEmbedded?('Reduced summary: '+(f.cameraSummary||'metadata present')):'No readable camera make/model metadata was detected.',f.cameraMetadataEmbedded?'warn':'safe'),
+    findingCard('Reverse-image web match',w.attempted?(reverseSignals+' MATCH SIGNAL'+(reverseSignals===1?'':'S')):'NOT RUN',w.attempted?((Number(w.matchingPages)||0)+' matching web page'+(Number(w.matchingPages)===1?'':'s')+' and '+(Number(w.similarImages)||0)+' visually similar image signal'+(Number(w.similarImages)===1?'':'s')+' returned by Google Vision Web Detection.'):'Google Vision Web Detection was not configured for this submission.',reverseSignals||Number(w.matchingPages)?'warn':'safe'),
     findingCard('Image file',(img.width||'?')+' × '+(img.height||'?'),(img.mime||'image')+' • '+formatBytes(img.bytes)+'. The raw photo was not persisted.','safe')
   );
   const wrap=$('photoMapWrap');wrap.replaceChildren();
