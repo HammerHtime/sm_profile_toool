@@ -93,6 +93,10 @@ if(!app.includes('.filter(step=>step[2]!=="EXPLAIN")')) fail("Social app guides 
 else pass("Social app guides remove redundant explanation slides");
 if(!app.includes("function settingTeachingExpansion(")) fail("Setting-level teaching point expansion is missing");
 else pass("Setting screen carries the full why-it-matters teaching point");
+if(!app.includes('"NAV:" + target') || !app.includes("function isGuideNavigationTarget(")) fail("Click-by-click setting navigation bridges are missing");
+else pass("Social app guides insert navigation screens before settings");
+if(!app.includes('Tap Back once to return to')) fail("Guides do not explicitly teach users to back out between settings");
+else pass("Guides explicitly return to the parent menu between settings");
 if(!app.includes("function platformHeaderFor(")) fail("Social privacy walkthrough header renderer is missing");
 else pass("Social privacy walkthrough header renderer exists");
 if(!app.includes("phoneSceneNativeIncoming")) fail("Native-style phone screen transition is missing");
