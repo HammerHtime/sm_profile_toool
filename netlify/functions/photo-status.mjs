@@ -56,6 +56,7 @@ export default async (req) => {
       },
       findings: record.findings || null,
       webDetection: record.webDetection || null,
+      locationContext: record.locationContext || null,
       correlation: record.correlation || null
     });
   } catch (error) {
