@@ -1,3 +1,4 @@
+import { detectWebImage } from "./google-vision-web.mjs";
 import exifr from "exifr";
 import { cleanText, deleteSession, expired, getSession, jsonResponse, putSession, safeEqual, store, voiceAudioKey } from "./photo-session-lib.mjs";
 
@@ -514,6 +515,8 @@ export default async (req) => {
       cameraSummary: camera || "",
       rawPhotoPersisted: false
     };
+
+    record.webDetection = await detectWebImage(body.imageData);
 
     try {
       record.correlation = await publicIdentityCorrelation(username, firstName, lastName, city);
