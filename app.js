@@ -469,22 +469,25 @@ async function checkLiveSearchReady() {
         status.classList.remove("liveUnconfigured");
         status.innerHTML = '<span class="statusDot"></span><strong>Live Search ready.</strong> Real public/indexed searches are configured. Synthetic Demo remains available as a clearly labelled fallback.';
         liveSearchBtn.dataset.configured = "true";
+        setConsentState();
       } else {
         status.classList.add("liveUnconfigured");
         status.classList.remove("liveConfigured");
         status.innerHTML = '<span class="statusDot"></span><strong>Live Search needs configuration.</strong> Add <b>BRAVE_SEARCH_API_KEY</b> in Netlify environment variables. Synthetic Demo and the privacy walkthroughs still work.';
         liveSearchBtn.dataset.configured = "false";
+        setConsentState();
       }
     } catch (e) {
       status.classList.add("liveUnconfigured");
       status.innerHTML = '<span class="statusDot"></span><strong>Live Search readiness could not be confirmed.</strong> Synthetic Demo and the privacy walkthroughs remain available.';
       liveSearchBtn.dataset.configured = "unknown";
+      setConsentState();
     }
   }
 
 function setConsentState() {
     const ok = !!consent.checked;
-    if (liveSearchBtn) liveSearchBtn.disabled = !ok;
+    if (liveSearchBtn) liveSearchBtn.disabled = !ok || liveSearchBtn.dataset.configured === "false";
     if (syntheticDemoBtn) syntheticDemoBtn.disabled = !ok;
     fileInput.disabled = !ok;
     uploadLabel.classList.toggle("disabled", !ok);
@@ -646,6 +649,14 @@ function setConsentState() {
       });
     }
 
+    const zeroFallback = $("zeroResultFallback");
+    if (zeroFallback) {
+      const verifiedHitCount = mode === "verified"
+        ? (report.publicSources || []).length
+        : 1;
+      zeroFallback.classList.toggle("hidden", !(mode === "verified" && verifiedHitCount === 0));
+    }
+
     $("takeaway").textContent = mode === "synthetic"
       ? "Synthetic mode is a visual fallback only. Use it to demonstrate capabilities when a live search returns little or nothing. Do not present these values as findings."
       : "One post is a fragment. Hundreds of verified or supplied fragments can become a profile. Always check the provenance label and source before treating a value as a real finding.";
@@ -661,7 +672,7 @@ function setConsentState() {
       const row = document.createElement("div");
       row.className = "breakdownRow";
       const pct = Math.max(5, Math.round(Number(x[1]) / max * 100));
-      row.innerHTML = "<span>" + x[0] + "</span><strong>" + x[1] + '</strong><div class="breakdownBar"><span style="width:' + pct + '%"></span></div>';
+      row.innerHTML = "<span>" + escapeHtml(x[0]) + "</span><strong>" + escapeHtml(x[1]) + '</strong><div class="breakdownBar"><span style="width:' + pct + '%"></span></div>';
       root.appendChild(row);
     });
   }
@@ -1229,6 +1240,13 @@ function setConsentState() {
         scanPanel.classList.add("hidden");
         setConsentState();
       }
+    });
+  }
+
+  const zeroSyntheticBtn = $("zeroSyntheticBtn");
+  if (zeroSyntheticBtn) {
+    zeroSyntheticBtn.addEventListener("click", () => {
+      if (syntheticDemoBtn && consent.checked) syntheticDemoBtn.click();
     });
   }
 
