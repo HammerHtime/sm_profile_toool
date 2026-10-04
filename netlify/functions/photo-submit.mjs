@@ -6,13 +6,25 @@ const allowed = new Set(["image/jpeg","image/jpg","image/png","image/webp","imag
 const BRAVE_ENDPOINT = "https://api.search.brave.com/res/v1/web/search";
 const MAX_VOICE_BYTES = 150 * 1024;
 const MAX_VOICE_MS = 10000;
-const allowedAudio = new Set(["audio/webm","audio/mp4","audio/mpeg","audio/ogg","audio/aac","audio/x-m4a"]);
+const allowedAudio = new Set([
+  "audio/webm",
+  "audio/mp4",
+  "audio/mpeg",
+  "audio/ogg",
+  "audio/aac",
+  "audio/3gpp",
+  "audio/3gpp2",
+  "audio/amr",
+  "audio/amr-wb"
+]);
 
 function normalizeAudioMime(value = "") {
   const raw = cleanText(value, 120).toLowerCase().trim();
   if (!raw) return "";
   const base = raw.split(";")[0].trim();
   if (base === "audio/x-m4a") return "audio/mp4";
+  if (base === "audio/mp4a-latm") return "audio/aac";
+  if (base === "audio/3gp") return "audio/3gpp";
   return base;
 }
 
