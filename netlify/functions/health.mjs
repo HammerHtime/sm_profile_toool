@@ -1,3 +1,5 @@
+import { openAIConfigured, openAIModel } from "./profile-intelligence.mjs";
+import { googleVisionConfigured } from "./google-vision-web.mjs";
 import { randomUUID } from "node:crypto";
 import { store } from "./photo-session-lib.mjs";
 
@@ -46,6 +48,9 @@ export default async (req) => {
     functionsRuntime:"request-response",
     liveSearchConfigured:!!getBraveApiKey(),
     braveKeySource:braveKeySource(),
+    openAIConfigured:openAIConfigured(),
+    openAIModel:openAIModel(),
+    googleVisionConfigured:googleVisionConfigured(),
     blobs:{ ok:false }
   };
 
