@@ -1743,7 +1743,7 @@ function setConsentState() {
         identity +
         '<div class="phoneDetailHeader"><span class="phoneBackChevron">‹</span><span><small>' + escapeHtml(detail.section||title) + '</small><strong>' + escapeHtml(title) + '</strong></span></div>' +
         detailRowsHtml(detail) +
-        '<div class="phoneRecommendation"><strong>PRIVACY BASELINE</strong><span>' + escapeHtml(detail.recommended||"Review this setting") + '</span></div>' +
+        '<div class="phoneRecommendation"><strong>RECOMMENDED PRIVACY SETTING</strong><span>' + escapeHtml(detail.recommended||"Review this setting") + '</span></div>' +
       '</div>';
     }
 
@@ -1806,7 +1806,7 @@ function setConsentState() {
     const actionBlock = isExplain
       ? '<div class="explainBox"><strong>What to explain to the audience</strong><ul>' + bullets.map((b)=>"<li>"+escapeHtml(b)+"</li>").join("") + "</ul></div>"
       : detail
-        ? '<div class="settingWhyCard"><div><strong>WHY THIS SETTING MATTERS</strong><p>' + escapeHtml(detail.why||body) + '</p></div><div><strong>PRIVACY BASELINE</strong><p>' + escapeHtml(detail.recommended||"Review this setting") + '</p></div></div>'
+        ? '<div class="settingWhyCard"><div><strong>WHY THIS SETTING MATTERS</strong><p>' + escapeHtml(detail.why||body) + '</p></div><div><strong>RECOMMENDED PRIVACY SETTING</strong><p>' + escapeHtml(detail.recommended||"Review this setting") + '</p></div></div>'
         : '<div class="tapCallout"><strong>Next action:</strong>&nbsp; ' + escapeHtml(target) + "</div>";
 
     const html =
