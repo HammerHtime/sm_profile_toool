@@ -1172,9 +1172,10 @@ function setConsentState() {
     if (p.device === "android") return parentMode ? androidParent : androidPrivacy;
     if (parentMode) return parentGuides[p.name] || fallbackGuide(p.name);
 
-    // Social-app walkthroughs no longer use separate "Why this matters" slides.
-    // Each setting screen already carries the explanation, the app default, and
-    // the recommended privacy setting, so a second explanation slide is redundant.
+    // Social-app walkthroughs are expanded into true click-by-click navigation.
+    // Before every actual privacy-control screen, show the parent menu again with
+    // the exact next row highlighted. This lets a presenter lead a non-technical
+    // audience tap-for-tap instead of jumping between settings.
     const base=(genericGuide[p.name] || fallbackGuide(p.name))
       .filter(step=>step[2]!=="EXPLAIN")
       .map(step=>step.slice());
@@ -1187,7 +1188,29 @@ function setConsentState() {
         "Notifications"
       ]);
     }
-    return base;
+
+    const expanded=[];
+    let previousWasDetail=false;
+    for(const step of base){
+      const target=String(step[2]||"");
+      const detail=settingDetailFor(p.name,target);
+      if(detail){
+        const menuName=platformHeaderFor(p.name,target);
+        expanded.push([
+          previousWasDetail ? "Go back, then tap " + step[0] : "Tap " + step[0],
+          previousWasDetail
+            ? "Tap Back once to return to " + menuName + ". Then tap " + step[0] + "."
+            : "From " + menuName + ", tap " + step[0] + ".",
+          "NAV:" + target
+        ]);
+        expanded.push(step);
+        previousWasDetail=true;
+      }else{
+        expanded.push(step);
+        previousWasDetail=false;
+      }
+    }
+    return expanded;
   }
 
   let activeDevicePortal = null;
@@ -1765,6 +1788,14 @@ function setConsentState() {
     return "";
   }
 
+  function isGuideNavigationTarget(target) {
+    return String(target || "").startsWith("NAV:");
+  }
+
+  function guideNavigationTarget(target) {
+    return isGuideNavigationTarget(target) ? String(target).slice(4) : String(target || "");
+  }
+
   function targetUsesToggle(target) {
     return /private account|protect.*post|quick add|precise location|subscriptions private|search engine|downloads|contact sync|sync contacts|ghost mode|activity sharing|location services|tracking|public visibility|allow.*search engine/i.test(String(target || ""));
   }
@@ -1788,8 +1819,10 @@ function setConsentState() {
       '</div>';
     }
 
-    const detail = guidePlatform?.device ? null : settingDetailFor(appName,target);
-    if (detail) {
+    const navigationOnly=isGuideNavigationTarget(target);
+    const actualTarget=guideNavigationTarget(target);
+    const detail = guidePlatform?.device ? null : settingDetailFor(appName,actualTarget);
+    if (detail && !navigationOnly) {
       return '<div class="phoneScreen phoneDetailScreen">' +
         identity +
         '<div class="phoneDetailHeader"><span class="phoneBackChevron">‹</span><span><small>' + escapeHtml(detail.section||title) + '</small><strong>' + escapeHtml(title) + '</strong></span></div>' +
@@ -1801,11 +1834,14 @@ function setConsentState() {
       '</div>';
     }
 
-    const deviceRows = deviceRowsFor(target);
-    const rows = deviceRows || platformRowsFor(appName, target);
-    if (deviceRows && target && target !== "EXPLAIN" && !rows.includes(target)) rows.push(target);
+    const menuTarget=navigationOnly ? actualTarget : target;
+    const deviceRows = deviceRowsFor(menuTarget);
+    const rows = deviceRows || platformRowsFor(appName, menuTarget);
+    if (deviceRows && menuTarget && menuTarget !== "EXPLAIN" && !rows.includes(menuTarget)) rows.push(menuTarget);
 
-    const phoneHeader = guidePlatform?.device ? phoneHeaderFor(target) : platformHeaderFor(appName, target);
+    const phoneHeader = guidePlatform?.device
+      ? phoneHeaderFor(menuTarget)
+      : (navigationOnly && detail ? platformHeaderFor(appName,actualTarget) : platformHeaderFor(appName,menuTarget));
 
     let html = '<div class="phoneScreen">' +
       identity +
@@ -1814,8 +1850,8 @@ function setConsentState() {
       '<div class="phoneRows">';
 
     rows.forEach((r) => {
-      const isTarget = target !== "EXPLAIN" && r === target;
-      const control = isTarget && targetUsesToggle(target)
+      const isTarget = menuTarget !== "EXPLAIN" && r === menuTarget;
+      const control = isTarget && targetUsesToggle(menuTarget)
         ? '<span class="toggle on"></span>'
         : '<span class="phoneChevron">›</span>';
       html += '<div class="phoneRow' + (isTarget ? " target" : "") + '"><span>' + escapeHtml(r) + '</span>' +
@@ -1852,20 +1888,22 @@ function setConsentState() {
 
   function updateCoachCopy(title, body, target, isExplain, direction = 0) {
     const copy = $("coachSlide").querySelector(".coachCopy");
-    const detail = !guidePlatform?.device ? settingDetailFor(guidePlatform?.name,target) : null;
+    const navigationOnly=isGuideNavigationTarget(target);
+    const actualTarget=guideNavigationTarget(target);
+    const detail = !guidePlatform?.device ? settingDetailFor(guidePlatform?.name,actualTarget) : null;
     const bullets = isExplain
       ? ["What this control changes","What exposure or risk it reduces","What the child/user will notice","Any trade-off or limitation to understand"]
       : ["Follow this exact path on the device","The highlighted row is the next tap","Use the presentation clicker to advance one action at a time"];
 
     const actionBlock = isExplain
       ? '<div class="explainBox"><strong>What to explain to the audience</strong><ul>' + bullets.map((b)=>"<li>"+escapeHtml(b)+"</li>").join("") + "</ul></div>"
-      : detail
+      : detail && !navigationOnly
         ? '<div class="settingWhyCard">' +
             '<div class="settingWhyMain"><strong>WHY THIS SETTING MATTERS</strong><p>' + escapeHtml(detail.why||body) + ' ' + escapeHtml(settingTeachingExpansion(detail)) + '</p></div>' +
             '<div class="settingDefaultTile"><strong>APP DEFAULT SETTING</strong><p>' + escapeHtml(appDefaultSettingFor(guidePlatform?.name,target,detail)) + '</p></div>' +
             '<div class="settingRecommendedTile"><strong>RECOMMENDED PRIVACY SETTING</strong><p>' + escapeHtml(detail.recommended||"Review this setting") + '</p></div>' +
           '</div>'
-        : '<div class="tapCallout"><strong>Next action:</strong>&nbsp; ' + escapeHtml(target) + "</div>";
+        : '<div class="tapCallout"><strong>Next action:</strong>&nbsp; ' + escapeHtml(navigationOnly ? actualTarget : target) + "</div>";
 
     const html =
       '<div class="coachAppBadge" style="--brand:' + escapeHtml(guidePlatform?.brand || "#52d6ff") + '"><span>' + (guidePlatform?.device ? "⚙" : guidePlatform.icon) + '</span><strong>' + escapeHtml(guidePlatform?.name || "Privacy") + '</strong></div>' +
