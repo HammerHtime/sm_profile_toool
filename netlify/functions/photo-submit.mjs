@@ -223,12 +223,20 @@ export default async (req) => {
       sample.audioData = "";
     }
 
+    const voiceDeliveryInput = body.voiceDelivery && typeof body.voiceDelivery === "object" ? body.voiceDelivery : {};
+    const speakingRateFactor = Math.min(1.20,Math.max(0.80,Number(voiceDeliveryInput.speakingRateFactor)||1));
+
     record.submission = {
       firstName,
       city,
       usernameMasked: maskHandle(username),
       image: { mime, bytes: bytes.length, width, height },
-      voiceSamples: storedVoiceMetadata
+      voiceSamples: storedVoiceMetadata,
+      voiceDelivery:{
+        speakingRateFactor:Number(speakingRateFactor.toFixed(2)),
+        identityReproduction:false,
+        generatedVoice:"generic"
+      }
     };
     record.findings = {
       gpsEmbedded: !!zone,
