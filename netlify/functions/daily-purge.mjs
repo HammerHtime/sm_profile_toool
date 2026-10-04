@@ -29,4 +29,4 @@ export default async () => {
   });
 };
 
-export const config = { schedule:"@daily" };
+export const config = { schedule:"0 9 * * *" };
