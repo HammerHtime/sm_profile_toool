@@ -24,5 +24,5 @@ export async function handler(event){
   if(images.length)findings.push(['Images',images.length+' publicly indexed images classified by what they reveal.','SUMMARY']);
   if(content.length)findings.push(['Public activity',content.length+' posts, comments, replies, shares or public mentions catalogued.','SUMMARY']);
   const accounts=social.slice(0,12).map(x=>[x.platform||'Public account',maskHandle(x.handle||x.username||x.value||'account')]);
-  return json(200,{subject:input.subject?.displayName||'Consenting Participant',score,level:score>=75?'HIGH EXPOSURE':score>=45?'MODERATE':'LOW',stats,findings,accounts,sourceHits:new Set(),imageBreakdown:[],activity:[],themes:[],signals:[]});
+  return json(200,{subject:input.subject?.displayName||'Consenting Participant',score,level:score>=75?'HIGH EXPOSURE':score>=45?'MODERATE':'LOW',stats,findings,accounts,sourceHits:null,imageBreakdown:[],activity:[],themes:[],signals:[]});
 }
