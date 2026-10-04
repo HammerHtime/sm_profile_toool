@@ -1289,3 +1289,12 @@ body.photoPresentationMode .impactSlide .photoRevealControls{
   .voicePlaybackGrid{margin-top:10px}
   .voiceSamplePlayBtn{min-height:78px}
 }
+
+
+/* RC18 natural AI voice */
+.generatedVoiceBtn.available:not(:disabled){
+  background:
+    radial-gradient(circle at 12% 20%,rgba(173,119,255,.12),transparent 30%),
+    linear-gradient(145deg,rgba(173,119,255,.075),#081720);
+}
+.voiceDemoBadge{white-space:nowrap}
