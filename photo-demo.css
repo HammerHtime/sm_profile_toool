@@ -809,3 +809,17 @@
   .voiceRecorder{flex-wrap:wrap}
   .voiceWave{min-width:120px}
 }
+
+.voicePlaybackFour{grid-template-columns:repeat(2,minmax(0,1fr))}
+.generatedVoiceBtn{border-color:rgba(173,119,255,.18)}
+.generatedVoiceBtn.available:not(:disabled){
+  border-color:rgba(173,119,255,.30);
+  background:linear-gradient(145deg,rgba(173,119,255,.08),#081720)
+}
+.generatedVoiceBtn .voicePlayGlyph{
+  background:rgba(173,119,255,.12);
+  color:#dec8ff
+}
+@media(max-width:760px){
+  .voicePlaybackFour{grid-template-columns:1fr}
+}
