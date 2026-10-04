@@ -260,32 +260,24 @@
   };
 
   const iosParent = [
-    ["Open Settings","On the parent's or child's iPhone, open Settings.","Settings"],
-    ["Open Family","Tap Family to confirm the child's Apple Account is in the family group.","Family"],
-    ["Open Screen Time","Settings → Screen Time.","Screen Time"],
-    ["Select the child","Under Family, select the child's name.","Child"],
-    ["Turn on App & Website Activity","Enable App & Website Activity so limits and reports can work.","App & Website Activity"],
-    ["Set a Screen Time passcode","Use a passcode the child does not know.","Screen Time passcode"],
-    ["Downtime","Set overnight or homework periods when only allowed apps remain available.","Downtime"],
-    ["App Limits","Create limits by app or category, including social media and games.","App Limits"],
-    ["Always Allowed","Choose apps that remain available during Downtime, such as Phone or school tools.","Always Allowed"],
-    ["Content & Privacy Restrictions","Turn on Content & Privacy Restrictions.","Content & Privacy"],
-    ["App Store purchases","Require approval/passwords and block installing or deleting apps if desired.","Purchases"],
-    ["Ask to Buy","For eligible child accounts, enable Ask to Buy so new downloads can require parent approval.","Ask to Buy"],
-    ["Web Content","Limit adult websites or use an allowed-sites-only approach for younger children.","Web Content"],
-    ["Apps and age ratings","Restrict apps, movies, TV and other content by rating.","Content ratings"],
-    ["Account changes","Prevent changes to account settings if you want the parent to retain control.","Account changes"],
-    ["Passcode changes","Prevent passcode/account changes where appropriate.","Passcode changes"],
-    ["Location Services","Review which apps can access the child's location.","Location Services"],
-    ["Precise Location","Turn off Precise Location for apps that only need a general area.","Precise Location"],
-    ["Share My Location","Review Find My / location sharing and who can see the child's location.","Share My Location"],
-    ["Contacts","Review apps that have access to the address book.","Contacts"],
-    ["Photos","Use limited photo-library access where an app doesn't need the full library.","Photos"],
-    ["Communication Limits","Use Screen Time communication limits to control who can communicate during allowed time and Downtime.","Communication Limits"],
-    ["Communication Safety","Turn on Communication Safety for the child.","Communication Safety"],
-    ["What Communication Safety does","On supported Apple services, on-device detection can warn and blur sensitive nude imagery before it is viewed or sent. Apple does not receive the image.","EXPLAIN"],
-    ["Important parent detail","For younger child accounts, Screen Time protections can require the parent/guardian Screen Time passcode before certain sensitive content is viewed. It is not a system that simply forwards the child's photo to the parent.","EXPLAIN"],
-    ["Finish with a family review","Walk through the child's most-used apps together and explain why each restriction exists.","EXPLAIN"]
+    ["Open Settings","On the parent's iPhone, open Settings.","Settings"],
+    ["Open Family","Tap Family.","Family"],
+    ["Select your child","Tap the child's name in the Family group.","Child"],
+    ["Open Screen Time","Tap Screen Time. In iOS 27, this opens the updated parental-control experience.","Screen Time"],
+    ["Apps & Websites","Review which apps and websites the child can access. This is also where Ask to Buy and Ask to Browse protections can apply.","Apps & Websites"],
+    ["Allowed Contacts","Review who the child can communicate with in Messages, FaceTime and Phone, including approval for new contacts where supported.","Allowed Contacts"],
+    ["Time Allowances","Set daily time budgets for categories such as entertainment, games and social media.","Time Allowances"],
+    ["Screen Time Schedules","Create school, after-school, evening or weekend routines for when apps can be used.","Screen Time Schedules"],
+    ["Content & Privacy Restrictions","Manage age ratings, apps, content and whether the child can change sensitive device settings.","Content & Privacy Restrictions"],
+    ["Communication Safety","Open Communication Safety and review the protection for the child account.","Communication Safety"],
+    ["What Communication Safety does","On supported Apple services, on-device detection can warn and blur sensitive photos or videos before they are viewed or sent. Apple does not receive the image merely because sensitive content was detected.","EXPLAIN"],
+    ["Extra protection for younger children","With a Screen Time passcode, children under 13 can require a parent or guardian to enter the passcode before viewing detected sensitive content. This is not a system that simply forwards the child's image to the parent.","EXPLAIN"],
+    ["Open Privacy & Security","On the child's iPhone, return to Settings and open Privacy & Security.","Privacy & Security"],
+    ["Location Services","Open Location Services and review which apps can use the child's location.","Location Services"],
+    ["Precise Location","For apps that only need a general area, turn off Precise Location where appropriate.","Precise Location"],
+    ["Contacts","Return to Privacy & Security and review which apps can access Contacts.","Contacts"],
+    ["Photos","Review Photos access and use limited-library access where a full photo library is not required.","Photos"],
+    ["Finish with the child","Review the most-used apps together and explain why each protection exists. The goal is safer habits, not just locked settings.","EXPLAIN"]
   ];
 
   const androidParent = [
@@ -588,7 +580,7 @@ function setConsentState() {
     b.className = "platformCard";
     b.style.setProperty("--brand", p.brand || "#52d6ff");
     b.innerHTML = '<div class="platformIcon">' + p.icon + '</div><div class="platformName">' + p.name + '</div><div class="platformDesc">' + p.desc + '</div><div class="platformStatus">' + (parentMode ? "PARENT GUIDE →" : (p.found ? "FOUND + FIX →" : "PRIVACY GUIDE →")) + "</div>";
-    b.addEventListener("click", () => openGuide(p, parentMode));
+    b.addEventListener("click", () => openGuide(p, parentMode, b));
     return b;
   }
 
@@ -614,25 +606,185 @@ function setConsentState() {
     return genericGuide[p.name] || fallbackGuide(p.name);
   }
 
-  function openGuide(p, parentMode) {
+  let activeDevicePortal = null;
+
+  function openGuideDirect(p, parentMode, startIndex = 0) {
     guidePlatform = p;
     currentGuide = guideFor(p, parentMode);
-    guideIndex = 0;
+    guideIndex = Math.max(0, Math.min(startIndex, currentGuide.length - 1));
+    $("coachSlide").innerHTML = "";
     $("coachModal").classList.remove("hidden");
     document.body.style.overflow = "hidden";
     renderGuideSlide();
+  }
+
+  function closeDevicePortal() {
+    if (!activeDevicePortal) return;
+    const { element, keyHandler } = activeDevicePortal;
+    if (keyHandler) window.removeEventListener("keydown", keyHandler);
+    element.classList.add("portalClosing");
+    setTimeout(() => element.remove(), 280);
+    activeDevicePortal = null;
+    document.body.style.overflow = "";
+  }
+
+  function openDevicePortal(p, parentMode, originEl) {
+    if (activeDevicePortal) closeDevicePortal();
+
+    guidePlatform = p;
+    currentGuide = guideFor(p, parentMode);
+    guideIndex = 0;
+
+    const rect = originEl?.getBoundingClientRect();
+    const portal = document.createElement("div");
+    portal.className = "devicePortal " + (p.device === "ios" ? "iosPortal" : "androidPortal");
+    portal.style.setProperty("--brand", p.brand || "#52d6ff");
+
+    const isIOS = p.device === "ios";
+    const deviceName = isIOS ? "iPhone" : "Android";
+    const settingsIcon = isIOS ? "⚙" : "⚙";
+    const appTiles = isIOS
+      ? [
+          ["✉","Messages"],["◉","Camera"],["▧","Photos"],["⌖","Find My"],
+          ["◷","Clock"],["☁","Weather"],["♪","Music"],["⚙","Settings"]
+        ]
+      : [
+          ["G","Google"],["◉","Camera"],["▧","Photos"],["▶","YouTube"],
+          ["⌖","Maps"],["✉","Messages"],["◆","Family Link"],["⚙","Settings"]
+        ];
+
+    portal.innerHTML =
+      '<div class="devicePortalBackdrop"></div>' +
+      '<div class="devicePortalHud">' +
+        '<div class="devicePortalKicker">PRIVACY CONTROLS</div>' +
+        '<h2>Enter the ' + deviceName + '</h2>' +
+        '<p>Click Settings or scroll down to move inside the phone.</p>' +
+      '</div>' +
+      '<div class="devicePortalPhone">' +
+        '<div class="portalPhoneNotch"></div>' +
+        '<div class="portalPhoneStatus"><span>9:41</span><span>● ● ●</span></div>' +
+        '<div class="portalHomeScreen">' +
+          '<div class="portalWallpaperGlow"></div>' +
+          '<div class="portalAppGrid">' +
+            appTiles.map(([icon,label]) =>
+              '<button type="button" class="portalApp ' + (label === "Settings" ? "portalSettingsApp" : "") + '" aria-label="' + label + '">' +
+                '<span>' + icon + '</span><small>' + label + '</small>' +
+              '</button>'
+            ).join("") +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="portalInstruction"><span class="portalMouse">↕</span><strong>SCROLL TO ENTER SETTINGS</strong><small>or click the glowing Settings icon</small></div>' +
+      '<div class="portalFlash"></div>';
+
+    const phone = portal.querySelector(".devicePortalPhone");
+    if (rect) {
+      phone.style.left = (rect.left + rect.width / 2) + "px";
+      phone.style.top = (rect.top + rect.height / 2) + "px";
+    }
+
+    document.body.appendChild(portal);
+    document.body.style.overflow = "hidden";
+    activeDevicePortal = { element:portal, keyHandler:null };
+
+    requestAnimationFrame(() => portal.classList.add("active"));
+
+    let entering = false;
+    const enterSettings = () => {
+      if (entering) return;
+      entering = true;
+      portal.classList.add("entering");
+      setTimeout(() => {
+        const keyHandler = activeDevicePortal?.keyHandler;
+        if (keyHandler) window.removeEventListener("keydown", keyHandler);
+        portal.remove();
+        activeDevicePortal = null;
+        // The portal already performed the "open Settings" action.
+        openGuideDirect(p, parentMode, Math.min(1, currentGuide.length - 1));
+      }, 760);
+    };
+
+    portal.querySelector(".portalSettingsApp")?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      enterSettings();
+    });
+
+    portal.addEventListener("wheel", (e) => {
+      if (Math.abs(e.deltaY) < 18) return;
+      e.preventDefault();
+      if (e.deltaY > 0) enterSettings();
+      else closeDevicePortal();
+    }, { passive:false });
+
+    const keyHandler = (e) => {
+      if (!activeDevicePortal) return;
+      if (["ArrowRight","ArrowDown","PageDown"," ","Enter"].includes(e.key)) {
+        e.preventDefault();
+        enterSettings();
+      } else if (["Escape","ArrowLeft","ArrowUp"].includes(e.key)) {
+        e.preventDefault();
+        closeDevicePortal();
+      }
+    };
+    activeDevicePortal.keyHandler = keyHandler;
+    window.addEventListener("keydown", keyHandler);
+  }
+
+  function openGuide(p, parentMode, originEl = null) {
+    if (p.device) {
+      openDevicePortal(p, parentMode, originEl);
+      return;
+    }
+    openGuideDirect(p, parentMode, 0);
   }
 
   function closeGuide() {
     $("coachModal").classList.add("hidden");
     document.body.style.overflow = "";
     currentGuide = null;
+    $("coachSlide").innerHTML = "";
+  }
+
+  function iosRowsFor(target) {
+    const screenTimeRows = ["Apps & Websites","Allowed Contacts","Time Allowances","Screen Time Schedules","Content & Privacy Restrictions","Communication Safety"];
+    const privacyRows = ["Location Services","Tracking","Contacts","Calendars","Photos","Bluetooth","Local Network","Microphone","Camera"];
+
+    if (target === "Family") return ["Airplane Mode","Wi-Fi","Bluetooth","Cellular","Notifications","Sounds & Haptics","Family","Screen Time","General","Privacy & Security"];
+    if (target === "Child") return ["Family Checklist","Subscriptions","Purchase Sharing","Location Sharing","Child","Parents / Guardians"];
+    if (target === "Screen Time") return ["Personal Information","Purchases","Subscriptions","Location Sharing","Screen Time"];
+    if (screenTimeRows.includes(target)) return screenTimeRows;
+    if (target === "Privacy & Security") return ["General","Accessibility","Action Button","Camera","Control Centre","Apps","Privacy & Security"];
+    if (privacyRows.includes(target)) return privacyRows;
+    if (target === "Precise Location") return ["Never","Ask Next Time Or When I Share","While Using the App","Always","Precise Location"];
+    if (target === "Settings") return ["Messages","Camera","Photos","Find My","Clock","Weather","Music","Settings"];
+    return ["Family","Screen Time","Privacy & Security","Notifications","General","Apps"];
+  }
+
+  function deviceRowsFor(target) {
+    if (guidePlatform?.device === "ios") return iosRowsFor(target);
+    if (guidePlatform?.device === "android") {
+      if (target === "Family Link") return ["Google","Security & privacy","Digital Wellbeing","Family Link","Apps","Location"];
+      return ["Controls","Daily limit","Downtime","App limits","Content restrictions","Location","Account settings"];
+    }
+    return null;
+  }
+
+  function phoneHeaderFor(target) {
+    if (guidePlatform?.device === "ios") {
+      const screenTimeTargets = ["Apps & Websites","Allowed Contacts","Time Allowances","Screen Time Schedules","Content & Privacy Restrictions","Communication Safety"];
+      const privacyTargets = ["Location Services","Tracking","Contacts","Calendars","Photos","Bluetooth","Local Network","Microphone","Camera","Precise Location"];
+      if (screenTimeTargets.includes(target)) return "Screen Time";
+      if (privacyTargets.includes(target)) return target === "Precise Location" ? "Location Services" : "Privacy & Security";
+      if (target === "Child" || target === "Screen Time") return "Family";
+      return "Settings";
+    }
+    return guidePlatform?.name || "Privacy Guide";
   }
 
   function phoneSceneHtml(title, target, explanation) {
     if (explanation) {
       return '<div class="phoneScreen phoneTeachingScreen">' +
-        '<div class="phoneTitle"><span class="phoneTitleIcon">' + guidePlatform.icon + '</span><span>' + guidePlatform.name + '</span></div>' +
+        '<div class="phoneTitle"><span class="phoneTitleIcon">' + (guidePlatform?.device ? "⚙" : guidePlatform.icon) + '</span><span>' + (guidePlatform?.device ? phoneHeaderFor(title) : guidePlatform.name) + '</span></div>' +
         '<div class="settingSuccess">' +
           '<div class="settingSuccessIcon">✓</div>' +
           '<div class="settingSuccessKicker">SETTING REVIEWED</div>' +
@@ -642,14 +794,19 @@ function setConsentState() {
       '</div>';
     }
 
-    const rows = ["Account","Privacy","Safety","Discoverability","Location","Messages","Content controls"];
-    if (target && target !== "EXPLAIN") {
+    const deviceRows = deviceRowsFor(target);
+    const rows = deviceRows || ["Account","Privacy","Safety","Discoverability","Location","Messages","Content controls"];
+    if (!deviceRows && target && target !== "EXPLAIN") {
       const i = Math.abs(hashCode(target)) % rows.length;
       rows[i] = target;
     }
+    if (deviceRows && target && target !== "EXPLAIN" && !rows.includes(target)) rows.push(target);
+
+    const phoneIcon = guidePlatform?.device ? "⚙" : guidePlatform.icon;
+    const phoneHeader = guidePlatform?.device ? phoneHeaderFor(target) : guidePlatform.name;
 
     let html = '<div class="phoneScreen">' +
-      '<div class="phoneTitle"><span class="phoneTitleIcon">' + guidePlatform.icon + '</span><span>' + guidePlatform.name + '</span></div>' +
+      '<div class="phoneTitle"><span class="phoneTitleIcon">' + phoneIcon + '</span><span>' + phoneHeader + '</span></div>' +
       '<div class="phoneCurrentScreen">' + title + '</div>' +
       '<div class="phoneRows">';
 
@@ -970,6 +1127,22 @@ function setConsentState() {
   document.querySelector("[data-close-coach]").addEventListener("click", closeGuide);
   $("coachPrev").addEventListener("click", () => navigateGuide(-1));
   $("coachNext").addEventListener("click", () => navigateGuide(1));
+
+  let coachWheelLocked = false;
+
+  $("coachSlide").addEventListener("click", (e) => {
+    if (!currentGuide) return;
+    if (e.target.closest(".phoneRow.target")) navigateGuide(1);
+  });
+
+  $("coachModal").addEventListener("wheel", (e) => {
+    if (!currentGuide || $("coachModal").classList.contains("hidden")) return;
+    if (Math.abs(e.deltaY) < 20 || coachWheelLocked) return;
+    e.preventDefault();
+    coachWheelLocked = true;
+    navigateGuide(e.deltaY > 0 ? 1 : -1);
+    setTimeout(() => { coachWheelLocked = false; }, 620);
+  }, { passive:false });
 
   window.addEventListener("keydown", (e) => {
     if (!currentGuide) return;
