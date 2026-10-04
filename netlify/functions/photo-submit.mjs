@@ -4,7 +4,7 @@ import { cleanText, deleteSession, expired, getSession, jsonResponse, putSession
 const MAX_BYTES = 4 * 1024 * 1024;
 const allowed = new Set(["image/jpeg","image/jpg","image/png","image/webp","image/heic","image/heif"]);
 const BRAVE_ENDPOINT = "https://api.search.brave.com/res/v1/web/search";
-const MAX_VOICE_BYTES = 400 * 1024;
+const MAX_VOICE_BYTES = 150 * 1024;
 const MAX_VOICE_MS = 10000;
 const allowedAudio = new Set(["audio/webm","audio/webm;codecs=opus","audio/mp4","audio/mpeg","audio/ogg","audio/ogg;codecs=opus"]);
 
@@ -194,7 +194,7 @@ export default async (req) => {
 
       const audioBytes = Buffer.from(audioData,"base64");
       if (!audioBytes.length || audioBytes.length > MAX_VOICE_BYTES) {
-        return jsonResponse({ error:"Each voice sample must be 400 KB or smaller" },413);
+        return jsonResponse({ error:"Each voice sample must be 150 KB or smaller" },413);
       }
 
       voiceSamples.push({
