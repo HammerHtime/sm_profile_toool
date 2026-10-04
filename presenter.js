@@ -8,7 +8,10 @@ const startView=$('startView'),sessionView=$('sessionView'),revealDeck=$('reveal
 async function request(path,options={}){
   const r=await fetch(path,{...options,headers:{'content-type':'application/json',...(options.headers||{})},cache:'no-store'});
   const data=await r.json().catch(()=>({}));
-  if(!r.ok) throw new Error((data.error||('Request failed ('+r.status+')')) + (data.detail ? ' — ' + data.detail : ''));
+  if(!r.ok){
+    if(r.status===429) throw new Error('Too many QR sessions were created in a short period. Wait about one minute, then try again.');
+    throw new Error((data.error||('Request failed ('+r.status+')')) + (data.detail ? ' — ' + data.detail : ''));
+  }
   return data;
 }
 function setSessionUi(active){startView.classList.toggle('hidden',active);sessionView.classList.toggle('hidden',!active);}
