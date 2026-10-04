@@ -12,6 +12,6 @@
     "qrcode": "1.5.4"
   },
   "scripts": {
-    "qa": "node scripts/static-qa.mjs"
+    "qa": "node scripts/static-qa.mjs && node scripts/runtime-qa.mjs"
   }
 }
