@@ -49,6 +49,12 @@ function platformFor(url = "") {
   return "Public web";
 }
 
+const PRESENTATION_SENSITIVE_TERMS = /\b(?:diagnos(?:is|ed)|cancer|hiv|aids|medical condition|medication|depression|suicid|religion|religious|catholic|muslim|jewish|christian|hindu|mosque|synagogue|sexual orientation|gay|lesbian|bisexual|transgender|political party|liberal party|conservative party|new democratic party|ndp|arrested|criminal charge|convicted|conviction)\b/i;
+
+function safeForPresentation(value = "") {
+  return !PRESENTATION_SENSITIVE_TERMS.test(String(value || ""));
+}
+
 function safePublicExcerpt(value = "", max = 112) {
   let text = cleanText(String(value || "").replace(/\s+/g," "), 220);
   text = text.replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi,"[email masked]");
@@ -177,13 +183,13 @@ async function publicHandleCorrelation(username, firstName, city) {
       domain:match.domain
     }));
   const presentationQuotes=matches
-    .filter(match=>match.description)
+    .filter(match=>match.description && safeForPresentation(match.description))
     .slice(0,6)
     .map(match=>({
       platform:match.platform,
       text:match.description
     }));
-  const presentationThemes=correlationThemes(matches,handle,firstName,city);
+  const presentationThemes=correlationThemes(matches.filter(match=>safeForPresentation([match.title,match.description].join(" "))),handle,firstName,city);
 
   return {
     attempted:true,
