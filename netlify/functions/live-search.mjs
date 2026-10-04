@@ -102,6 +102,21 @@ function buildAgeContext(age) {
   };
 }
 
+function parseSearchClues(value) {
+  if (typeof value !== "string") return [];
+  const seen = new Set();
+  const out = [];
+  for (const raw of value.split(",")) {
+    const clue = clean(raw, 80);
+    const key = normalize(clue);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    out.push(clue);
+    if (out.length >= 10) break;
+  }
+  return out;
+}
+
 function ageSupport(haystack, ageCtx) {
   if (!ageCtx) return { supported:false, reason:"" };
   const h = String(haystack);
@@ -143,16 +158,28 @@ function matchResult(result, person) {
   const usernameAny = username && hay.includes(username);
   const age = ageSupport(raw, person.ageContext);
 
+  const clueMatches = (person.searchClues || []).filter(clue => {
+    const key = normalize(clue);
+    return key && hay.includes(key);
+  });
+
   if (usernameUrl) reasons.push("username in URL");
   else if (usernameAny) reasons.push("username match");
   if (fullName) reasons.push("full name");
   if (cityMatch) reasons.push("city");
   if (age.supported) reasons.push(age.reason);
+  clueMatches.slice(0,4).forEach(clue => reasons.push("clue: " + clue));
 
-  // Age is intentionally never required. It can only strengthen a match.
-  if (usernameUrl || (fullName && cityMatch) || (fullName && age.supported)) {
+  if (
+    usernameUrl ||
+    (fullName && cityMatch) ||
+    (fullName && age.supported) ||
+    (fullName && clueMatches.length >= 1) ||
+    (usernameAny && clueMatches.length >= 1)
+  ) {
     return { confidence:"strong", reasons };
   }
+
   if (fullName || usernameAny) return { confidence:"possible", reasons };
   return { confidence:"discard", reasons:[] };
 }
@@ -200,6 +227,7 @@ export default async (req) => {
   const city = clean(body.city, 80);
   const username = clean(body.username, 100);
   const age = clean(body.age, 3);
+  const searchClues = parseSearchClues(body.clues || "");
   const fullName = [firstName,lastName].filter(Boolean).join(" ").trim();
 
   if (!firstName || !lastName) return respond({ error:"First and last name are required." }, 400);
@@ -220,9 +248,18 @@ export default async (req) => {
   ];
   if (username) queries.push({ group:"Username", q:'"' + username.replaceAll('"',"") + '"' });
 
-  const person = { fullName, city, username, ageContext };
+  for (let i = 0; i < searchClues.length; i += 3) {
+    const group = searchClues.slice(i, i + 3);
+    const clueExpression = group.map(clue => '"' + clue.replaceAll('"',"") + '"').join(" OR ");
+    queries.push({
+      group:"Clues: " + group.join(", "),
+      q:quotedName + " (" + clueExpression + ")"
+    });
+  }
+
+  const person = { fullName, city, username, ageContext, searchClues };
   const byUrl = new Map();
-  const clues = { emails:[], phones:[], addresses:[] };
+  const contactClues = { emails:[], phones:[], addresses:[] };
 
   for (const query of queries) {
     const results = await searchWeb(apiKey, query.q);
@@ -233,9 +270,9 @@ export default async (req) => {
 
       const title = redact(raw.title || "");
       const snippet = redact(raw.description || "");
-      clues.emails.push(...title.emails,...snippet.emails);
-      clues.phones.push(...title.phones,...snippet.phones);
-      clues.addresses.push(...title.addresses,...snippet.addresses);
+      contactClues.emails.push(...title.emails,...snippet.emails);
+      contactClues.phones.push(...title.phones,...snippet.phones);
+      contactClues.addresses.push(...title.addresses,...snippet.addresses);
 
       const platform = platformFor(raw.url);
       const item = {
@@ -281,7 +318,7 @@ export default async (req) => {
   ];
 
   const uniq = arr => [...new Set(arr)].slice(0,5);
-  const emailClues = uniq(clues.emails), phoneClues = uniq(clues.phones), addressClues = uniq(clues.addresses);
+  const emailClues = uniq(contactClues.emails), phoneClues = uniq(contactClues.phones), addressClues = uniq(contactClues.addresses);
   if (emailClues.length) findings.push(["Email clues",emailClues.length+" masked public email clues. Example: "+emailClues[0],"MASKED"]);
   if (phoneClues.length) findings.push(["Phone clues",phoneClues.length+" masked public phone clues. Example: "+phoneClues[0],"MASKED"]);
   if (addressClues.length) findings.push(["Address clues",addressClues.length+" masked public address clues. Example: "+addressClues[0],"MASKED"]);
@@ -314,6 +351,7 @@ export default async (req) => {
       supportingRange:ageContext.minAge+"–"+ageContext.maxAge,
       note:"Age is a soft supporting signal only and never filters out a result."
     } : null,
+    cluesUsed:searchClues,
     signals:[],
     imageBreakdown:[],
     activity:[],
