@@ -342,7 +342,7 @@ function matchResult(result, person) {
   if (age.conflict && fullName) return { confidence:"discard", reasons, identityRejected:true };
   if (!fullName && !usernameAny) return { confidence:"discard", reasons:[] };
   if (cityRequired && fullName && !city.anchored && !usernameAny) {
-    return { confidence:"discard", reasons, identityRejected:true, geographyRejected:city.mentioned };
+    return { confidence:"discard", reasons, identityRejected:true, geographyRejected:cityRequired && !city.anchored };
   }
   if (clueGateActive && fullName) {
     if (cityRequired && city.anchored && clueMatches.length >= 1) return { confidence:"strong", reasons };
