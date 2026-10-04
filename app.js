@@ -1171,7 +1171,19 @@ function setConsentState() {
     if (p.device === "ios") return parentMode ? iosParent : iosPrivacy;
     if (p.device === "android") return parentMode ? androidParent : androidPrivacy;
     if (parentMode) return parentGuides[p.name] || fallbackGuide(p.name);
-    return genericGuide[p.name] || fallbackGuide(p.name);
+
+    const base=(genericGuide[p.name] || fallbackGuide(p.name)).map(step=>step.slice());
+    const alreadyHasNotifications=base.some(step=>step[2]==="Notifications");
+    if(!alreadyHasNotifications){
+      const finalExplain=base.map(step=>step[2]).lastIndexOf("EXPLAIN");
+      const insertAt=finalExplain >= 0 ? finalExplain : base.length;
+      base.splice(insertAt,0,[
+        "Notification privacy",
+        "At the phone level, review this app's notification permission, lock-screen visibility and preview settings.",
+        "Notifications"
+      ]);
+    }
+    return base;
   }
 
   let activeDevicePortal = null;
@@ -1630,7 +1642,28 @@ function setConsentState() {
   };
 
   function settingDetailFor(name,target) {
-    return APP_SETTING_DETAILS[name]?.[target] || null;
+    const specific=APP_SETTING_DETAILS[name]?.[target];
+    if(specific) return specific;
+
+    if(target==="Notifications"){
+      return {
+        kind:"notification",
+        section:name+" notifications",
+        recommended:"Keep only useful alerts; hide sensitive previews on the lock screen",
+        why:"Notification previews can expose names, message content, codes or activity on a locked phone. Turning notifications off does not change who can see your account or posts."
+      };
+    }
+
+    if(target==="Location"){
+      return {
+        kind:"location",
+        section:name+" location permission",
+        recommended:"While Using or Never unless the feature genuinely needs background location",
+        why:"Device permission controls whether the app can access location. It does not automatically publish your location to everyone; sharing features inside the app are controlled separately."
+      };
+    }
+
+    return null;
   }
 
   function detailRowsHtml(detail) {
@@ -1665,6 +1698,14 @@ function setConsentState() {
         optionRow("While Using the App",!/never/i.test(detail.recommended||"")) +
         optionRow("Always",false) +
         '<div class="phoneSettingToggleRow"><span><strong>Precise Location</strong><small>Use only when the feature genuinely needs exact location</small></span><span class="toggle"></span></div>' +
+      '</div>';
+    }
+    if (detail.kind === "notification") {
+      return '<div class="phoneSettingGroup phoneNotificationSettings">' +
+        '<div class="phoneSettingToggleRow"><span><strong>Allow notifications</strong><small>Master switch for this app</small></span><span class="toggle on"></span></div>' +
+        '<div class="phoneSettingToggleRow"><span><strong>Lock screen</strong><small>Show alerts on the locked device</small></span><span class="toggle"></span></div>' +
+        '<div class="phoneSettingToggleRow"><span><strong>Show previews</strong><small>Hide sensitive message/content previews</small></span><span class="toggle"></span></div>' +
+        '<div class="phoneSettingToggleRow"><span><strong>Notification categories</strong><small>Choose which kinds of alerts can appear</small></span><span class="phoneChevron">›</span></div>' +
       '</div>';
     }
     if (detail.kind === "status") {
