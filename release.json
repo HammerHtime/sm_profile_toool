@@ -1,4 +1,4 @@
 {
-  "release": "public-footprint-rc2-smoke-v6",
-  "purpose": "Production redeploy with verified Brave Search API credential"
+  "release": "public-footprint-rc2-smoke-v7",
+  "purpose": "Grouped public-source presentation release"
 }
