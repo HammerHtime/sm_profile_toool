@@ -347,3 +347,44 @@ button{border:0;cursor:pointer}
   box-shadow:0 0 10px rgba(255,173,94,.45);
   margin-right:7px
 }
+
+
+/* Optional comma-separated identity clues */
+.cluesField{
+  grid-column:1 / -1;
+  margin-top:2px
+}
+.cluesField small{
+  color:#7f9bad;
+  font-weight:600;
+  margin-left:5px
+}
+.cluesField textarea{
+  width:100%;
+  min-height:96px;
+  resize:vertical;
+  padding:14px 15px;
+  border-radius:14px;
+  background:
+    linear-gradient(180deg,rgba(5,17,26,.98),rgba(6,20,30,.98));
+  border:1px solid rgba(82,214,255,.14);
+  color:#fff;
+  font:inherit;
+  line-height:1.5;
+  outline:none;
+  transition:border-color .18s ease,box-shadow .18s ease,background .18s ease
+}
+.cluesField textarea::placeholder{color:#587487}
+.cluesField textarea:focus{
+  border-color:rgba(82,214,255,.72);
+  box-shadow:0 0 0 3px rgba(82,214,255,.07),0 0 26px rgba(82,214,255,.08);
+  background:#06131d
+}
+.clueHint{
+  display:block;
+  margin-top:7px;
+  color:#7892a3;
+  font-size:.72rem;
+  line-height:1.45;
+  font-weight:500
+}
