@@ -3,6 +3,7 @@ const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (ch) => ({
   "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
 })[ch]);
 let session=null,pollTimer=null,revealIndex=0,latestStatus=null,searchRunning=false,searchComplete=false;
+let activeVoiceAudio=null,activeVoiceAudioUrl='',activeVoiceButton=null;
 const startView=$('startView'),sessionView=$('sessionView'),revealDeck=$('revealDeck');
 
 async function request(path,options={}){
@@ -53,6 +54,7 @@ async function restorePresenterSession(){
 
   let saved;
   try{saved=JSON.parse(raw)}catch{
+    resetVoicePlaybackUi();
     sessionStorage.removeItem('pfPhotoPresenter');
     return;
   }
@@ -248,19 +250,22 @@ function normalizePublicNodes(data){
 }
 
 function verifiedMetadataNodes(data){
-  const f=data.findings||{},img=data.image||{},voice=data.voiceSample||{};
+  const f=data.findings||{},img=data.image||{},voiceSamples=Array.isArray(data.voiceSamples)?data.voiceSamples:[];
   const nodes=[];
   if(f.gpsEmbedded) nodes.push({name:'GPS',count:1,subtitle:'embedded location signal',icon:'⌖',kind:'metadata'});
   if(f.captureDateEmbedded) nodes.push({name:'Capture time',count:1,subtitle:f.capturedAtYear?('year '+f.capturedAtYear):'original date found',icon:'◷',kind:'metadata'});
   if(f.cameraMetadataEmbedded) nodes.push({name:'Camera / device',count:1,subtitle:f.cameraSummary||'device metadata',icon:'▣',kind:'metadata'});
   if(img.bytes) nodes.push({name:'File',count:1,subtitle:(img.width||'?')+' × '+(img.height||'?')+' · '+formatBytes(img.bytes),icon:'#',kind:'metadata'});
-  if(voice.recorded) nodes.push({
-    name:'Voice sample',
-    count:1,
-    subtitle:Math.max(1,Math.round((voice.durationMs||0)/1000))+' sec supplied locally',
-    icon:'🎙',
-    kind:'participant'
-  });
+  if(voiceSamples.length) {
+    const totalSeconds=Math.max(1,Math.round(voiceSamples.reduce((sum,s)=>sum+(Number(s.durationMs)||0),0)/1000));
+    nodes.push({
+      name:'Voice samples',
+      count:voiceSamples.length,
+      subtitle:totalSeconds+' sec of original volunteer audio',
+      icon:'🎙',
+      kind:'participant'
+    });
+  }
   return nodes;
 }
 
@@ -425,73 +430,95 @@ async function startAutoSearch(data){
 }
 
 
-function renderVoiceRisk(data){
-  const voice=data.voiceSample||{};
-  const status=$('voiceSampleStatus');
-  const copy=$('voiceSampleCopy');
-  const button=$('playVoiceRiskBtn');
-  if(!status||!copy||!button)return;
-
-  if(voice.recorded){
-    const seconds=Math.max(1,Math.round((voice.durationMs||0)/1000));
-    status.textContent='Volunteer supplied a '+seconds+'-second voice sample.';
-    copy.textContent='The audio stayed on the volunteer’s phone and was discarded. This demo does not create a participant voice clone.';
-  }else{
-    status.textContent='No volunteer voice sample was recorded.';
-    copy.textContent='You can still play the generic AI example to explain the voice-cloning scam risk.';
+function resetVoicePlaybackUi(){
+  if(activeVoiceAudio){
+    try{activeVoiceAudio.pause();}catch{}
+    activeVoiceAudio=null;
   }
-  button.disabled=false;
+  if(activeVoiceAudioUrl){
+    URL.revokeObjectURL(activeVoiceAudioUrl);
+    activeVoiceAudioUrl='';
+  }
+  if(activeVoiceButton){
+    const index=Number(activeVoiceButton.dataset.index);
+    activeVoiceButton.classList.remove('playing');
+    activeVoiceButton.querySelector('.voicePlayGlyph').textContent='▶';
+    const strong=activeVoiceButton.querySelector('strong');
+    if(strong) strong.textContent='Play Sample '+(index+1);
+    activeVoiceButton=null;
+  }
 }
 
-function playVoiceRiskDemo(){
-  const button=$('playVoiceRiskBtn');
-  if(!('speechSynthesis' in window)||typeof SpeechSynthesisUtterance==='undefined'){
-    alert('This browser does not provide speech synthesis for the awareness example.');
-    return;
+function renderVoiceRisk(data){
+  const samples=Array.isArray(data.voiceSamples)?data.voiceSamples:[];
+  const status=$('voiceSampleStatus');
+  const copy=$('voiceSampleCopy');
+  if(!status||!copy)return;
+
+  const totalSeconds=Math.round(samples.reduce((sum,s)=>sum+(Number(s.durationMs)||0),0)/1000);
+  if(samples.length){
+    status.textContent='Volunteer supplied '+samples.length+' original voice sample'+(samples.length===1?'':'s')+
+      ' totaling about '+Math.max(1,totalSeconds)+' seconds.';
+    copy.textContent='These are the volunteer’s harmless original recordings. No cloned or synthetic participant voice is created.';
+  }else{
+    status.textContent='No volunteer voice samples were recorded.';
+    copy.textContent='The voice-exposure section remains available as a teaching point, but there is no participant audio to play.';
   }
 
-  speechSynthesis.cancel();
-
-  const intro=new SpeechSynthesisUtterance(
-    "AI generated awareness example. This is not the participant's voice."
-  );
-  const example=new SpeechSynthesisUtterance(
-    "I'm in trouble. Something happened. I need you to send money."
-  );
-  const warning=new SpeechSynthesisUtterance(
-    "Stop. Verify the caller through another trusted channel before sending money."
-  );
-
-  [intro,example,warning].forEach(u=>{
-    u.rate=.94;
-    u.pitch=1;
-    u.volume=1;
-  });
-
-  const voices=speechSynthesis.getVoices();
-  const generic=voices.find(v=>/^en(-|_)/i.test(v.lang||''))||voices[0];
-  if(generic){
-    intro.voice=generic;
-    example.voice=generic;
-    warning.voice=generic;
+  for(let index=0;index<3;index++){
+    const button=$('playVoiceSample'+index);
+    if(!button)continue;
+    const available=samples.some(sample=>Number(sample.index)===index&&sample.available);
+    button.disabled=!available;
+    button.classList.toggle('available',available);
   }
+}
 
-  if(button){
+async function playOriginalVoiceSample(index){
+  if(!session)return;
+  const button=$('playVoiceSample'+index);
+  if(!button||button.disabled)return;
+
+  resetVoicePlaybackUi();
+
+  try{
     button.classList.add('playing');
-    button.innerHTML='<span>■</span> Playing awareness example…';
-  }
+    button.querySelector('.voicePlayGlyph').textContent='■';
+    const strong=button.querySelector('strong');
+    if(strong) strong.textContent='Loading Sample '+(index+1)+'…';
+    activeVoiceButton=button;
 
-  warning.onend=()=>{
-    if(button){
-      button.classList.remove('playing');
-      button.innerHTML='<span>▶</span> Play scam-awareness example';
+    const response=await fetch('/.netlify/functions/photo-audio',{
+      method:'POST',
+      headers:{'content-type':'application/json'},
+      body:JSON.stringify({
+        id:session.id,
+        presenterToken:session.presenterToken,
+        index
+      }),
+      cache:'no-store'
+    });
+
+    if(!response.ok){
+      const data=await response.json().catch(()=>({}));
+      throw new Error(data.error||'Could not load the voice sample.');
     }
-  };
-  warning.onerror=warning.onend;
 
-  speechSynthesis.speak(intro);
-  speechSynthesis.speak(example);
-  speechSynthesis.speak(warning);
+    const blob=await response.blob();
+    activeVoiceAudioUrl=URL.createObjectURL(blob);
+    activeVoiceAudio=new Audio(activeVoiceAudioUrl);
+
+    if(strong) strong.textContent='Playing Sample '+(index+1);
+    activeVoiceAudio.onended=resetVoicePlaybackUi;
+    activeVoiceAudio.onerror=()=>{
+      resetVoicePlaybackUi();
+      alert('The voice sample could not be played.');
+    };
+    await activeVoiceAudio.play();
+  }catch(err){
+    resetVoicePlaybackUi();
+    alert(err.message||'Could not play the voice sample.');
+  }
 }
 
 function renderSubmitted(data){
@@ -555,7 +582,9 @@ async function erase(){
 $('startSession').addEventListener('click',createSession);
 $('copyLink').addEventListener('click',async()=>{const u=$('copyLink').dataset.url;if(!u)return;await navigator.clipboard.writeText(u);$('copyLink').textContent='Copied ✓';setTimeout(()=>$('copyLink').textContent='Copy volunteer link',1200);});
 $('erasePhotoDemo').addEventListener('click',erase);
-$('playVoiceRiskBtn')?.addEventListener('click',playVoiceRiskDemo);
+for(let index=0;index<3;index++){
+  $('playVoiceSample'+index)?.addEventListener('click',()=>playOriginalVoiceSample(index));
+}
 document.addEventListener('keydown',(e)=>{
   const nextKeys=['ArrowRight','PageDown',' ','Enter'];
   const backKeys=['ArrowLeft','PageUp'];
@@ -582,3 +611,7 @@ document.addEventListener('keydown',(e)=>{
 
 checkPresenterHealth();
 restorePresenterSession();
+
+window.addEventListener('pagehide',()=>{
+  resetVoicePlaybackUi();
+});
