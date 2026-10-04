@@ -195,6 +195,12 @@ const PRESENTATION_STOP_WORDS = new Set([
   "facebook","instagram","linkedin","tiktok","twitter","reddit","youtube","threads","github","strava"
 ]);
 
+const PRESENTATION_SENSITIVE_TERMS = /\b(?:diagnos(?:is|ed)|cancer|hiv|aids|medical condition|medication|depression|suicid|religion|religious|catholic|muslim|jewish|christian|hindu|mosque|synagogue|sexual orientation|gay|lesbian|bisexual|transgender|political party|liberal party|conservative party|new democratic party|ndp|arrested|criminal charge|convicted|conviction)\b/i;
+
+function safeForPresentation(value = "") {
+  return !PRESENTATION_SENSITIVE_TERMS.test(String(value || ""));
+}
+
 function safeExcerpt(value = "", max = 132) {
   const masked = redact(String(value || "")).text.replace(/\s+/g," ").trim();
   if (!masked) return "";
@@ -436,7 +442,7 @@ export default async (req) => {
 
   const coverageNames = ["LinkedIn","Instagram","Facebook","TikTok","Threads","Reddit","X / Twitter","YouTube","Strava","GitHub","Medium","Substack"];
   const quoteSnippets = sources
-    .filter(source=>source.snippet)
+    .filter(source=>source.snippet && safeForPresentation(source.snippet))
     .slice(0,8)
     .map(source=>({
       platform:source.platform,
@@ -484,7 +490,7 @@ export default async (req) => {
     .filter((item,index,list)=>list.findIndex(other=>other.src===item.src)===index)
     .slice(0,12);
 
-  const themeTerms = presentationThemes(sources,person);
+  const themeTerms = presentationThemes(sources.filter(source=>safeForPresentation([source.title,source.snippet].join(" "))),person);
   const signals = [];
   if (platforms.size > 1) signals.push(["◎","Cross-platform presence",platforms.size+" public source types returned matching pages."]);
   if (platforms.has("LinkedIn") || platforms.has("News")) signals.push(["▤","Professional or public references","Professional, organization or news results were present in the public search."]);
