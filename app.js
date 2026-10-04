@@ -5,6 +5,7 @@
   const consent = $("consent");
   const consentBox = $("consentBox");
   const liveSearchBtn = $("liveSearchBtn");
+  const syntheticDemoBtn = $("syntheticDemoBtn");
   const uploadLabel = $("uploadLabel");
   const fileInput = $("fileInput");
   const scanPanel = $("scanPanel");
@@ -312,9 +313,96 @@
     ["Why it matters","Family Link combines device limits, app approval, web/content controls, location and permission review in one parent dashboard.","EXPLAIN"]
   ];
 
-  function setConsentState() {
+  function syntheticReport() {
+    const first = $("firstName")?.value.trim() || "Demo";
+    const last = $("lastName")?.value.trim() || "Participant";
+    const subject = (first + " " + last).trim();
+
+    return {
+      dataMode:"synthetic",
+      synthetic:true,
+      subject,
+      score:86,
+      level:"SYNTHETIC DEMO",
+      stats:[
+        {n:9,k:"sample accounts"},
+        {n:684,k:"sample public images"},
+        {n:19,k:"sample recurring people"},
+        {n:27,k:"sample location signals"}
+      ],
+      findings:[
+        ["Previous addresses","4 synthetic historical address references. Example: 123 xxxxx St.","SYNTHETIC"],
+        ["Phone numbers","2 synthetic phone references. Example: 416-xxx-xx02.","SYNTHETIC"],
+        ["Email addresses","3 synthetic email references. Example: an•••••@g•••.com.","SYNTHETIC"],
+        ["Education","2 synthetic education records. Institution names hidden.","SYNTHETIC"],
+        ["Employment","6 synthetic employment / organization associations.","SYNTHETIC"],
+        ["Images","684 synthetic public-image records grouped by what they reveal.","SYNTHETIC"],
+        ["Public activity","1,526 synthetic posts, comments, replies, shares and mentions.","SYNTHETIC"]
+      ],
+      accounts:[
+        ["Instagram","@ale••••••n02"],
+        ["Facebook","alex••••••••onto"],
+        ["TikTok","@am••••••02"],
+        ["LinkedIn","alex••••••••4821"],
+        ["Reddit","u/ale••••••n02"],
+        ["X / Twitter","@ale••••n"],
+        ["YouTube","Alex•••••02"],
+        ["Strava","A••x M••••n"]
+      ],
+      sourceCoverage:{
+        searched:12,
+        matched:9,
+        sources:[
+          {name:"LinkedIn",matched:true},
+          {name:"Instagram",matched:true},
+          {name:"Facebook",matched:true},
+          {name:"TikTok",matched:true},
+          {name:"Threads",matched:false},
+          {name:"Reddit",matched:true},
+          {name:"X / Twitter",matched:true},
+          {name:"YouTube",matched:true},
+          {name:"Strava",matched:true},
+          {name:"GitHub",matched:false},
+          {name:"Medium",matched:false},
+          {name:"Substack",matched:true}
+        ]
+      },
+      publicSources:[],
+      imageBreakdown:[
+        ["Friends / family / social groups",352],
+        ["Travel destinations",134],
+        ["Sports and activities",54],
+        ["Vehicles",44],
+        ["Food / restaurants",39],
+        ["Work / public events",26],
+        ["Pets",17],
+        ["Home / property clues",11],
+        ["Documents / screenshots",7]
+      ],
+      activity:[
+        ["Posts and captions",614],
+        ["Comments",382],
+        ["Replies",216],
+        ["Shares / reposts",131],
+        ["Forum contributions",97],
+        ["News / article mentions",86]
+      ],
+      themes:["Travel","Sports","Restaurants","Technology","Vehicles","Community events","Professional topics","Photography"],
+      signals:[
+        ["◎","Identity linking","Synthetic repeated usernames, contact fragments and bios connect sample accounts together."],
+        ["⌖","Routine & location","Synthetic location signals demonstrate how routines and travel patterns can appear."],
+        ["◌","Social network","Synthetic recurring people demonstrate how public relationships could be mapped."],
+        ["✎","Public voice","Synthetic posts, comments and mentions demonstrate a long-lived public record."],
+        ["▣","Image history","Synthetic images demonstrate how destinations, activities, vehicles and events can create exposure."],
+        ["◷","Time depth","Synthetic material demonstrates how years of public history can form a timeline."]
+      ]
+    };
+  }
+
+function setConsentState() {
     const ok = !!consent.checked;
     if (liveSearchBtn) liveSearchBtn.disabled = !ok;
+    if (syntheticDemoBtn) syntheticDemoBtn.disabled = !ok;
     fileInput.disabled = !ok;
     uploadLabel.classList.toggle("disabled", !ok);
     uploadLabel.setAttribute("aria-disabled", ok ? "false" : "true");
@@ -347,15 +435,17 @@
   }
 
   function renderReport(report) {
-    const mode = report.dataMode === "verified" ? "verified" : "evidence";
+    const mode = report.dataMode === "verified" ? "verified" : report.dataMode === "synthetic" ? "synthetic" : "evidence";
     const banner = $("dataModeBanner");
-    const modeLabel = mode === "verified" ? "VERIFIED" : "EVIDENCE FILE";
-    const modeClass = mode === "verified" ? "verified" : "evidence";
+    const modeLabel = mode === "verified" ? "VERIFIED" : mode === "synthetic" ? "SYNTHETIC" : "EVIDENCE FILE";
+    const modeClass = mode;
 
     if (banner) {
       banner.className = "dataModeBanner " + modeClass;
       if (mode === "verified") {
         banner.innerHTML = "<strong>VERIFIED PUBLIC FINDINGS</strong><span>These findings were returned by configured public-source collectors and include the public source URL for review.</span>";
+      } else if (mode === "synthetic") {
+        banner.innerHTML = "<strong>SYNTHETIC DEMONSTRATION DATA</strong><span>Everything on this result screen is fabricated to demonstrate what the presentation can look like. Nothing here was found about the person entered.</span>";
       } else {
         banner.innerHTML = "<strong>USER-SUPPLIED EVIDENCE</strong><span>This report summarizes the JSON file you uploaded. It has not been independently verified by this app as a live public-source search.</span>";
       }
@@ -364,7 +454,9 @@
     $("subjectName").textContent = report.subject || "Search Subject";
     $("summaryLine").textContent = mode === "verified"
       ? "Verified public-source findings, privacy-masked before display."
-      : "Summary of user-supplied evidence. Not independently verified by this build.";
+      : mode === "synthetic"
+        ? "Synthetic fallback presentation. No live public search produced these values."
+        : "Summary of user-supplied evidence. Not independently verified by this build.";
     $("score").textContent = report.score || 0;
     $("scoreLabel").textContent = report.level || "LOW";
 
@@ -398,14 +490,14 @@
 
     const sourcePanel = $("sourceCoveragePanel");
     $("sourceCoverageGrid").innerHTML = "";
-    if (mode === "verified" && report.sourceCoverage) {
+    if ((mode === "verified" || mode === "synthetic") && report.sourceCoverage) {
       sourcePanel.classList.remove("hidden");
       $("sourceSearched").textContent = report.sourceCoverage.searched || 0;
       $("sourceMatched").textContent = report.sourceCoverage.matched || 0;
       (report.sourceCoverage.sources || []).forEach((source) => {
         const chip = document.createElement("div");
         chip.className = "sourceChip" + (source.matched ? " hit" : "");
-        chip.innerHTML = '<span class="sourceModeDot verified"></span>' + (source.matched ? "✓ " : "○ ") + source.name;
+        chip.innerHTML = '<span class="sourceModeDot ' + modeClass + '"></span>' + (source.matched ? "✓ " : "○ ") + source.name;
         $("sourceCoverageGrid").appendChild(chip);
       });
     } else {
@@ -471,7 +563,9 @@
       });
     }
 
-    $("takeaway").textContent = "One post is a fragment. Hundreds of verified or supplied fragments can become a profile. Always check the provenance label and source before treating a value as a real finding.";
+    $("takeaway").textContent = mode === "synthetic"
+      ? "Synthetic mode is a visual fallback only. Use it to demonstrate capabilities when a live search returns little or nothing. Do not present these values as findings."
+      : "One post is a fragment. Hundreds of verified or supplied fragments can become a profile. Always check the provenance label and source before treating a value as a real finding.";
     results.classList.remove("hidden");
     results.scrollIntoView({behavior:"smooth",block:"start"});
   }
@@ -795,6 +889,39 @@
         scanPanel.classList.add("hidden");
         setConsentState();
       }
+    });
+  }
+
+  if (syntheticDemoBtn) {
+    syntheticDemoBtn.addEventListener("click", () => {
+      if (!consent.checked) return;
+
+      eraseNotice.classList.add("hidden");
+      results.classList.add("hidden");
+      scanPanel.classList.remove("hidden");
+      syntheticDemoBtn.disabled = true;
+
+      const statuses = [
+        ["Building synthetic demonstration…","Generating clearly labelled sample findings."],
+        ["Creating sample account links…","No public internet search is being performed."],
+        ["Generating sample exposure…","All counts and examples are fabricated for teaching."],
+        ["Preparing presentation…","Synthetic mode will remain visibly marked on every result."]
+      ];
+      let i = 0;
+      scanTitle.textContent = statuses[0][0];
+      scanSub.textContent = statuses[0][1];
+      const timer = setInterval(() => {
+        i = (i + 1) % statuses.length;
+        scanTitle.textContent = statuses[i][0];
+        scanSub.textContent = statuses[i][1];
+      }, 550);
+
+      setTimeout(() => {
+        clearInterval(timer);
+        scanPanel.classList.add("hidden");
+        renderReport(syntheticReport());
+        setConsentState();
+      }, 2200);
     });
   }
 
