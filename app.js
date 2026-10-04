@@ -1172,12 +1172,16 @@ function setConsentState() {
     if (p.device === "android") return parentMode ? androidParent : androidPrivacy;
     if (parentMode) return parentGuides[p.name] || fallbackGuide(p.name);
 
-    const base=(genericGuide[p.name] || fallbackGuide(p.name)).map(step=>step.slice());
+    // Social-app walkthroughs no longer use separate "Why this matters" slides.
+    // Each setting screen already carries the explanation, the app default, and
+    // the recommended privacy setting, so a second explanation slide is redundant.
+    const base=(genericGuide[p.name] || fallbackGuide(p.name))
+      .filter(step=>step[2]!=="EXPLAIN")
+      .map(step=>step.slice());
+
     const alreadyHasNotifications=base.some(step=>step[2]==="Notifications");
     if(!alreadyHasNotifications){
-      const finalExplain=base.map(step=>step[2]).lastIndexOf("EXPLAIN");
-      const insertAt=finalExplain >= 0 ? finalExplain : base.length;
-      base.splice(insertAt,0,[
+      base.push([
         "Notification privacy",
         "At the phone level, review this app's notification permission, lock-screen visibility and preview settings.",
         "Notifications"
@@ -1847,7 +1851,7 @@ function setConsentState() {
       ? '<div class="explainBox"><strong>What to explain to the audience</strong><ul>' + bullets.map((b)=>"<li>"+escapeHtml(b)+"</li>").join("") + "</ul></div>"
       : detail
         ? '<div class="settingWhyCard">' +
-            '<div class="settingWhyMain"><strong>WHY THIS SETTING MATTERS</strong><p>' + escapeHtml(detail.why||body) + '</p></div>' +
+            '<div class="settingWhyMain"><strong>WHY THIS SETTING MATTERS</strong><p>' + escapeHtml(detail.why||body) + '</p><span class="settingWhyHint">This is the teaching point for this setting. No separate explanation slide follows.</span></div>' +
             '<div class="settingDefaultTile"><strong>APP DEFAULT SETTING</strong><p>' + escapeHtml(appDefaultSettingFor(guidePlatform?.name,target,detail)) + '</p></div>' +
             '<div class="settingRecommendedTile"><strong>RECOMMENDED PRIVACY SETTING</strong><p>' + escapeHtml(detail.recommended||"Review this setting") + '</p></div>' +
           '</div>'
