@@ -83,7 +83,6 @@ async function createSession(){
   }catch(e){
     alert(e.message);
     await checkPresenterHealth();
-restorePresenterSession();
   } finally {
     if (!$('presenterHealth')?.classList.contains('failed')) $('startSession').disabled=false;
   }
@@ -495,3 +494,4 @@ document.addEventListener('keydown',(e)=>{
 });
 
 checkPresenterHealth();
+restorePresenterSession();
