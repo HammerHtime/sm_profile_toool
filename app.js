@@ -389,6 +389,16 @@
   }
 
   function renderReport(report) {
+    const banner = $("dataModeBanner");
+    if (banner) {
+      if (report.synthetic) {
+        banner.classList.remove("hidden");
+        banner.innerHTML = "<strong>SYNTHETIC DEMONSTRATION DATA</strong><span>These values are fabricated to demonstrate the presentation experience. They are not findings about the person entered above.</span>";
+      } else {
+        banner.classList.add("hidden");
+        banner.innerHTML = "";
+      }
+    }
     $("subjectName").textContent = report.subject || "Demo Subject";
     $("summaryLine").textContent = "AI connected public fragments across social platforms, images, comments, news and other indexed sources.";
     $("score").textContent = report.score || 0;
@@ -693,9 +703,8 @@
         const data = await res.json();
         renderReport(data);
       } catch (e) {
-        const fallback = syntheticReport();
-        fallback.subject = evidence.subject || fallback.subject;
-        renderReport(fallback);
+        results.classList.add("hidden");
+        alert("Evidence analysis failed. No synthetic results were substituted. Please check the evidence file or try again.");
       }
     });
   });
