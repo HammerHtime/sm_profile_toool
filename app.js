@@ -48,9 +48,12 @@
     "Public awards pages","Public association pages"
   ];
 
+  const APPLE_LOGO_SVG = '<svg class="brandLogoSvg appleLogoSvg" viewBox="0 0 64 64" aria-hidden="true"><path fill="#111827" d="M41.7 13.2c3.5-4.2 3.1-8.1 3-9.2-3.1.2-6.8 2.1-8.8 4.5-2.2 2.5-3.5 5.6-3.2 8.8 3.4.3 6.5-1.5 9-4.1zM49.8 34.1c-.1-8.1 6.6-12 6.9-12.2-3.8-5.5-9.7-6.3-11.8-6.4-5-.5-9.8 3-12.3 3-2.5 0-6.4-3-10.5-2.9-5.4.1-10.4 3.1-13.2 7.8-5.6 9.7-1.4 24.1 4 31.9 2.7 3.8 5.8 8.1 9.9 7.9 4-.2 5.5-2.6 10.3-2.6s6.2 2.6 10.4 2.5c4.3-.1 7-3.8 9.6-7.7 3.1-4.5 4.4-8.9 4.5-9.1-.1 0-8.7-3.3-8.8-13.2z"/></svg>';
+  const ANDROID_LOGO_SVG = '<svg class="brandLogoSvg androidLogoSvg" viewBox="0 0 64 64" aria-hidden="true"><g fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round"><path d="M22 15 17 8M42 15l5-7"/></g><g fill="#fff"><path d="M17 20h30a5 5 0 0 1 5 5v18H12V25a5 5 0 0 1 5-5z"/><rect x="18" y="40" width="7" height="17" rx="3.5"/><rect x="39" y="40" width="7" height="17" rx="3.5"/><rect x="7" y="25" width="7" height="20" rx="3.5"/><rect x="50" y="25" width="7" height="20" rx="3.5"/></g><circle cx="23" cy="28" r="2.2" fill="#72d572"/><circle cx="41" cy="28" r="2.2" fill="#72d572"/></svg>';
+
   const PLATFORMS = [
-    {name:"iPhone Privacy",icon:"●",brand:"#e7edf3",desc:"Location, precise location, contacts, photos, camera, microphone, tracking and app permissions",found:true,device:"ios"},
-    {name:"Android Privacy",icon:"◆",brand:"#72d572",desc:"Permission manager, location, precise location, camera, microphone, contacts, photos and app access",found:true,device:"android"},
+    {name:"iPhone Privacy",icon:APPLE_LOGO_SVG,brand:"#e7edf3",desc:"Location, precise location, contacts, photos, camera, microphone, tracking and app permissions",found:true,device:"ios"},
+    {name:"Android Privacy",icon:ANDROID_LOGO_SVG,brand:"#72d572",desc:"Permission manager, location, precise location, camera, microphone, contacts, photos and app access",found:true,device:"android"},
     {name:"Instagram",icon:"◎",brand:"#ff3d9a",desc:"Account visibility, tags, mentions, contacts, activity and location",found:true},
     {name:"Facebook",icon:"f",brand:"#1877f2",desc:"Audience, profile discovery, tagging, friends, location and off-Facebook data",found:true},
     {name:"TikTok",icon:"♪",brand:"#25f4ee",desc:"Private account, suggestions, contacts, downloads, messages and location",found:true},
@@ -78,8 +81,8 @@
   ];
 
   const DEVICE_GUIDES = [
-    {name:"iPhone / iPad",icon:"●",brand:"#e7edf3",desc:"Screen Time, Communication Safety, app installs, contacts, web content, privacy, location, purchases and downtime",device:"ios"},
-    {name:"Android / Family Link",icon:"◆",brand:"#72d572",desc:"Family Link, app approvals, location, Chrome, Search, YouTube, contacts, purchases, limits and bedtime",device:"android"}
+    {name:"iPhone / iPad",icon:APPLE_LOGO_SVG,brand:"#e7edf3",desc:"Screen Time, Communication Safety, app installs, contacts, web content, privacy, location, purchases and downtime",device:"ios"},
+    {name:"Android / Family Link",icon:ANDROID_LOGO_SVG,brand:"#72d572",desc:"Family Link, app approvals, location, Chrome, Search, YouTube, contacts, purchases, limits and bedtime",device:"android"}
   ];
 
   const genericGuide = {
