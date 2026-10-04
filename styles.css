@@ -957,3 +957,34 @@ button{border:0;cursor:pointer}
   background:#ffad5e;
   box-shadow:0 0 10px rgba(255,173,94,.45)
 }
+
+
+.zeroResultFallback{
+  margin:14px 0;
+  padding:15px 17px;
+  border-radius:18px;
+  border:1px solid rgba(255,173,94,.28);
+  background:
+    radial-gradient(circle at 88% 18%,rgba(255,173,94,.10),transparent 32%),
+    linear-gradient(145deg,rgba(255,173,94,.065),rgba(255,255,255,.015));
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:18px
+}
+.zeroResultFallback strong{
+  display:block;
+  color:#ffd0a0;
+  margin-bottom:4px
+}
+.zeroResultFallback span{
+  display:block;
+  color:#9fb0bc;
+  font-size:.78rem;
+  line-height:1.45
+}
+.zeroResultFallback .syntheticDemoBtn{flex:0 0 auto}
+@media(max-width:700px){
+  .zeroResultFallback{flex-direction:column;align-items:flex-start}
+  .zeroResultFallback .syntheticDemoBtn{width:100%}
+}
