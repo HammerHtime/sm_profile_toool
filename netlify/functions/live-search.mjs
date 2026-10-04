@@ -102,14 +102,43 @@ function platformFor(url = "") {
 
 function maskedHandle(url = "", platform = "") {
   try {
+    const supported = new Set([
+      "LinkedIn","Instagram","Facebook","TikTok","Reddit","X / Twitter","YouTube",
+      "Threads","Strava","GitHub","Medium","Pinterest","Twitch","Bluesky","Flickr"
+    ]);
+    if (!supported.has(platform)) return "";
+
     const u = new URL(url);
     const parts = u.pathname.split("/").filter(Boolean);
     let candidate = "";
-    if (platform === "LinkedIn" && parts[0] === "in") candidate = parts[1] || "";
-    else if (platform === "YouTube" && ["channel","c","user"].includes(parts[0])) candidate = parts[1] || "";
-    else candidate = parts[0] || "";
+
+    if (platform === "LinkedIn") {
+      if (parts[0] !== "in") return "";
+      candidate = parts[1] || "";
+    } else if (platform === "YouTube") {
+      if (parts[0]?.startsWith("@")) candidate = parts[0];
+      else if (["channel","c","user"].includes(parts[0])) candidate = parts[1] || "";
+    } else if (platform === "Reddit") {
+      if (!["user","u"].includes(parts[0])) return "";
+      candidate = parts[1] || "";
+    } else if (platform === "Strava") {
+      if (parts[0] !== "athletes") return "";
+      candidate = parts[1] || "";
+    } else if (platform === "Bluesky") {
+      if (parts[0] !== "profile") return "";
+      candidate = parts[1] || "";
+    } else if (platform === "Flickr") {
+      if (parts[0] !== "people") return "";
+      candidate = parts[1] || "";
+    } else if (platform === "TikTok" || platform === "Threads" || platform === "Medium") {
+      if (!parts[0]?.startsWith("@")) return "";
+      candidate = parts[0];
+    } else {
+      candidate = parts[0] || "";
+    }
+
     candidate = candidate.replace(/^@/, "");
-    if (!candidate || /^(posts?|share|watch|groups?|pages?|search|explore|company|school)$/i.test(candidate)) return "";
+    if (!candidate || /^(posts?|share|watch|groups?|pages?|search|explore|company|school|news|article|articles|sports)$/i.test(candidate)) return "";
     const left = Math.max(1, Math.ceil(candidate.length * .28));
     const right = Math.max(1, Math.ceil(candidate.length * .20));
     const hidden = Math.max(3, candidate.length - left - right);
@@ -149,81 +178,144 @@ function parseSearchClues(value) {
   return out;
 }
 
-function ageSupport(haystack, ageCtx) {
-  if (!ageCtx) return { supported:false, reason:"" };
+function ageAssessment(haystack, ageCtx) {
+  if (!ageCtx) return { supported:false, conflict:false, reason:"" };
   const h = String(haystack);
 
+  const explicitAges = [];
   const agePatterns = [
     /\b(?:age|aged)\s+(\d{2})\b/gi,
     /\b(\d{2})[- ]year[- ]old\b/gi
   ];
   for (const re of agePatterns) {
-    for (const m of h.matchAll(re)) {
-      const value = Number(m[1]);
-      if (value >= ageCtx.minAge && value <= ageCtx.maxAge) {
-        return { supported:true, reason:"rough age compatible ("+ageCtx.minAge+"–"+ageCtx.maxAge+")" };
-      }
-    }
+    for (const m of h.matchAll(re)) explicitAges.push(Number(m[1]));
   }
 
+  for (const value of explicitAges) {
+    if (value >= ageCtx.minAge && value <= ageCtx.maxAge) {
+      return { supported:true, conflict:false, reason:"rough age compatible ("+ageCtx.minAge+"–"+ageCtx.maxAge+")" };
+    }
+  }
+  if (explicitAges.some(value => Number.isFinite(value))) {
+    return { supported:false, conflict:true, reason:"explicit age conflicts with supplied age" };
+  }
+
+  const birthYears=[];
   for (const m of h.matchAll(/\b(?:born|birth|dob|date of birth)\D{0,12}(19\d{2}|20\d{2})\b/gi)) {
-    const year = Number(m[1]);
+    birthYears.push(Number(m[1]));
+  }
+  for (const year of birthYears) {
     if (year >= ageCtx.minBirthYear && year <= ageCtx.maxBirthYear) {
-      return { supported:true, reason:"birth-year clue compatible" };
+      return { supported:true, conflict:false, reason:"birth-year clue compatible" };
     }
   }
+  if (birthYears.length) {
+    return { supported:false, conflict:true, reason:"birth-year clue conflicts with supplied age" };
+  }
 
-  return { supported:false, reason:"" };
+  return { supported:false, conflict:false, reason:"" };
+}
+
+function clueVariants(clue = "") {
+  const key=normalize(clue);
+  const variants=[key];
+  if (key.includes("university of western ontario")) variants.push("western university");
+  if (key.includes("western university")) variants.push("university of western ontario");
+  if (key === "toronto police" || key.includes("toronto police service")) {
+    variants.push("toronto police");
+    variants.push("toronto police service");
+    variants.push("tps");
+  }
+  return [...new Set(variants.filter(Boolean))];
+}
+
+function cityIdentitySupport(raw = "", city = "") {
+  const key=normalize(city);
+  if (!key) return { mentioned:false, anchored:false };
+  const hay=normalize(raw);
+  const mentioned=hay.includes(key);
+  if (!mentioned) return { mentioned:false, anchored:false };
+
+  const anchors=[
+    "based in "+key,
+    "based "+key,
+    "from "+key,
+    "lives in "+key,
+    "located in "+key,
+    key+" ontario",
+    key+" on canada",
+    key+" canada",
+    key+" police",
+    key+" university",
+    key+" based"
+  ];
+  return { mentioned:true, anchored:anchors.some(anchor=>hay.includes(anchor)) };
 }
 
 function matchResult(result, person) {
   const raw = [result.title, result.description, result.url].filter(Boolean).join(" ");
   const hay = normalize(raw);
   const full = normalize(person.fullName);
-  const city = normalize(person.city);
   const username = normalize(person.username.replace(/^@/, ""));
   const reasons = [];
 
   const fullName = full && hay.includes(full);
-  const cityMatch = city && hay.includes(city);
-  const cityRequired = !!city;
+  const city = cityIdentitySupport(raw, person.city);
+  const cityRequired = !!normalize(person.city);
   const usernameUrl = username && normalize(result.url).includes(username);
   const usernameAny = username && hay.includes(username);
-  const age = ageSupport(raw, person.ageContext);
+  const age = ageAssessment(raw, person.ageContext);
 
-  const clueMatches = (person.searchClues || []).filter(clue => {
-    const key = normalize(clue);
-    return key && hay.includes(key);
-  });
+  const clueMatches = (person.searchClues || []).filter(clue =>
+    clueVariants(clue).some(variant => variant && hay.includes(variant))
+  );
+  const clueGateActive = (person.searchClues || []).length > 0;
 
   if (usernameUrl) reasons.push("username in URL");
   else if (usernameAny) reasons.push("username match");
   if (fullName) reasons.push("full name");
-  if (cityMatch) reasons.push("city");
+  if (city.anchored) reasons.push("city identity context");
+  else if (city.mentioned) reasons.push("city mentioned");
   if (age.supported) reasons.push(age.reason);
+  if (age.conflict) reasons.push(age.reason);
   clueMatches.slice(0,4).forEach(clue => reasons.push("clue: " + clue));
 
-  // An exact user-supplied username in the public URL is a strong independent identifier.
+  // An exact user-supplied username in an account URL is an independent identifier.
   if (usernameUrl) return { confidence:"strong", reasons };
 
-  // When a city is supplied, geography becomes a required anchor for name-based matching.
-  // This prevents same-name profiles from other cities/countries from surfacing as "possible".
-  if (cityRequired && !cityMatch) {
-    if (fullName || usernameAny) return { confidence:"discard", reasons, geographyRejected:true };
-    return { confidence:"discard", reasons:[] };
+  // Explicit age/birth-year contradictions beat a same-name hit.
+  if (age.conflict && fullName) {
+    return { confidence:"discard", reasons, identityRejected:true };
+  }
+
+  // When the user supplies identity clues, name-only results must overlap at least
+  // one clue. This is the key protection against common-name collisions.
+  if (clueGateActive && fullName && !usernameAny && clueMatches.length === 0) {
+    return { confidence:"discard", reasons, identityRejected:true };
+  }
+
+  // A city appearing incidentally in an article is not enough. It needs profile-like
+  // geographic context unless another supplied clue independently ties the result.
+  if (cityRequired && fullName && !city.anchored && clueMatches.length === 0 && !usernameAny) {
+    return { confidence:"discard", reasons, geographyRejected:city.mentioned };
   }
 
   if (
-    (fullName && cityMatch) ||
-    (usernameAny && cityMatch) ||
-    (fullName && age.supported) ||
     (fullName && clueMatches.length >= 1) ||
-    (usernameAny && clueMatches.length >= 1)
+    (usernameAny && clueMatches.length >= 1) ||
+    (fullName && city.anchored) ||
+    (usernameAny && city.anchored) ||
+    (fullName && age.supported && !cityRequired)
   ) {
     return { confidence:"strong", reasons };
   }
 
-  if (fullName || usernameAny) return { confidence:"possible", reasons };
+  // If the search has no extra identity anchors, retain a plain name hit only for
+  // human review. Once city/clues are supplied, weak name-only results stay out.
+  if ((fullName || usernameAny) && !cityRequired && !clueGateActive) {
+    return { confidence:"possible", reasons };
+  }
+
   return { confidence:"discard", reasons:[] };
 }
 
@@ -673,3 +765,6 @@ export const config = {
     windowLimit:6
   }
 };
+
+
+export { matchResult, buildAgeContext };
