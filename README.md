@@ -157,3 +157,12 @@ The production presentation now includes explicit regression protection for the 
 - phone walkthrough navigation uses a native-style screen push while the teaching copy cross-fades independently
 - when the presenter supplies identity clues, same-name results must overlap a supplied clue before they can survive as a name-based match
 - short clue aliases are token-matched so strings such as `https` cannot accidentally satisfy an acronym clue
+
+
+### Natural AI voice output
+
+The presenter no longer uses the browser's built-in speech synthesizer. Generated demonstration sentences are rendered server-side through the OpenAI Speech API with `gpt-4o-mini-tts` and the `marin` built-in voice. The UI clearly labels the result as AI-generated and not cloned. The volunteer's recording is not used to reproduce vocal identity; only a coarse speaking-rate factor may influence delivery.
+
+### Theme and identity hardening
+
+Narrative excerpts, recurring themes and ambient thumbnails now use only corroborated strong-identity sources. A single result can no longer create a "recurring theme"; a term must occur across at least two eligible public results. A regression test specifically rejects the unrelated Andrew Hammond psychotherapist profile in Spencerville when the supplied identity clues are Toronto Police and University of Western Ontario.
