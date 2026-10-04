@@ -4,6 +4,7 @@ const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (ch) => ({
 })[ch]);
 let session=null,pollTimer=null,revealIndex=0,latestStatus=null,searchRunning=false,searchComplete=false;
 let activeVoiceAudio=null,activeVoiceAudioUrl='',activeVoiceButton=null;
+const preloadedVoiceSamples=new Map();
 const startView=$('startView'),sessionView=$('sessionView'),revealDeck=$('revealDeck');
 
 async function request(path,options={}){
@@ -55,6 +56,7 @@ async function restorePresenterSession(){
   let saved;
   try{saved=JSON.parse(raw)}catch{
     resetVoicePlaybackUi();
+    clearPreloadedVoiceSamples();
     sessionStorage.removeItem('pfPhotoPresenter');
     return;
   }
@@ -344,6 +346,7 @@ async function startAutoSearch(data){
   latestStatus=data;
 
   renderSubmitted(data);
+  preloadVoiceSamples(data);
 
   const presenterGrid=document.querySelector('.presenterGrid');
   if(presenterGrid)presenterGrid.classList.add('hidden');
@@ -449,6 +452,39 @@ function resetVoicePlaybackUi(){
   }
 }
 
+async function preloadVoiceSamples(data){
+  if(!session)return;
+  const samples=Array.isArray(data.voiceSamples)?data.voiceSamples:[];
+  const jobs=samples.filter(s=>s.available).map(async sample=>{
+    const index=Number(sample.index);
+    if(preloadedVoiceSamples.has(index))return;
+    try{
+      const response=await fetch('/.netlify/functions/photo-audio',{
+        method:'POST',
+        headers:{'content-type':'application/json'},
+        body:JSON.stringify({
+          id:session.id,
+          presenterToken:session.presenterToken,
+          index
+        }),
+        cache:'no-store'
+      });
+      if(!response.ok)return;
+      const blob=await response.blob();
+      const url=URL.createObjectURL(blob);
+      preloadedVoiceSamples.set(index,{blob,url});
+    }catch{}
+  });
+  await Promise.allSettled(jobs);
+}
+
+function clearPreloadedVoiceSamples(){
+  for(const item of preloadedVoiceSamples.values()){
+    if(item?.url) URL.revokeObjectURL(item.url);
+  }
+  preloadedVoiceSamples.clear();
+}
+
 function renderVoiceRisk(data){
   const samples=Array.isArray(data.voiceSamples)?data.voiceSamples:[];
   const status=$('voiceSampleStatus');
@@ -488,25 +524,33 @@ async function playOriginalVoiceSample(index){
     if(strong) strong.textContent='Loading Sample '+(index+1)+'…';
     activeVoiceButton=button;
 
-    const response=await fetch('/.netlify/functions/photo-audio',{
-      method:'POST',
-      headers:{'content-type':'application/json'},
-      body:JSON.stringify({
-        id:session.id,
-        presenterToken:session.presenterToken,
-        index
-      }),
-      cache:'no-store'
-    });
+    const cached=preloadedVoiceSamples.get(index);
+    let blobUrl=cached?.url||'';
 
-    if(!response.ok){
-      const data=await response.json().catch(()=>({}));
-      throw new Error(data.error||'Could not load the voice sample.');
+    if(!blobUrl){
+      const response=await fetch('/.netlify/functions/photo-audio',{
+        method:'POST',
+        headers:{'content-type':'application/json'},
+        body:JSON.stringify({
+          id:session.id,
+          presenterToken:session.presenterToken,
+          index
+        }),
+        cache:'no-store'
+      });
+
+      if(!response.ok){
+        const data=await response.json().catch(()=>({}));
+        throw new Error(data.error||'Could not load the voice sample.');
+      }
+
+      const blob=await response.blob();
+      blobUrl=URL.createObjectURL(blob);
+      preloadedVoiceSamples.set(index,{blob,url:blobUrl});
     }
 
-    const blob=await response.blob();
-    activeVoiceAudioUrl=URL.createObjectURL(blob);
-    activeVoiceAudio=new Audio(activeVoiceAudioUrl);
+    activeVoiceAudioUrl='';
+    activeVoiceAudio=new Audio(blobUrl);
 
     if(strong) strong.textContent='Playing Sample '+(index+1);
     activeVoiceAudio.onended=resetVoicePlaybackUi;
@@ -614,4 +658,5 @@ restorePresenterSession();
 
 window.addEventListener('pagehide',()=>{
   resetVoicePlaybackUi();
+  clearPreloadedVoiceSamples();
 });
