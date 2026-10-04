@@ -210,3 +210,76 @@ button{border:0;cursor:pointer}
   .dataModeBanner{flex-direction:column;align-items:flex-start}
   .dataModeBanner strong{white-space:normal}
 }
+
+
+/* Fixed-device navigation: only the screen inside the phone moves */
+.phoneFixed{
+  overflow:hidden;
+  transform:none!important;
+}
+.phoneViewport{
+  position:absolute;
+  left:12px;
+  right:12px;
+  top:51px;
+  bottom:18px;
+  border-radius:34px;
+  overflow:hidden;
+  z-index:2;
+  background:linear-gradient(180deg,#f8fbfd,#eef3f7);
+}
+.phoneScene{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  transition:transform .38s cubic-bezier(.2,.78,.2,1),opacity .34s ease,filter .34s ease;
+  will-change:transform,opacity;
+}
+.phoneSceneIncomingRight{transform:translateX(100%);opacity:.98}
+.phoneSceneIncomingLeft{transform:translateX(-100%);opacity:.98}
+.phoneSceneActive{transform:translateX(0);opacity:1}
+.phoneSceneExitLeft{transform:translateX(-100%);opacity:.98}
+.phoneSceneExitRight{transform:translateX(100%);opacity:.98}
+.phoneViewport .phoneScreen{
+  position:absolute;
+  inset:0;
+  padding:10px;
+  z-index:1;
+}
+.phoneFixed .phoneStatus{
+  position:absolute;
+  left:24px;
+  right:24px;
+  top:18px;
+  z-index:4;
+}
+.phoneFixed .phoneNotch{z-index:5}
+.copySwapForward{animation:copySwapForward .38s ease both}
+.copySwapBack{animation:copySwapBack .38s ease both}
+@keyframes copySwapForward{
+  0%{opacity:1;transform:none}
+  32%{opacity:0;transform:translateX(-18px)}
+  45%{opacity:0;transform:translateX(22px)}
+  100%{opacity:1;transform:none}
+}
+@keyframes copySwapBack{
+  0%{opacity:1;transform:none}
+  32%{opacity:0;transform:translateX(18px)}
+  45%{opacity:0;transform:translateX(-22px)}
+  100%{opacity:1;transform:none}
+}
+/* Disable older whole-phone slide animations */
+.coachExitForward .coachVisual,
+.coachExitBack .coachVisual,
+.coachEnterForward .coachVisual,
+.coachEnterBack .coachVisual{
+  animation:none!important;
+  transform:none!important;
+  opacity:1!important;
+  filter:none!important;
+}
+@media(prefers-reduced-motion:reduce){
+  .phoneScene{transition:none!important}
+  .copySwapForward,.copySwapBack{animation:none!important}
+}
