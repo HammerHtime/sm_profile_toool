@@ -97,6 +97,10 @@ if(!app.includes("function settingTeachingExpansion(")) fail("Setting-level teac
 else pass("Setting screen carries the full why-it-matters teaching point");
 if(!read("index.html").includes('id="privacyGuidesBtn"') || !app.includes("function openPrivacyGuideHub(")) fail("Direct privacy settings launcher is missing");
 else pass("Direct privacy settings launcher exists");
+if(!read("index.html").includes('id="directDevicePrivacyGrid"') || !app.includes('directDevicePrivacyGrid')) fail("Standalone privacy hub is missing iPhone/Android device guides");
+else pass("Standalone privacy hub includes device guides");
+if(!read("styles.css").includes("RC28 standalone privacy hub viewport repair")) fail("Standalone privacy hub viewport repair is missing");
+else pass("Standalone privacy hub has its own scroll-safe viewport");
 if(!app.includes('"#privacy-settings"') || !app.includes("showReportStage(4)")) fail("Bookmarkable no-scan privacy route is missing");
 else pass("Privacy settings can open directly without a profile scan");
 if(!app.includes('"NAV:" + target') || !app.includes("function isGuideNavigationTarget(")) fail("Click-by-click setting navigation bridges are missing");

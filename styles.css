@@ -2509,3 +2509,104 @@ body.privacyGuideDirect [data-report-stage="4"] .reportStageIntro strong{
 .deviceParentGrid .platformIcon{
   overflow:hidden;
 }
+
+
+/* RC28 standalone privacy hub viewport repair */
+.directDeviceQuickAccess{display:none}
+
+body.privacyGuideDirect{
+  overflow:hidden!important;
+}
+body.privacyGuideDirect .reportDeck{
+  position:fixed!important;
+  inset:0!important;
+  width:100vw!important;
+  height:100dvh!important;
+  min-height:0!important;
+  margin:0!important;
+  padding:0!important;
+  display:grid!important;
+  grid-template-rows:auto minmax(0,1fr)!important;
+  gap:0!important;
+  overflow:hidden!important;
+  transform:none!important;
+}
+body.privacyGuideDirect .reportDeckTopbar{
+  position:relative!important;
+  z-index:30!important;
+  width:100%!important;
+  max-width:none!important;
+  min-height:64px!important;
+  margin:0!important;
+  padding:10px 18px!important;
+  background:rgba(5,14,22,.97)!important;
+  border-bottom:1px solid rgba(255,255,255,.08)!important;
+  pointer-events:auto!important;
+}
+body.privacyGuideDirect .reportStageRail{
+  display:none!important;
+}
+body.privacyGuideDirect .reportExit{
+  position:relative;
+  z-index:31;
+  pointer-events:auto!important;
+}
+body.privacyGuideDirect .reportStageViewport{
+  min-height:0!important;
+  height:auto!important;
+  overflow-x:hidden!important;
+  overflow-y:auto!important;
+  padding:14px 18px 42px!important;
+  overscroll-behavior:contain!important;
+  -webkit-overflow-scrolling:touch;
+  pointer-events:auto!important;
+}
+body.privacyGuideDirect [data-report-stage="4"]{
+  display:flex!important;
+  height:auto!important;
+  min-height:100%!important;
+  max-width:1280px!important;
+  overflow:visible!important;
+  padding:0 6px 36px!important;
+}
+body.privacyGuideDirect [data-report-stage="4"] .reportStageIntro{
+  min-height:54px;
+}
+body.privacyGuideDirect .privacyCoachPanel,
+body.privacyGuideDirect .directDeviceQuickAccess{
+  flex:0 0 auto!important;
+}
+body.privacyGuideDirect .directDeviceQuickAccess{
+  display:block!important;
+  margin-top:6px;
+}
+body.privacyGuideDirect .platformCard{
+  position:relative!important;
+  z-index:3!important;
+  pointer-events:auto!important;
+}
+body.privacyGuideDirect .platformWall{
+  margin-bottom:8px;
+}
+body.privacyGuideDirect .directDevicePrivacyGrid{
+  margin-top:18px;
+}
+body.privacyGuideDirect .directDevicePrivacyGrid .platformCard{
+  min-height:170px;
+}
+@media(max-width:760px){
+  body.privacyGuideDirect .reportDeckTopbar{
+    grid-template-columns:1fr auto!important;
+    min-height:58px!important;
+    padding:8px 10px!important;
+  }
+  body.privacyGuideDirect .reportDeckIdentity{
+    min-width:0;
+  }
+  body.privacyGuideDirect .reportDeckIdentity small{
+    display:none;
+  }
+  body.privacyGuideDirect .reportStageViewport{
+    padding:10px 8px 30px!important;
+  }
+}

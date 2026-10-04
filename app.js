@@ -906,6 +906,7 @@ function setConsentState() {
     reportStageIndex = 0;
     const wasDirect=privacyGuideDirectMode;
     privacyGuideDirectMode = false;
+    if ($("closeReportDeck")) $("closeReportDeck").textContent = "Exit results";
     if (wasDirect && window.location.hash === "#privacy-settings") {
       history.replaceState(null,"",window.location.pathname + window.location.search);
     }
@@ -924,8 +925,12 @@ function setConsentState() {
     document.body.classList.add("reportDeckActive","privacyGuideDirect");
     resetPlatformGuideHitsForDirectMode();
     if ($("reportDeckSubject")) $("reportDeckSubject").textContent = "Privacy Settings Guide";
+    if ($("closeReportDeck")) $("closeReportDeck").textContent = "← Back to home";
     results.classList.remove("hidden");
     showReportStage(4);
+    const viewport=$("reportStageViewport");
+    if(viewport) viewport.scrollTop=0;
+    window.scrollTo(0,0);
     if (!fromHash && window.location.hash !== "#privacy-settings") {
       history.pushState(null,"","#privacy-settings");
     }
@@ -1184,6 +1189,12 @@ function setConsentState() {
     if (privacyDevices) {
       privacyDevices.innerHTML = "";
       PLATFORMS.filter((p) => p.device).forEach((p) => privacyDevices.appendChild(buildPlatformCard(p, false)));
+    }
+
+    const directPrivacyDevices = $("directDevicePrivacyGrid");
+    if (directPrivacyDevices) {
+      directPrivacyDevices.innerHTML = "";
+      PLATFORMS.filter((p) => p.device).forEach((p) => directPrivacyDevices.appendChild(buildPlatformCard(p, false)));
     }
 
     $("parentPlatformGrid").innerHTML = "";
