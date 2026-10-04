@@ -248,12 +248,19 @@ function normalizePublicNodes(data){
 }
 
 function verifiedMetadataNodes(data){
-  const f=data.findings||{},img=data.image||{};
+  const f=data.findings||{},img=data.image||{},voice=data.voiceSample||{};
   const nodes=[];
   if(f.gpsEmbedded) nodes.push({name:'GPS',count:1,subtitle:'embedded location signal',icon:'⌖',kind:'metadata'});
   if(f.captureDateEmbedded) nodes.push({name:'Capture time',count:1,subtitle:f.capturedAtYear?('year '+f.capturedAtYear):'original date found',icon:'◷',kind:'metadata'});
   if(f.cameraMetadataEmbedded) nodes.push({name:'Camera / device',count:1,subtitle:f.cameraSummary||'device metadata',icon:'▣',kind:'metadata'});
   if(img.bytes) nodes.push({name:'File',count:1,subtitle:(img.width||'?')+' × '+(img.height||'?')+' · '+formatBytes(img.bytes),icon:'#',kind:'metadata'});
+  if(voice.recorded) nodes.push({
+    name:'Voice sample',
+    count:1,
+    subtitle:Math.max(1,Math.round((voice.durationMs||0)/1000))+' sec supplied locally',
+    icon:'🎙',
+    kind:'participant'
+  });
   return nodes;
 }
 
@@ -269,7 +276,7 @@ function addSearchConnection(x,y,kind='metadata'){
   const line=document.createElementNS('http://www.w3.org/2000/svg','line');
   line.setAttribute('x1','500');line.setAttribute('y1','310');
   line.setAttribute('x2',String(x*10));line.setAttribute('y2',String(y*6.2));
-  line.classList.add('searchConnectionLine',kind==='public'?'public':'metadata');
+  line.classList.add('searchConnectionLine',kind==='public'?'public':kind==='participant'?'participant':'metadata');
   svg.appendChild(line);
 }
 
@@ -280,7 +287,7 @@ function addSearchNode(node,index,total){
   addSearchConnection(pos.x,pos.y,node.kind);
 
   const el=document.createElement('div');
-  el.className='searchNode '+(node.kind==='public'?'publicNode':'metadataNode');
+  el.className='searchNode '+(node.kind==='public'?'publicNode':node.kind==='participant'?'participantNode':'metadataNode');
   el.style.left=pos.x+'%';
   el.style.top=pos.y+'%';
   el.innerHTML=
@@ -288,7 +295,7 @@ function addSearchNode(node,index,total){
     '<strong class="searchNodeCount">'+escapeHtml(node.count)+'</strong>'+
     '<span class="searchNodeName">'+escapeHtml(node.name)+'</span>'+
     '<small>'+escapeHtml(node.subtitle)+'</small>'+
-    '<em>VERIFIED</em>';
+    '<em>'+(node.kind==='participant'?'SUPPLIED':'VERIFIED')+'</em>';
   stage.appendChild(el);
   requestAnimationFrame(()=>el.classList.add('visible'));
 }
@@ -344,7 +351,7 @@ async function startAutoSearch(data){
   const img=data.image||{};
   $('searchCoreMeta').textContent=(img.width&&img.height)?(img.width+' × '+img.height):'verified upload';
   $('searchStageTitle').textContent='Searching privacy signals…';
-  $('searchStageSubtitle').textContent='Verified findings appear around the photo as they are confirmed.';
+  $('searchStageSubtitle').textContent='Verified findings and participant-supplied signals appear as they are confirmed.';
   setSearchProgress(4,'Starting');
   setChecklist(0);
   setPulse('Photo received. Initializing analysis…');
@@ -417,10 +424,80 @@ async function startAutoSearch(data){
   searchRunning=false;
 }
 
+
+function renderVoiceRisk(data){
+  const voice=data.voiceSample||{};
+  const status=$('voiceSampleStatus');
+  const copy=$('voiceSampleCopy');
+  const button=$('playVoiceRiskBtn');
+  if(!status||!copy||!button)return;
+
+  if(voice.recorded){
+    const seconds=Math.max(1,Math.round((voice.durationMs||0)/1000));
+    status.textContent='Volunteer supplied a '+seconds+'-second voice sample.';
+    copy.textContent='The audio stayed on the volunteer’s phone and was discarded. This demo does not create a participant voice clone.';
+  }else{
+    status.textContent='No volunteer voice sample was recorded.';
+    copy.textContent='You can still play the generic AI example to explain the voice-cloning scam risk.';
+  }
+  button.disabled=false;
+}
+
+function playVoiceRiskDemo(){
+  const button=$('playVoiceRiskBtn');
+  if(!('speechSynthesis' in window)||typeof SpeechSynthesisUtterance==='undefined'){
+    alert('This browser does not provide speech synthesis for the awareness example.');
+    return;
+  }
+
+  speechSynthesis.cancel();
+
+  const intro=new SpeechSynthesisUtterance(
+    "AI generated awareness example. This is not the participant's voice."
+  );
+  const example=new SpeechSynthesisUtterance(
+    "I'm in trouble. Something happened. I need you to send money."
+  );
+  const warning=new SpeechSynthesisUtterance(
+    "Stop. Verify the caller through another trusted channel before sending money."
+  );
+
+  [intro,example,warning].forEach(u=>{
+    u.rate=.94;
+    u.pitch=1;
+    u.volume=1;
+  });
+
+  const voices=speechSynthesis.getVoices();
+  const generic=voices.find(v=>/^en(-|_)/i.test(v.lang||''))||voices[0];
+  if(generic){
+    intro.voice=generic;
+    example.voice=generic;
+    warning.voice=generic;
+  }
+
+  if(button){
+    button.classList.add('playing');
+    button.innerHTML='<span>■</span> Playing awareness example…';
+  }
+
+  warning.onend=()=>{
+    if(button){
+      button.classList.remove('playing');
+      button.innerHTML='<span>▶</span> Play scam-awareness example';
+    }
+  };
+  warning.onerror=warning.onend;
+
+  speechSynthesis.speak(intro);
+  speechSynthesis.speak(example);
+  speechSynthesis.speak(warning);
+}
+
 function renderSubmitted(data){
   latestStatus=data;$('participantName').textContent=data.participant?.firstName||'Volunteer';
   const grid=$('photoFindingCards');grid.replaceChildren();const img=data.image||{},f=data.findings||{};
-  metadataMap(data);correlationMap(data);impact(data);
+  metadataMap(data);correlationMap(data);impact(data);renderVoiceRisk(data);
   grid.append(
     findingCard('Embedded GPS',f.gpsEmbedded?'FOUND':'NOT FOUND',f.gpsEmbedded?'The original file contained GPS coordinates. They were reduced before display.':'No embedded GPS coordinates were detected.',f.gpsEmbedded?'risk':'safe'),
     findingCard('Capture date',f.captureDateEmbedded?('YEAR '+(f.capturedAtYear||'FOUND')):'NOT FOUND',f.captureDateEmbedded?'The file contained original capture-time metadata.':'No readable original capture date was detected.',f.captureDateEmbedded?'warn':'safe'),
@@ -478,6 +555,7 @@ async function erase(){
 $('startSession').addEventListener('click',createSession);
 $('copyLink').addEventListener('click',async()=>{const u=$('copyLink').dataset.url;if(!u)return;await navigator.clipboard.writeText(u);$('copyLink').textContent='Copied ✓';setTimeout(()=>$('copyLink').textContent='Copy volunteer link',1200);});
 $('erasePhotoDemo').addEventListener('click',erase);
+$('playVoiceRiskBtn')?.addEventListener('click',playVoiceRiskDemo);
 document.addEventListener('keydown',(e)=>{
   const nextKeys=['ArrowRight','PageDown',' ','Enter'];
   const backKeys=['ArrowLeft','PageUp'];
