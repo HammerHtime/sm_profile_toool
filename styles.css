@@ -324,3 +324,26 @@ button{border:0;cursor:pointer}
 }
 .sourceModeDot.synthetic{background:#ffad5e;box-shadow:0 0 9px rgba(255,173,94,.45)}
 .sourceModeDot.verified{background:#55e39c;box-shadow:0 0 9px rgba(85,227,156,.45)}
+
+
+.buildStatus{
+  margin-top:14px;
+  padding:12px 14px;
+  border-radius:14px;
+  border:1px solid rgba(255,166,72,.26);
+  background:rgba(255,166,72,.055);
+  color:#cbb9a5;
+  font-size:.78rem;
+  line-height:1.5
+}
+.buildStatus strong{color:#ffbd7c;margin-right:4px}
+.buildStatus b{color:#f0f5f8}
+.statusDot{
+  display:inline-block;
+  width:8px;
+  height:8px;
+  border-radius:50%;
+  background:#ffad5e;
+  box-shadow:0 0 10px rgba(255,173,94,.45);
+  margin-right:7px
+}
