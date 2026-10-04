@@ -1,10 +1,37 @@
-import { cleanText, deleteSession, expired, getSession, json, safeEqual } from './photo-session-lib.mjs';
-export async function handler(event){
-  if(event.httpMethod!=='GET') return json(405,{error:'Method not allowed'});
-  const id=cleanText(event.queryStringParameters?.id,80), presenterToken=cleanText(event.queryStringParameters?.token,120);
-  const record=await getSession(id);
-  if(!record) return json(404,{error:'Session not found'});
-  if(expired(record)){await deleteSession(id);return json(410,{error:'Session expired'})}
-  if(!safeEqual(presenterToken,record.presenterTokenHash)) return json(403,{error:'Invalid presenter token'});
-  return json(200,{id:record.id,status:record.status,expiresAt:record.expiresAt,consent:record.consent,submittedAt:record.submittedAt||null,participant:record.submission?{firstName:record.submission.firstName,city:record.submission.city,usernameMasked:record.submission.usernameMasked}:null,image:record.submission?.image||null,findings:record.findings||null});
-}
+import { cleanText, deleteSession, expired, getSession, jsonResponse, safeEqual } from "./photo-session-lib.mjs";
+
+export default async (req) => {
+  if (req.method !== "GET") return jsonResponse({ error: "Method not allowed" }, 405);
+
+  try {
+    const url = new URL(req.url);
+    const id = cleanText(url.searchParams.get("id"), 80);
+    const presenterToken = cleanText(url.searchParams.get("token"), 120);
+    const record = await getSession(id);
+
+    if (!record) return jsonResponse({ error: "Session not found" }, 404);
+    if (expired(record)) {
+      await deleteSession(id);
+      return jsonResponse({ error: "Session expired" }, 410);
+    }
+    if (!safeEqual(presenterToken, record.presenterTokenHash)) return jsonResponse({ error: "Invalid presenter token" }, 403);
+
+    return jsonResponse({
+      id: record.id,
+      status: record.status,
+      expiresAt: record.expiresAt,
+      consent: record.consent,
+      submittedAt: record.submittedAt || null,
+      participant: record.submission ? {
+        firstName: record.submission.firstName,
+        city: record.submission.city,
+        usernameMasked: record.submission.usernameMasked
+      } : null,
+      image: record.submission?.image || null,
+      findings: record.findings || null
+    });
+  } catch (error) {
+    console.error("photo-status failed", error);
+    return jsonResponse({ error: "Could not read the live photo session.", detail: error?.message || "Unknown error" }, 500);
+  }
+};
