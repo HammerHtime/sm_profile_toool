@@ -2418,3 +2418,18 @@ body.reportDeckActive{overflow:hidden}
 @media(max-width:760px){
   .settingWhyCard{grid-template-columns:1fr}
 }
+
+
+/* RC22 consolidate setting education into the setting screen */
+.settingWhyMain{
+  min-width:0;
+}
+.settingWhyHint{
+  display:block;
+  margin-top:10px;
+  padding-top:9px;
+  border-top:1px solid rgba(255,255,255,.08);
+  color:#7f95a3;
+  font-size:.66rem;
+  line-height:1.4;
+}

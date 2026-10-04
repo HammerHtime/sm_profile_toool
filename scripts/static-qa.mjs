@@ -89,6 +89,10 @@ if(!app.includes('detail.kind === "location"')) fail("Location permission detail
 else pass("Location permission choices render inside the phone");
 if(!app.includes("APP DEFAULT SETTING") || !app.includes("RECOMMENDED PRIVACY SETTING") || !app.includes("function appDefaultSettingFor(")) fail("Default/recommended privacy comparison is missing");
 else pass("App default and recommended privacy tiles render");
+if(!app.includes('.filter(step=>step[2]!=="EXPLAIN")')) fail("Social app guides still include redundant explanation slides");
+else pass("Social app guides remove redundant explanation slides");
+if(!app.includes("settingWhyHint")) fail("Setting-level teaching point expansion is missing");
+else pass("Setting screen carries the full why-it-matters teaching point");
 if(!app.includes("function platformHeaderFor(")) fail("Social privacy walkthrough header renderer is missing");
 else pass("Social privacy walkthrough header renderer exists");
 if(!app.includes("phoneSceneNativeIncoming")) fail("Native-style phone screen transition is missing");
