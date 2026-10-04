@@ -26,7 +26,7 @@ jobs:
     timeout-minutes: 8
     env:
       SITE_URL: https://sm-profile-tool.netlify.app
-      RELEASE_MARKER: public-footprint-rc2-smoke-v10
+      RELEASE_MARKER: public-footprint-rc2-smoke-v11
     steps:
       - name: Wait for this release to reach Netlify
         shell: bash
