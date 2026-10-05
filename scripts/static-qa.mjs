@@ -83,6 +83,14 @@ if(!app.includes("const DEVICE_SETTING_DETAILS = {") || !app.includes("function 
 else pass("iPhone and Android privacy guides use real setting detail screens");
 if(!app.includes("function expandDevicePrivacyGuide(") || !app.includes("Tap Back until you return to")) fail("Device privacy guides are not click-by-click");
 else pass("iPhone and Android privacy guides return to parent menus between settings");
+if(!app.includes("const PARENT_SETTING_DETAILS = {") || !app.includes("const PARENT_DEVICE_SETTING_DETAILS = {")) fail("Parental-control setting detail models are missing");
+else pass("Parental-control guides render real setting detail screens");
+if(!app.includes("function expandParentGuide(") || !app.includes("function parentRowsFor(") || !app.includes("guideParentMode")) fail("Parent guides are not using click-by-click highlighted navigation");
+else pass("Parent guides return to parent menus and highlight the next setting");
+if(!read("styles.css").includes("RC31 presentation readability pass")) fail("Main presentation readability pass is missing");
+else pass("Main presentation uses classroom-readable font sizing");
+if(!read("photo-demo.css").includes("RC31 photo presenter readability pass")) fail("Photo presenter readability pass is missing");
+else pass("Photo presenter uses classroom-readable font sizing");
 if(!app.includes("DEVICE DEFAULT / NORMAL BEHAVIOUR")) fail("Device default behaviour tile is missing");
 else pass("Device privacy slides show default behaviour and recommended setting");
 if(!app.includes("function platformRowsFor(")) fail("Social privacy walkthrough row renderer is missing");
