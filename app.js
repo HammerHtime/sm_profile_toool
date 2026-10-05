@@ -388,6 +388,39 @@
 
   const PARENT_DEVICE_SETTING_DETAILS = {
     ios:{
+      "Family":{kind:"menu",section:"Family",rows:[
+        ["Child account","Open the child or teen profile you want to manage"],
+        ["Family Checklist","Review recommended family setup items"],
+        ["Subscriptions","Review shared subscriptions"],
+        ["Purchase Sharing","Review family purchase sharing"],
+        ["Location Sharing","Review family location sharing"]
+      ],recommended:"Select the child or teen account before changing parental controls",defaultText:"Family settings are organized by family member and the services shared with them.",why:"Opening the correct child profile ensures the controls you change apply to the intended account."},
+      "Child":{kind:"menu",section:"Child account",rows:[
+        ["Screen Time","Open the child's Screen Time controls"],
+        ["Ask to Buy","Review app download and purchase approvals"],
+        ["Location Sharing","Review family location sharing"],
+        ["Purchases","Review purchases and subscriptions"],
+        ["Personal Information","Review account information"]
+      ],recommended:"Open Screen Time for device use, communication and content restrictions",defaultText:"The child profile is the hub for that family member's parental controls.",why:"This is where the parent's settings branch into Screen Time, purchases, location and other child-specific controls."},
+      "Screen Time":{kind:"menu",section:"Screen Time",rows:[
+        ["Apps & Websites","Review app and website activity"],
+        ["Time Allowances","Set app or category time limits"],
+        ["Screen Time Schedules","Set downtime and scheduled limits"],
+        ["Allowed Contacts","Review communication limits"],
+        ["Always Allowed","Choose apps and contacts that remain available"],
+        ["Content & Privacy Restrictions","Manage content, purchases and protected settings"],
+        ["Communication Safety","Review sensitive-content protections"]
+      ],recommended:"Review each section instead of treating Screen Time as one master switch",defaultText:"Screen Time is a hub. Individual limits and restrictions must be configured inside its sections.",why:"The important protections live inside the Screen Time sections, so the walkthrough should show the actual control pages rather than stop at the Screen Time menu."},
+      "Privacy & Security":{kind:"menu",section:"Privacy & Security",rows:[
+        ["Location Services","Review which apps can access location"],
+        ["Tracking","Review cross-app tracking requests"],
+        ["Contacts","Review address-book access"],
+        ["Photos","Review photo-library access"],
+        ["Camera","Review camera access"],
+        ["Microphone","Review microphone access"],
+        ["Local Network","Review local-network access"],
+        ["Safety Check","Review sharing and access"]
+      ],recommended:"Open each sensitive permission and review apps individually",defaultText:"Permissions are granted per app, so one Privacy & Security screen does not determine every app's access.",why:"A child may have allowed permissions in several apps at different times. Reviewing the actual permission pages catches those differences."},
       "Apps & Websites":{kind:"status",section:"Screen Time",status:"Review the child's app and website activity",recommended:"Use the activity view to identify the apps/categories that need limits",defaultText:"Screen Time records activity when enabled; limits are not created automatically for every app.",why:"This shows where the child's time is actually going before you set restrictions."},
       "Ask to Buy":{kind:"toggle",section:"Purchases",label:"Ask to Buy",value:"On",recommended:"On for children who should need approval for downloads/purchases",defaultText:"Ask to Buy availability depends on Family Sharing age/account setup.",why:"Ask to Buy requires the parent to approve eligible app downloads and purchases."},
       "Ask to Browse":{kind:"toggle",section:"Web content / Ask to Browse",label:"Require approval for new websites",value:"On",recommended:"On for younger children using restricted web access",defaultText:"Ask to Browse applies only when the relevant web restrictions are configured.",why:"It turns a blocked website into an approval request instead of forcing the child to find a workaround."},
@@ -406,6 +439,34 @@
       "Photos":{kind:"choices",section:"Photos permission",options:["None","Limited Access","Full Access"],recommended:"Limited Access where possible",defaultText:"Apps require permission before accessing the photo library.",why:"Limiting photo access prevents an app from seeing the child's entire image library."}
     },
     android:{
+      "Family Link":{kind:"menu",section:"Family Link",rows:[
+        ["Child profile","Open the supervised child account"],
+        ["Screen time","Review device time and schedules"],
+        ["Controls","Review content, Chrome, Search and account controls"],
+        ["Location","Review parent-visible device location"],
+        ["Highlights","Review high-level activity and recent changes"]
+      ],recommended:"Select the child profile first, then work through Screen time, Controls and Location",defaultText:"Family Link is a hub. The individual controls are inside the child's profile.",why:"The parent needs to be inside the correct child profile before the settings shown in the walkthrough can be changed."},
+      "Child profile":{kind:"menu",section:"Child profile",rows:[
+        ["Screen time","Daily limits, downtime and app limits"],
+        ["Controls","Google Play, Chrome, Search, YouTube and account settings"],
+        ["Location","Parent-visible device location"],
+        ["Highlights","High-level activity information"],
+        ["Devices","Review the child's supervised devices"]
+      ],recommended:"Open Screen time for usage limits or Controls for content and account restrictions",defaultText:"The child profile groups the controls by purpose rather than putting every setting on one page.",why:"Showing this page makes it clear which branch the parent must open next instead of presenting a generic list of labels."},
+      "Screen time":{kind:"menu",section:"Screen time",rows:[
+        ["Daily limit","Set the total daily device limit"],
+        ["Downtime","Schedule periods when the device is unavailable"],
+        ["App limits","Limit, block or allow unlimited time for individual apps"],
+        ["School time","Create a school-hours schedule where supported"],
+        ["Bonus time","Temporarily extend today's limit"]
+      ],recommended:"Set the total daily limit first, then add app-specific limits where needed",defaultText:"No custom family schedule or app limit exists until the parent creates it.",why:"The Screen time page is the working control screen. This is where the parent changes limits rather than merely reading a Screen time label."},
+      "Chrome":{kind:"menu",section:"Google Chrome",rows:[
+        ["Website controls","Choose the overall site-filtering level"],
+        ["Manage sites","Review approved and blocked websites"],
+        ["Try to block explicit sites","Filter many explicit websites"],
+        ["Only allow approved sites","Restrict browsing to approved websites"],
+        ["Blocked sites","Review sites the child cannot open"]
+      ],recommended:"Use the narrowest browsing level appropriate to the child's age and needs",defaultText:"Chrome filtering is configured by the parent for the supervised account.",why:"The website-control page shows the actual options that determine what the child can browse."},
       "Daily limit":{kind:"status",section:"Family Link → Screen time",status:"Set the daily device limit",recommended:"Choose a realistic school-day and weekend limit",defaultText:"No custom family daily limit exists until the parent sets one.",why:"A daily limit places an enforceable ceiling on total device time."},
       "Downtime":{kind:"status",section:"Family Link → Schedules",status:"Set bedtime / downtime schedule",recommended:"Cover sleep and school periods where the device should be unavailable",defaultText:"Family schedule settings depend on what the parent configures.",why:"Scheduled downtime is more predictable than asking the child to stop manually every evening."},
       "App limits":{kind:"status",section:"Family Link → App limits",status:"Choose an app and set Limit, Block or Unlimited time",recommended:"Set limits on high-use entertainment/social apps",defaultText:"Individual app limits are parent-configured.",why:"Per-app limits reduce one problematic app without disabling the entire phone."},
@@ -1624,22 +1685,29 @@ function setConsentState() {
   }
 
   function iosRowsFor(target) {
+    const ensureTarget = (rows) => {
+      const out = rows.slice();
+      if (target && target !== "EXPLAIN" && !out.includes(target)) {
+        out.splice(Math.min(2,out.length),0,target);
+      }
+      return out.slice(0,9);
+    };
     const screenTimeRows = ["Apps & Websites","Allowed Contacts","Always Allowed","Time Allowances","Screen Time Schedules","Content & Privacy Restrictions","Communication Safety"];
     const privacyRows = ["Location Services","Tracking","Contacts","Calendars","Photos","Bluetooth","Local Network","Microphone","Camera","Safety Check"];
 
-    if (target === "Family") return ["Airplane Mode","Wi-Fi","Bluetooth","Cellular","Notifications","Sounds & Haptics","Family","Screen Time","General","Privacy & Security"];
-    if (target === "Child") return ["Family Checklist","Subscriptions","Purchase Sharing","Location Sharing","Child","Parents / Guardians"];
-    if (target === "Screen Time") return ["Personal Information","Purchases","Subscriptions","Location Sharing","Screen Time"];
-    if (["Ask to Buy","Ask to Browse"].includes(target)) return ["Apps & Websites","Restrictions","Ask to Buy","Websites","Ask to Browse","Allowed","Blocked"];
+    if (target === "Family") return ensureTarget(["Airplane Mode","Wi-Fi","Bluetooth","Cellular","Notifications","Sounds & Haptics","Family","Screen Time","General","Privacy & Security"]);
+    if (target === "Child") return ensureTarget(["Family Checklist","Subscriptions","Purchase Sharing","Location Sharing","Child","Parents / Guardians"]);
+    if (target === "Screen Time") return ensureTarget(["Personal Information","Purchases","Subscriptions","Location Sharing","Screen Time"]);
+    if (["Ask to Buy","Ask to Browse"].includes(target)) return ensureTarget(["Apps & Websites","Restrictions","Ask to Buy","Websites","Ask to Browse","Allowed","Blocked"]);
     if (["iTunes & App Store Purchases","App Store, Media, Web & Games","Allow Changes to Settings"].includes(target)) {
-      return ["Content & Privacy Restrictions","iTunes & App Store Purchases","App Store, Media, Web & Games","Other Features","Allow Changes to Settings"];
+      return ensureTarget(["Content & Privacy Restrictions","iTunes & App Store Purchases","App Store, Media, Web & Games","Other Features","Allow Changes to Settings"]);
     }
-    if (screenTimeRows.includes(target)) return screenTimeRows;
-    if (target === "Privacy & Security") return ["General","Accessibility","Action Button","Camera","Control Centre","Apps","Privacy & Security"];
-    if (privacyRows.includes(target)) return privacyRows;
-    if (target === "Precise Location") return ["Never","Ask Next Time Or When I Share","While Using the App","Always","Precise Location"];
-    if (target === "Settings") return ["Messages","Camera","Photos","Find My","Clock","Weather","Music","Settings"];
-    return ["Family","Screen Time","Privacy & Security","Notifications","General","Apps"];
+    if (screenTimeRows.includes(target)) return ensureTarget(screenTimeRows);
+    if (target === "Privacy & Security") return ensureTarget(["General","Accessibility","Action Button","Camera","Control Centre","Apps","Privacy & Security"]);
+    if (privacyRows.includes(target)) return ensureTarget(privacyRows);
+    if (target === "Precise Location") return ensureTarget(["Never","Ask Next Time Or When I Share","While Using the App","Always","Precise Location"]);
+    if (target === "Settings") return ensureTarget(["Messages","Camera","Photos","Find My","Clock","Weather","Music","Settings"]);
+    return ensureTarget(["Family","Screen Time","Privacy & Security","Notifications","General","Apps"]);
   }
 
   function androidRowsFor(target) {
@@ -1686,7 +1754,7 @@ function setConsentState() {
 
   function phoneHeaderFor(target) {
     if (guidePlatform?.device === "ios") {
-      const screenTimeTargets = ["Apps & Websites","Allowed Contacts","Time Allowances","Screen Time Schedules","Content & Privacy Restrictions","Communication Safety"];
+      const screenTimeTargets = ["Apps & Websites","Ask to Buy","Ask to Browse","Allowed Contacts","Always Allowed","Time Allowances","Screen Time Schedules","Content & Privacy Restrictions","iTunes & App Store Purchases","App Store, Media, Web & Games","Allow Changes to Settings","Communication Safety"];
       const privacyTargets = ["Location Services","Tracking","Contacts","Calendars","Photos","Bluetooth","Local Network","Microphone","Camera","Precise Location","Safety Check"];
       if (screenTimeTargets.includes(target)) return "Screen Time";
       if (privacyTargets.includes(target)) return target === "Precise Location" ? "Location Services" : "Privacy & Security";
@@ -2007,6 +2075,18 @@ function setConsentState() {
         '</span>' +
       '</div>';
 
+    if (detail.kind === "menu") {
+      return '<div class="phoneSettingGroup phoneMenuSettings">' + (detail.rows||[]).map((row,index)=>{
+        const label=Array.isArray(row)?row[0]:row;
+        const meta=Array.isArray(row)?row[1]:"";
+        const emphasized=index===0;
+        return '<div class="phoneSettingMenuRow' + (emphasized ? ' emphasized' : '') + '">' +
+          '<span><strong>' + escapeHtml(label) + '</strong>' + (meta ? '<small>' + escapeHtml(meta) + '</small>' : '') + '</span>' +
+          '<span class="phoneChevron">›</span>' +
+        '</div>';
+      }).join("") + '</div>';
+    }
+
     if (detail.kind === "choices") {
       const chosen=(detail.options||[]).find(option=>recommended.includes(String(option).toLowerCase())) || detail.options?.[0];
       return '<div class="phoneSettingGroup">' + (detail.options||[]).map(option=>optionRow(option,option===chosen)).join("") + '</div>';
@@ -2039,7 +2119,10 @@ function setConsentState() {
       '</div>';
     }
     if (detail.kind === "status") {
-      return '<div class="phoneStatusCard"><span class="phoneStatusDot"></span><strong>' + escapeHtml(detail.status||"Review this setting") + '</strong><small>' + escapeHtml(detail.recommended||"") + '</small></div>';
+      return '<div class="phoneSettingGroup phoneStatusSettings">' +
+        '<div class="phoneStatusSettingPrimary"><span class="phoneStatusDot"></span><span><strong>' + escapeHtml(detail.section||"Setting") + '</strong><small>' + escapeHtml(detail.status||"Review this setting") + '</small></span><span class="phoneStatusCheck">✓</span></div>' +
+        '<div class="phoneSettingInfoRow"><strong>Recommended</strong><span>' + escapeHtml(detail.recommended||"Review this setting") + '</span></div>' +
+      '</div>';
     }
     return "";
   }
