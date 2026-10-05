@@ -1,0 +1,79 @@
+name: Real Public Profile QA
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/real-profile-qa.yml"
+
+jobs:
+  test-real-public-profiles:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Run three anonymized real-profile tests
+        env:
+          SITE_URL: https://sm-profile-tool.netlify.app
+        shell: bash
+        run: |
+          node <<'NODE'
+          const cases = [
+            {id:"A",firstName:"Ryan",lastName:"Reynolds",age:"49",city:"Vancouver, British Columbia",clues:"actor producer entrepreneur"},
+            {id:"B",firstName:"Gordon",lastName:"Ramsay",age:"59",city:"London, England",clues:"chef television personality"},
+            {id:"C",firstName:"Cristiano",lastName:"Ronaldo",age:"41",city:"Riyadh, Saudi Arabia",clues:"football player athlete"}
+          ];
+
+          const site = process.env.SITE_URL;
+          for (const t of cases) {
+            const res = await fetch(site + "/api/live-search", {
+              method:"POST",
+              headers:{"content-type":"application/json"},
+              body:JSON.stringify({
+                consent:true,
+                firstName:t.firstName,
+                lastName:t.lastName,
+                age:t.age,
+                city:t.city,
+                username:"",
+                clues:t.clues
+              })
+            });
+            const data = await res.json().catch(()=>({}));
+            if (!res.ok) throw new Error("Test "+t.id+" failed HTTP "+res.status+" "+JSON.stringify(data).slice(0,400));
+
+            const platformCounts = {};
+            for (const s of (data.publicSources || [])) {
+              const p = s.platform || s.domain || "Unknown";
+              platformCounts[p] = (platformCounts[p] || 0) + 1;
+            }
+            const topPlatforms = Object.entries(platformCounts)
+              .sort((a,b)=>b[1]-a[1])
+              .slice(0,12)
+              .map(([k,v])=>k+":"+v);
+
+            const intel = data.intelligence || {};
+            const summary = {
+              test:t.id,
+              score:data.score,
+              strong:data.searchHealth?.strongSources ?? null,
+              possible:data.searchHealth?.possibleSources ?? null,
+              accepted:data.searchHealth?.acceptedSources ?? null,
+              rejected:data.searchHealth?.identityRejected ?? null,
+              geographyRejected:data.searchHealth?.geographyRejected ?? null,
+              sourceTypes:(data.stats || []).find(x=>x.k==="source types")?.n ?? null,
+              uniqueDomains:(data.stats || []).find(x=>x.k==="unique domains")?.n ?? null,
+              topPlatforms,
+              accounts:(data.accounts || []).map(a=>({platform:a.platform,confidence:a.confidence})).slice(0,12),
+              signals:(data.signals || []).map(s=>s[1]).slice(0,8),
+              storyPoints:(intel.storyPoints || []).length,
+              timelineItems:(intel.timeline || []).length,
+              themes:(intel.themes || []).length,
+              locations:(intel.locations || []).length,
+              intelligenceMode:intel.mode || null,
+              overviewLength:(intel.overview || "").length,
+              searchPasses:data.searchHealth?.completed ?? null,
+              rawResults:data.searchHealth?.rawResults ?? null
+            };
+            console.log("ANON_PROFILE_TEST_RESULT "+JSON.stringify(summary));
+          }
+          NODE
