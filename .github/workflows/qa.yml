@@ -26,7 +26,7 @@ jobs:
     timeout-minutes: 8
     env:
       SITE_URL: https://sm-profile-tool.netlify.app
-      RELEASE_MARKER: public-footprint-rc2-smoke-v33
+      RELEASE_MARKER: public-footprint-rc2-smoke-v34
     steps:
       - name: Wait for this release to reach Netlify
         shell: bash
@@ -63,6 +63,7 @@ jobs:
           if (!data.blobs?.ok) throw new Error("Netlify Blobs round-trip is not healthy");
           if (!data.liveSearchConfigured) throw new Error("No live search provider is visible to production functions");
           if (!data.serpApiConfigured && !data.braveSearchConfigured) throw new Error("Neither SerpApi nor Brave is configured");
+          if (data.serpApiConfigured && data.serpApiValid === false) throw new Error("SERPAPI_API_KEY is present but SerpApi rejected it: " + (data.serpApiAccount?.error || "invalid credential"));
           if (!data.openAIConfigured) throw new Error("OPENAI_API_KEY is not visible to production functions");
           if (!data.googleVisionConfigured) throw new Error("GOOGLE_VISION_API_KEY is not visible to production functions");
           if (!data.googleGeocodingConfigured) throw new Error("GOOGLE_GEOCODING_API_KEY is not visible to production functions");
