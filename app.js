@@ -386,6 +386,79 @@
     return rows.slice(0,7);
   }
 
+  const PARENT_DEVICE_SETTING_DETAILS = {
+    ios:{
+      "Apps & Websites":{kind:"status",section:"Screen Time",status:"Review the child's app and website activity",recommended:"Use the activity view to identify the apps/categories that need limits",defaultText:"Screen Time records activity when enabled; limits are not created automatically for every app.",why:"This shows where the child's time is actually going before you set restrictions."},
+      "Ask to Buy":{kind:"toggle",section:"Purchases",label:"Ask to Buy",value:"On",recommended:"On for children who should need approval for downloads/purchases",defaultText:"Ask to Buy availability depends on Family Sharing age/account setup.",why:"Ask to Buy requires the parent to approve eligible app downloads and purchases."},
+      "Ask to Browse":{kind:"toggle",section:"Web content / Ask to Browse",label:"Require approval for new websites",value:"On",recommended:"On for younger children using restricted web access",defaultText:"Ask to Browse applies only when the relevant web restrictions are configured.",why:"It turns a blocked website into an approval request instead of forcing the child to find a workaround."},
+      "Allowed Contacts":{kind:"choices",section:"Communication Limits",options:["Everyone","Contacts Only","Contacts & Groups","Specific approved contacts"],recommended:"Contacts Only / approved contacts for younger children",defaultText:"Communication limits are not automatically customized for each family.",why:"This limits who the child may contact through supported Apple communication apps during Screen Time periods."},
+      "Always Allowed":{kind:"status",section:"Always Allowed",status:"Choose essential apps and contacts",recommended:"Keep only communication, school and safety essentials permanently available",defaultText:"The parent chooses additional Always Allowed apps.",why:"Always Allowed prevents important communication or safety apps from being blocked by broader time limits."},
+      "Time Allowances":{kind:"status",section:"App Limits",status:"Set daily time by app or category",recommended:"Set specific limits for entertainment/social categories",defaultText:"No custom app/category limit exists until the parent creates one.",why:"Category limits target high-use apps without blocking school or communication tools."},
+      "Screen Time Schedules":{kind:"status",section:"Downtime",status:"Set school, evening and bedtime periods",recommended:"Match schedules to the child's real routine",defaultText:"Custom schedules must be configured by the parent.",why:"Schedules make limits predictable and reduce repeated negotiation."},
+      "Content & Privacy Restrictions":{kind:"toggle",section:"Content & Privacy Restrictions",label:"Content & Privacy Restrictions",value:"On",recommended:"On when using parental restrictions",defaultText:"Restrictions must be enabled before sub-settings can be enforced.",why:"This is the master control for many purchase, content and privacy restrictions."},
+      "iTunes & App Store Purchases":{kind:"choices",section:"App Store purchases",options:["Allow","Don't Allow","Require Password / Approval"],recommended:"Require approval/password",defaultText:"Purchase restrictions depend on the family/account configuration.",why:"These controls can prevent unapproved installs, purchases or deletion/reinstallation used to bypass rules."},
+      "App Store, Media, Web & Games":{kind:"status",section:"Content restrictions",status:"Set app age ratings, web content and media/game limits",recommended:"Match ratings to the child's age and maturity",defaultText:"Age/content restrictions are configurable by the parent.",why:"Age ratings and web restrictions reduce access to content outside the family's intended range."},
+      "Allow Changes to Settings":{kind:"choices",section:"Allow Changes",options:["Allow changes","Don't Allow changes"],recommended:"Don't Allow changes for protected privacy/account settings",defaultText:"Change permissions must be configured for each protected setting.",why:"A restriction has little value if the child can change the underlying account, contacts, location or privacy setting."},
+      "Communication Safety":{kind:"toggle",section:"Communication Safety",label:"Communication Safety",value:"On",recommended:"On for child/teen accounts",defaultText:"Availability/default depends on child account and OS version.",why:"On-device detection can warn and blur potentially sensitive images before the child views or sends them."},
+      "Location Services":{kind:"status",section:"Child device Location Services",status:"Review each app's location permission",recommended:"Use While Using or Never for most apps",defaultText:"Apps need permission before they can access location.",why:"Reviewing location at the child-device level catches apps not covered by an individual app walkthrough."},
+      "Precise Location":{kind:"toggle",section:"App location permission",label:"Precise Location",value:"Off",recommended:"Off unless exact position is genuinely needed",defaultText:"Precise Location is controlled per app.",why:"Approximate location is enough for many apps and exposes less exact location data."},
+      "Contacts":{kind:"status",section:"Contacts permission",status:"Review every app with Contacts access",recommended:"Remove access from apps that do not genuinely need the address book",defaultText:"Apps require permission before accessing contacts.",why:"A child's address book can expose friends' names, phone numbers and email addresses to apps."},
+      "Photos":{kind:"choices",section:"Photos permission",options:["None","Limited Access","Full Access"],recommended:"Limited Access where possible",defaultText:"Apps require permission before accessing the photo library.",why:"Limiting photo access prevents an app from seeing the child's entire image library."}
+    },
+    android:{
+      "Daily limit":{kind:"status",section:"Family Link → Screen time",status:"Set the daily device limit",recommended:"Choose a realistic school-day and weekend limit",defaultText:"No custom family daily limit exists until the parent sets one.",why:"A daily limit places an enforceable ceiling on total device time."},
+      "Downtime":{kind:"status",section:"Family Link → Schedules",status:"Set bedtime / downtime schedule",recommended:"Cover sleep and school periods where the device should be unavailable",defaultText:"Family schedule settings depend on what the parent configures.",why:"Scheduled downtime is more predictable than asking the child to stop manually every evening."},
+      "App limits":{kind:"status",section:"Family Link → App limits",status:"Choose an app and set Limit, Block or Unlimited time",recommended:"Set limits on high-use entertainment/social apps",defaultText:"Individual app limits are parent-configured.",why:"Per-app limits reduce one problematic app without disabling the entire phone."},
+      "Google Play":{kind:"status",section:"Family Link → Controls → Google Play",status:"Review content restrictions and approvals",recommended:"Set ratings and approvals appropriate to the child's age",defaultText:"Google Play supervision depends on the child's Family Link configuration.",why:"This is the parent hub for app/content restrictions in Google Play."},
+      "App approvals":{kind:"choices",section:"Purchase & download approvals",options:["All content","Paid content only","In-app purchases only","No approval"],recommended:"All content for younger children",defaultText:"Approval behaviour is selected by the family manager.",why:"Download approval prevents the child from adding new apps without the parent seeing the request."},
+      "Purchases":{kind:"choices",section:"Purchase approvals",options:["All purchases","In-app purchases","Paid content","No approval"],recommended:"Require approval for purchases and in-app spending",defaultText:"Purchase approvals are configurable by the family manager.",why:"Purchase approval reduces surprise charges and impulse in-app spending."},
+      "Websites":{kind:"choices",section:"Chrome site controls",options:["Allow all sites","Try to block explicit sites","Only allow approved sites"],recommended:"Only approved sites for younger children; explicit-site filtering for older teens where appropriate",defaultText:"Chrome web filtering is selected by the parent.",why:"Website controls determine whether the child can freely browse beyond known sites."},
+      "SafeSearch":{kind:"toggle",section:"Google Search",label:"SafeSearch",value:"On",recommended:"On for supervised child accounts",defaultText:"SafeSearch protections apply to supervised accounts but should still be reviewed.",why:"SafeSearch filters many explicit results from Google Search."},
+      "YouTube":{kind:"status",section:"YouTube controls",status:"Choose supervised YouTube / YouTube Kids content experience",recommended:"Use the narrowest content level appropriate to the child's age",defaultText:"YouTube experience depends on the supervised account configuration.",why:"The YouTube content setting determines the range of videos the child may discover and watch."},
+      "Contacts":{kind:"status",section:"Contacts, calls & text",status:"Review parent-managed contacts and allowed communication",recommended:"Keep the approved contact list current",defaultText:"Availability varies by supervised device/app.",why:"Parent-managed contacts can reduce communication with unknown numbers on supported experiences."},
+      "Device location":{kind:"toggle",section:"Family Link → Location",label:"See your child's location",value:"On",recommended:"Use only when the family wants parent-visible device location",defaultText:"Family Link location requires supported devices and location sharing to be enabled.",why:"This lets a parent locate the child's supported Android device, which is different from publicly sharing the child's location."},
+      "Precise location":{kind:"status",section:"Location settings",status:"Review Location Accuracy and per-app location access",recommended:"Use approximate/while-in-use access where exact location is not needed",defaultText:"Precise location depends on the device and per-app permissions.",why:"Reducing precise location limits how accurately individual apps can determine the child's position."},
+      "App permissions":{kind:"status",section:"App permissions",status:"Review Location, Camera, Microphone, Contacts, Photos and videos",recommended:"Allow only the permissions each app genuinely needs",defaultText:"Apps request permissions individually.",why:"Family Link permission review gives the parent a single place to catch over-permissioned apps."},
+      "Unknown apps":{kind:"toggle",section:"Install unknown apps",label:"Allow from this source",value:"Off",recommended:"Off",defaultText:"Installing from unknown sources is restricted unless explicitly allowed for a source.",why:"Keeping sideloading off reduces installation of apps outside the normal store/approval path."},
+      "Account supervision":{kind:"status",section:"Account settings → Privacy",status:"Review Google activity and account privacy settings",recommended:"Keep only the activity the family wants saved",defaultText:"Google activity settings depend on the supervised account.",why:"Account activity settings influence what Google stores and uses across services."},
+      "Parent alerts":{kind:"toggles",section:"Family Link notifications",items:[["App requests","On"],["Website requests","On"],["Activity changes","On"],["Location changes","On where useful"]],recommended:"Keep approval/request alerts on",defaultText:"Notification categories can be changed by the parent.",why:"Parent alerts are useful only if the parent receives the requests the child is waiting on."}
+    }
+  };
+
+  function parentDeviceSettingDetailFor(device,target){
+    return PARENT_DEVICE_SETTING_DETAILS[device]?.[target] || null;
+  }
+
+  function parentDefaultSettingFor(detail){
+    return detail?.defaultText || "Default varies by child age, account type, app version and supervision state.";
+  }
+
+  function expandParentGuide(p,source){
+    const base=source.filter(step=>step[2]!=="EXPLAIN").map(step=>step.slice());
+    const expanded=[];
+    let previousWasDetail=false;
+    for(const step of base){
+      const target=String(step[2]||"");
+      const detail=p.device ? parentDeviceSettingDetailFor(p.device,target) : parentSettingDetailFor(p.name,target);
+      if(detail){
+        const menu=p.device ? phoneHeaderFor(target) : (p.name+" parent controls");
+        expanded.push([
+          previousWasDetail ? "Go back, then tap " + step[0] : "Tap " + step[0],
+          previousWasDetail
+            ? "Tap Back until you return to " + menu + ". Then tap " + step[0] + "."
+            : "From " + menu + ", tap " + step[0] + ".",
+          "NAV:" + target
+        ]);
+        expanded.push(step);
+        previousWasDetail=true;
+      }else{
+        expanded.push(step);
+        previousWasDetail=false;
+      }
+    }
+    return expanded;
+  }
+
   const iosPrivacy = [
     ["Open Settings","Open the Settings app on the iPhone.","Settings"],
     ["Open Privacy & Security","Scroll down and tap Privacy & Security.","Privacy & Security"],
