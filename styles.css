@@ -2704,3 +2704,131 @@ body.privacyGuideDirect .directDevicePrivacyGrid .platformCard{
   .reportDeck .accountMatchesGrid,
   .reportDeck .sourceCoverageGrid{grid-template-columns:1fr 1fr}
 }
+
+
+/* RC32 readability + parental-control walkthrough polish */
+:root{
+  --min-micro: .74rem;
+}
+
+/* General small-text floor */
+.fineprint,.privacyNote{font-size:.9rem}
+.stepPill,.privacyChip,.badge{font-size:.78rem}
+.coverageNumbers span{font-size:.8rem}
+.activityHero span{font-size:.8rem}
+.platformDesc{font-size:.84rem;line-height:1.48}
+.platformStatus{font-size:.76rem;line-height:1.35}
+.parentShield small{font-size:.76rem;line-height:1.35}
+.parentAccuracyNote{font-size:.88rem;line-height:1.6}
+
+/* Sources / report page readability */
+.sourceChip{font-size:.86rem;line-height:1.4}
+.publicSourcePlatform{font-size:.82rem}
+.matchConfidence{font-size:.74rem}
+.publicSourceCard>strong{font-size:1.05rem}
+.publicSourceCard p{font-size:.9rem;line-height:1.58}
+.publicSourceMeta{font-size:.78rem;line-height:1.4}
+.sourceGroupCount{font-size:.72rem}
+.sourceGroupStats{font-size:.76rem;line-height:1.35}
+.publicSourceDetails summary{font-size:.78rem}
+.publicSourceLink b{font-size:.84rem}
+.publicSourceLink small{font-size:.76rem;line-height:1.35}
+.publicSourceLink em{font-size:.7rem}
+.publicSourceOpen{font-size:.74rem}
+
+/* Phone walkthrough readability */
+.phoneStatus{font-size:.74rem}
+.phoneCurrentScreen{font-size:.8rem;line-height:1.35}
+.phoneRow{font-size:.86rem;line-height:1.3}
+.phoneRow.target:after{font-size:.62rem;padding:4px 8px}
+.settingSuccessKicker{font-size:.7rem}
+.settingSuccess span{font-size:.8rem;line-height:1.5}
+.phoneOptionCopy strong,
+.phoneSettingToggleRow strong{font-size:.82rem;line-height:1.28}
+.phoneOptionCopy small,
+.phoneSettingToggleRow small{font-size:.7rem;line-height:1.38}
+.phoneStatusCard strong{font-size:.84rem}
+.phoneStatusCard small{font-size:.72rem;line-height:1.38}
+.phoneDefaultSetting strong,
+.phoneRecommendation strong{font-size:.64rem;line-height:1.25}
+.phoneDefaultSetting span,
+.phoneRecommendation span{font-size:.74rem;line-height:1.4}
+
+/* Real menu-style setting pages */
+.phoneMenuSettings{display:grid;gap:7px}
+.phoneSettingMenuRow{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  min-height:50px;
+  padding:9px 11px;
+  border:1px solid #e0e7ec;
+  border-radius:12px;
+  background:#fff;
+  color:#26313b
+}
+.phoneSettingMenuRow>span:first-child{min-width:0}
+.phoneSettingMenuRow strong{display:block;font-size:.8rem;line-height:1.2}
+.phoneSettingMenuRow small{display:block;margin-top:3px;color:#6c7b87;font-size:.66rem;line-height:1.3}
+.phoneSettingMenuRow.emphasized{
+  border-color:color-mix(in srgb,var(--brand) 48%,#d8e3ea);
+  background:color-mix(in srgb,var(--brand) 8%,white)
+}
+.phoneStatusSettings{display:grid;gap:8px}
+.phoneStatusSettingPrimary{
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr) auto;
+  gap:9px;
+  align-items:center;
+  padding:12px;
+  border-radius:13px;
+  background:#fff;
+  border:1px solid #dfe7ec;
+  color:#26313b
+}
+.phoneStatusSettingPrimary strong{display:block;font-size:.82rem}
+.phoneStatusSettingPrimary small{display:block;margin-top:3px;font-size:.68rem;line-height:1.35;color:#6b7d89}
+.phoneStatusCheck{
+  width:24px;height:24px;border-radius:50%;
+  display:grid;place-items:center;
+  background:color-mix(in srgb,var(--brand) 16%,white);
+  color:#17303a;font-size:.74rem;font-weight:950
+}
+.phoneSettingInfoRow{
+  padding:11px 12px;
+  border-radius:12px;
+  background:#f7fafc;
+  border:1px solid #e1e8ed;
+  color:#26313b
+}
+.phoneSettingInfoRow strong{display:block;font-size:.68rem;text-transform:uppercase;letter-spacing:.06em;color:#61717e}
+.phoneSettingInfoRow span{display:block;margin-top:4px;font-size:.74rem;line-height:1.38}
+
+/* Presentation deck: remove remaining tiny text */
+.reportDeck .reportStageIntro small{font-size:.84rem}
+.reportDeck .eyebrow{font-size:.8rem}
+.reportDeck .privacyChip,
+.reportDeck .badge{font-size:.76rem}
+.reportDeck .findingRow .badge{font-size:.72rem}
+.reportDeck .findingRow .provenanceMini{font-size:.7rem;line-height:1.3}
+.reportDeck .sourceChip{font-size:.82rem}
+.reportDeck .publicSourcePlatform{font-size:.82rem}
+.reportDeck .matchConfidence,
+.reportDeck .sourceGroupCount{font-size:.72rem}
+.reportDeck .publicSourceMeta,
+.reportDeck .sourceGroupStats,
+.reportDeck .publicSourceDetails summary{font-size:.76rem}
+.reportDeck .publicSourceLink small{font-size:.74rem}
+.reportDeck .publicSourceLink em{font-size:.7rem}
+.reportDeck .platformDesc{font-size:.8rem}
+.reportDeck .platformStatus{font-size:.72rem}
+.reportDeckProgress span{font-size:.76rem}
+.reportStageRail button{font-size:.68rem}
+
+/* Keep density under control on smaller screens */
+@media(max-width:760px){
+  .publicSourceCard p{font-size:.86rem}
+  .sourceChip{font-size:.82rem}
+  .phoneRow{font-size:.82rem}
+}
