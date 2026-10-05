@@ -1347,11 +1347,12 @@ function setConsentState() {
   let currentGuide = null;
   let guideIndex = 0;
   let guidePlatform = null;
+  let guideParentMode = false;
 
   function guideFor(p, parentMode) {
-    if (p.device === "ios") return parentMode ? iosParent : expandDevicePrivacyGuide(p,iosPrivacy);
-    if (p.device === "android") return parentMode ? androidParent : expandDevicePrivacyGuide(p,androidPrivacy);
-    if (parentMode) return parentGuides[p.name] || fallbackGuide(p.name);
+    if (p.device === "ios") return parentMode ? expandParentGuide(p,iosParent) : expandDevicePrivacyGuide(p,iosPrivacy);
+    if (p.device === "android") return parentMode ? expandParentGuide(p,androidParent) : expandDevicePrivacyGuide(p,androidPrivacy);
+    if (parentMode) return expandParentGuide(p,parentGuides[p.name] || fallbackGuide(p.name));
 
     // Social-app walkthroughs are expanded into true click-by-click navigation.
     // Before every actual privacy-control screen, show the parent menu again with
@@ -1398,6 +1399,7 @@ function setConsentState() {
 
   function openGuideDirect(p, parentMode, startIndex = 0) {
     guidePlatform = p;
+    guideParentMode = !!parentMode;
     currentGuide = guideFor(p, parentMode);
     guideIndex = Math.max(0, Math.min(startIndex, currentGuide.length - 1));
     $("coachSlide").innerHTML = "";
@@ -1617,6 +1619,7 @@ function setConsentState() {
     $("coachModal").classList.add("hidden");
     document.body.style.overflow = "";
     currentGuide = null;
+    guideParentMode = false;
     $("coachSlide").innerHTML = "";
   }
 
