@@ -2,6 +2,7 @@ import { synthesizePublicProfile } from "./profile-intelligence.mjs";
 import { googleGeocodingConfigured, normalizeBroadPlace, normalizeStoryLocations } from "./google-geocoding.mjs";
 const BRAVE_ENDPOINT = "https://api.search.brave.com/res/v1/web/search";
 const BRAVE_IMAGE_ENDPOINT = "https://api.search.brave.com/res/v1/images/search";
+const SERPAPI_ENDPOINT = "https://serpapi.com/search.json";
 
 function normalizeBraveApiKey(value = "") {
   let candidate = String(value || "").trim();
@@ -27,6 +28,20 @@ function braveKeySource() {
   if (process.env.BRAVE_API_KEY) return "BRAVE_API_KEY";
   if (process.env.BRAVE_SEARCH_KEY) return "BRAVE_SEARCH_KEY";
   return null;
+}
+
+function normalizeSerpApiKey(value = "") {
+  let candidate = String(value || "").trim();
+  if (!candidate) return "";
+  const assignment = candidate.match(/^(?:SERPAPI_API_KEY|SERPAPI_KEY)\s*=\s*(.+)$/i);
+  if (assignment) candidate = assignment[1].trim();
+  const quoted = (candidate.startsWith('"') && candidate.endsWith('"')) || (candidate.startsWith("'") && candidate.endsWith("'"));
+  if (quoted && candidate.length >= 2) candidate = candidate.slice(1, -1).trim();
+  return candidate.replace(/^Bearer\s+/i, "").trim();
+}
+
+function getSerpApiKey() {
+  return normalizeSerpApiKey(process.env.SERPAPI_API_KEY || process.env.SERPAPI_KEY || "");
 }
 
 const clean = (v, max = 120) =>
@@ -485,19 +500,90 @@ function presentationThemes(items, person) {
 }
 
 function braveThumbnail(result = {}) {
-  const candidates = [result.thumbnail?.src,result.profile?.img,result.meta_url?.favicon];
-  return candidates.find(url=>typeof url==="string" && /^https:\/\/imgs\.search\.brave\.com\//i.test(url)) || "";
+  const candidates = [result.thumbnail?.src,result.thumbnail,result.profile?.img,result.meta_url?.favicon];
+  return candidates.find(url=>typeof url==="string" && /^https:\/\//i.test(url)) || "";
 }
 
-async function searchImages(apiKey, q) {
-  const data = await braveJson(apiKey, BRAVE_IMAGE_ENDPOINT, {
-    q,
-    country:"CA",
-    search_lang:"en",
-    count:16,
-    safesearch:"strict"
-  });
-  return Array.isArray(data?.results) ? data.results : [];
+async function serpApiJson(apiKey, params, maxRetries = 1) {
+  const url = new URL(SERPAPI_ENDPOINT);
+  for (const [key,value] of Object.entries(params || {})) {
+    if (value !== undefined && value !== null && value !== "") url.searchParams.set(key,String(value));
+  }
+  url.searchParams.set("api_key",apiKey);
+
+  for (let attempt=0; attempt<=maxRetries; attempt++) {
+    const response = await fetch(url,{
+      method:"GET",
+      headers:{"accept":"application/json"},
+      signal:AbortSignal.timeout(15000)
+    });
+    const data = await response.json().catch(()=>({}));
+    if (response.ok && !data?.error) return data;
+
+    const detail = data?.error || ("SerpApi returned HTTP " + response.status);
+    if (response.status === 429 && attempt < maxRetries) {
+      await providerWait(900);
+      continue;
+    }
+    const error = new Error(detail);
+    error.status = response.status;
+    error.code = "SERPAPI";
+    throw error;
+  }
+  throw new Error("SerpApi retry limit reached");
+}
+
+function normalizeSerpOrganic(result = {}) {
+  return {
+    url:result.link || "",
+    title:result.title || "",
+    description:result.snippet || result.snippet_highlighted_words?.join(" ") || "",
+    age:result.date || "",
+    page_age:result.date || "",
+    thumbnail:result.thumbnail || ""
+  };
+}
+
+function normalizeSerpImage(result = {}) {
+  return {
+    url:result.link || result.original || "",
+    title:result.title || "",
+    source:result.source || "",
+    thumbnail:result.thumbnail || result.original || ""
+  };
+}
+
+async function searchImages(providerState, q, location = "") {
+  if (providerState.braveKey && !providerState.braveDisabled) {
+    try {
+      const data = await braveJson(providerState.braveKey, BRAVE_IMAGE_ENDPOINT, {
+        q,
+        country:"CA",
+        search_lang:"en",
+        count:16,
+        safesearch:"strict"
+      });
+      providerState.used.add("Brave Search API");
+      return Array.isArray(data?.results) ? data.results : [];
+    } catch (error) {
+      providerState.errors.push("Brave images: " + (error?.message || "failed"));
+      if ([401,402,403].includes(Number(error?.status))) providerState.braveDisabled = true;
+    }
+  }
+
+  if (providerState.serpKey) {
+    const data = await serpApiJson(providerState.serpKey,{
+      engine:"google_images",
+      q,
+      location:location || undefined,
+      hl:"en",
+      safe:"active"
+    });
+    providerState.used.add("SerpApi Google");
+    return (data?.images_results || []).slice(0,20).map(normalizeSerpImage);
+  }
+
+  return [];
 }
 
 function imageMatchesPerson(result, person) {
@@ -567,33 +653,66 @@ async function braveJson(apiKey, endpoint, params, maxRetries = 2) {
   throw new Error("Search provider retry limit reached");
 }
 
-async function searchWebPage(apiKey, q, offset = 0) {
-  const data = await braveJson(apiKey, BRAVE_ENDPOINT, {
-    q,
-    country:"CA",
-    search_lang:"en",
-    count:20,
-    offset
-  });
-  return {
-    results:data?.web?.results || [],
-    moreResultsAvailable:!!data?.query?.more_results_available
-  };
+async function searchWebPage(providerState, q, offset = 0, location = "") {
+  if (providerState.braveKey && !providerState.braveDisabled) {
+    try {
+      const data = await braveJson(providerState.braveKey, BRAVE_ENDPOINT, {
+        q,
+        country:"CA",
+        search_lang:"en",
+        count:20,
+        offset
+      });
+      providerState.used.add("Brave Search API");
+      return {
+        results:data?.web?.results || [],
+        moreResultsAvailable:!!data?.query?.more_results_available,
+        provider:"Brave Search API"
+      };
+    } catch (error) {
+      providerState.errors.push("Brave: " + (error?.message || "failed"));
+      if ([401,402,403].includes(Number(error?.status))) providerState.braveDisabled = true;
+    }
+  }
+
+  if (providerState.serpKey) {
+    const start=Math.max(0,Number(offset)||0) * 10;
+    const data=await serpApiJson(providerState.serpKey,{
+      engine:"google",
+      q,
+      location:location || undefined,
+      hl:"en",
+      num:10,
+      start
+    });
+    providerState.used.add("SerpApi Google");
+    const results=(data?.organic_results || []).map(normalizeSerpOrganic);
+    return {
+      results,
+      moreResultsAvailable:!!data?.serpapi_pagination?.next || results.length >= 10,
+      provider:"SerpApi Google"
+    };
+  }
+
+  const error = new Error("No usable public search provider is available.");
+  error.status = 503;
+  throw error;
 }
 
-async function searchWeb(apiKey, q, offset = 0) {
-  return (await searchWebPage(apiKey,q,offset)).results;
+async function searchWeb(providerState, q, offset = 0, location = "") {
+  return (await searchWebPage(providerState,q,offset,location)).results;
 }
 
 export default async (req) => {
-  const apiKey = getBraveApiKey();
+  const braveApiKey = getBraveApiKey();
+  const serpApiKey = getSerpApiKey();
 
   if (req.method !== "POST") return respond({ error:"POST required" }, 405);
 
-  if (!apiKey) {
+  if (!braveApiKey && !serpApiKey) {
     return respond({
       error:"Live public search is not configured.",
-      detail:"Add BRAVE_SEARCH_API_KEY to the Netlify site's environment variables."
+      detail:"Add SERPAPI_API_KEY or BRAVE_SEARCH_API_KEY to the Netlify site's environment variables."
     }, 503);
   }
 
@@ -645,6 +764,13 @@ export default async (req) => {
   if (username) queries.push({ group:"Username", q:'"' + username.replaceAll('"',"") + '"' });
 
   const person = { fullName, city, username, ageContext, searchClues };
+  const providerState = {
+    braveKey:braveApiKey,
+    serpKey:serpApiKey,
+    braveDisabled:false,
+    used:new Set(),
+    errors:[]
+  };
   const byUrl = new Map();
   let geographyRejected = 0;
   let identityRejected = 0;
@@ -653,18 +779,19 @@ export default async (req) => {
   const queryBatches = [];
   for (const query of queries) {
     try {
-      const firstPage = await searchWebPage(apiKey, query.q, 0);
-      queryBatches.push({ query, results:firstPage.results, error:null, offset:0 });
+      const firstPage = await searchWebPage(providerState, query.q, 0, city);
+      queryBatches.push({ query, results:firstPage.results, error:null, offset:0, provider:firstPage.provider });
 
       if (query.deep && firstPage.moreResultsAvailable) {
         await providerWait(180);
         try {
-          const secondPage=await searchWebPage(apiKey,query.q,1);
+          const secondPage=await searchWebPage(providerState,query.q,1,city);
           queryBatches.push({
             query:{...query,group:query.group+" · page 2"},
             results:secondPage.results,
             error:null,
-            offset:1
+            offset:1,
+            provider:secondPage.provider
           });
         } catch (error) {
           console.error("live-search page 2 failed", query.group, error);
@@ -739,6 +866,7 @@ export default async (req) => {
         confidence:match.confidence,
         reasons:match.reasons,
         queryGroup:query.group,
+        provider:batch.provider || "",
         handleMasked:maskedHandle(raw.url,platform),
         title:safeExcerpt(title.text,120),
         snippet:safeExcerpt(snippet.text,150),
@@ -771,7 +899,7 @@ export default async (req) => {
     const q=accountExpansionQuery(seed,person);
     if (!q) continue;
     try {
-      const expanded=await searchWeb(apiKey,q);
+      const expanded=await searchWeb(providerState,q,0,city);
       accountExpansionPasses += 1;
       for (const raw of expanded) {
         if (!raw?.url || byUrl.has(raw.url) || !accountExpansionMatches(raw,seed,person)) continue;
@@ -858,7 +986,7 @@ export default async (req) => {
       expandedClues.slice(0,5).map(clue=>'"'+clue.replaceAll('"',"")+'"').join(" "),
       username && '"' + username.replaceAll('"',"") + '"'
     ].filter(Boolean).join(" ");
-    const imageResults = await searchImages(apiKey,imageQuery);
+    const imageResults = await searchImages(providerState,imageQuery,city);
     imageSearch.completed = true;
     imageSearch.results = imageResults
       .filter(result=>imageMatchesPerson(result,person))
@@ -969,7 +1097,9 @@ export default async (req) => {
       imageSearchCompleted:imageSearch.completed,
       imageSearchError:imageSearch.error
     },
-    provider:"Brave Search API"
+    provider:[...providerState.used].join(" + ") || "Unavailable",
+    providersUsed:[...providerState.used],
+    providerErrors:[...new Set(providerState.errors)].slice(0,6)
   });
 };
 
