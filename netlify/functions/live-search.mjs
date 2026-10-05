@@ -100,6 +100,27 @@ function platformFor(url = "") {
   return host || "Public web";
 }
 
+function isProfileIdentityUrl(url = "", platform = "") {
+  try {
+    const u=new URL(url);
+    const parts=u.pathname.split("/").filter(Boolean);
+    if (!platform) platform=platformFor(url);
+
+    if (platform==="LinkedIn") return parts[0]==="in" && !!parts[1];
+    if (platform==="Facebook") {
+      const first=(parts[0]||"").toLowerCase();
+      if (!first || first.includes(".php")) return false;
+      return !/^(posts?|share|watch|groups?|pages?|photos?|videos?|reels?|events?|marketplace|gaming)$/.test(first);
+    }
+    if (platform==="Instagram") return !!parts[0] && !/^(p|reel|reels|stories|explore)$/.test(parts[0]);
+    if (platform==="TikTok" || platform==="Threads") return !!parts[0]?.startsWith("@");
+    if (platform==="Reddit") return ["user","u"].includes(parts[0]) && !!parts[1];
+    if (platform==="YouTube") return !!parts[0]?.startsWith("@") || ["channel","c","user"].includes(parts[0]);
+    if (platform==="X / Twitter" || platform==="GitHub") return !!parts[0] && !/^(home|explore|search|i|intent|settings)$/.test(parts[0]);
+  } catch {}
+  return false;
+}
+
 function accountTokenFor(url = "", platform = "") {
   try {
     const u=new URL(url);
@@ -116,27 +137,39 @@ function accountTokenFor(url = "", platform = "") {
   return "";
 }
 
-function accountExpansionQuery(source) {
+function accountExpansionQuery(source, person = {}) {
   const token=accountTokenFor(source?.url||"",source?.platform||"");
-  if (!token || token.length < 4) return "";
-  const quoted='"'+token.replaceAll('"',"")+'"';
-  if (source.platform==="LinkedIn") return "site:linkedin.com/posts " + quoted;
-  if (source.platform==="Facebook") return "site:facebook.com " + quoted + " (posts OR photos OR videos)";
-  if (source.platform==="Instagram") return "site:instagram.com " + quoted;
-  if (source.platform==="X / Twitter") return "(site:x.com OR site:twitter.com) " + quoted;
-  if (source.platform==="TikTok") return "site:tiktok.com " + quoted;
-  if (source.platform==="Threads") return "site:threads.net " + quoted;
-  if (source.platform==="YouTube") return "site:youtube.com " + quoted;
-  if (source.platform==="Reddit") return "site:reddit.com " + quoted;
+  const fullName=clean(person.fullName||"",120);
+  if (!token && !fullName) return "";
+
+  const identity=fullName ? ('"'+fullName.replaceAll('"',"")+'"') : ('"'+token.replaceAll('"',"")+'"');
+  const supportTerms=[
+    clean(person.city||"",80),
+    ...(person.searchClues||[]).slice(0,3)
+  ].filter(Boolean).map(value=>'"'+String(value).replaceAll('"',"")+'"');
+  const support=supportTerms.length ? " ("+supportTerms.join(" OR ")+")" : "";
+  const tokenPart=token && fullName ? (' "'+token.replaceAll('"',"")+'"') : "";
+
+  if (source.platform==="LinkedIn") return "site:linkedin.com/posts " + identity + support + tokenPart;
+  if (source.platform==="Facebook") return "site:facebook.com " + identity + support + tokenPart + " (posts OR photos OR videos)";
+  if (source.platform==="Instagram") return "site:instagram.com " + identity + support + tokenPart;
+  if (source.platform==="X / Twitter") return "(site:x.com OR site:twitter.com) " + identity + support + tokenPart;
+  if (source.platform==="TikTok") return "site:tiktok.com " + identity + support + tokenPart;
+  if (source.platform==="Threads") return "site:threads.net " + identity + support + tokenPart;
+  if (source.platform==="YouTube") return "site:youtube.com " + identity + support + tokenPart;
+  if (source.platform==="Reddit") return "site:reddit.com " + identity + support + tokenPart;
   return "";
 }
 
-function accountExpansionMatches(raw, seed) {
-  const token=accountTokenFor(seed?.url||"",seed?.platform||"");
-  if (!token) return false;
+function accountExpansionMatches(raw, seed, person = {}) {
   if (platformFor(raw?.url||"") !== seed.platform) return false;
+
+  const token=accountTokenFor(seed?.url||"",seed?.platform||"");
   const hay=normalize([raw?.url,raw?.title,raw?.description].filter(Boolean).join(" "));
-  return variantMatches(hay,token);
+  if (token && variantMatches(hay,token)) return true;
+
+  const match=matchResult(raw,person);
+  return match.confidence==="strong";
 }
 function maskedHandle(url = "", platform = "") {
   try {
@@ -320,40 +353,62 @@ function matchResult(result, person) {
   const full = normalize(person.fullName);
   const username = normalize(person.username.replace(/^@/, ""));
   const reasons = [];
+
   const fullName = full && hay.includes(full);
   const city = cityIdentitySupport(raw, person.city);
   const cityRequired = !!normalize(person.city);
   const usernameUrl = username && normalize(result.url).includes(username);
   const usernameAny = username && hay.includes(username);
   const age = ageAssessment(raw, person.ageContext);
+  const platform=platformFor(result.url||"");
+  const profileIdentity=isProfileIdentityUrl(result.url||"",platform);
   const clueMatches = (person.searchClues || []).filter(clue =>
     clueVariants(clue).some(variant => variantMatches(hay,variant))
   );
   const clueGateActive = (person.searchClues || []).length > 0;
+
   if (usernameUrl) reasons.push("username in URL");
   else if (usernameAny) reasons.push("username match");
   if (fullName) reasons.push("full name");
   if (city.anchored) reasons.push("city identity context");
   else if (city.mentioned) reasons.push("city mentioned");
+  if (profileIdentity) reasons.push("personal profile page");
   if (age.supported) reasons.push(age.reason);
   if (age.conflict) reasons.push(age.reason);
   clueMatches.slice(0,4).forEach(clue => reasons.push("clue: " + clue));
+
   if (usernameUrl) return { confidence:"strong", reasons };
   if (age.conflict && fullName) return { confidence:"discard", reasons, identityRejected:true };
   if (!fullName && !usernameAny) return { confidence:"discard", reasons:[] };
+
+  // If the result does not expose the supplied city, two independent clues can
+  // still establish identity. One generic clue alone is not enough.
   if (cityRequired && fullName && !city.anchored && !usernameAny) {
-    return { confidence:"discard", reasons, identityRejected:true, geographyRejected:cityRequired && !city.anchored };
+    if (clueMatches.length >= 2 || (clueMatches.length >= 1 && age.supported)) {
+      return { confidence:"strong", reasons };
+    }
+    return {
+      confidence:"discard",
+      reasons,
+      identityRejected:true,
+      geographyRejected:true
+    };
   }
+
   if (clueGateActive && fullName) {
     if (cityRequired && city.anchored && clueMatches.length >= 1) return { confidence:"strong", reasons };
+    if (cityRequired && city.anchored && profileIdentity) return { confidence:"strong", reasons };
     if (!cityRequired && clueMatches.length >= 1) return { confidence:"strong", reasons };
     if (cityRequired && city.anchored) return { confidence:"possible", reasons };
     return { confidence:"discard", reasons, identityRejected:true };
   }
-  if ((fullName && city.anchored) || (usernameAny && city.anchored) || (fullName && age.supported && !cityRequired)) {
-    return { confidence:"strong", reasons };
-  }
+
+  if (fullName && city.anchored && profileIdentity) return { confidence:"strong", reasons };
+  if (fullName && city.anchored) return { confidence:"possible", reasons };
+  if (usernameAny && city.anchored) return { confidence:"strong", reasons };
+  if (fullName && age.supported && !cityRequired) return { confidence:"strong", reasons };
   if ((fullName || usernameAny) && !cityRequired) return { confidence:"possible", reasons };
+
   return { confidence:"discard", reasons:[] };
 }
 
@@ -381,6 +436,20 @@ function safeExcerpt(value = "", max = 132) {
 }
 
 function narrativeEligibleSource(source = {}) {
+  if (source.confidence !== "strong") return false;
+  const reasons = Array.isArray(source.reasons) ? source.reasons : [];
+  const clueCount = reasons.filter(reason=>String(reason).startsWith("clue: ")).length;
+  const username = reasons.some(reason=>/username in url|username match/i.test(reason));
+  const city = reasons.some(reason=>/city identity context/i.test(reason));
+  const age = reasons.some(reason=>/age compatible|birth-year clue compatible/i.test(reason));
+  const profile = reasons.some(reason=>/personal profile page/i.test(reason));
+
+  if (username) return true;
+  if (clueCount >= 2) return true;
+  if (clueCount >= 1 && (city || age)) return true;
+  if (city && (age || profile)) return true;
+  return false;
+}) {
   if (source.confidence !== "strong") return false;
   const reasons = Array.isArray(source.reasons) ? source.reasons : [];
   const clueCount = reasons.filter(reason=>String(reason).startsWith("clue: ")).length;
@@ -511,14 +580,22 @@ async function braveJson(apiKey, endpoint, params, maxRetries = 2) {
   throw new Error("Search provider retry limit reached");
 }
 
-async function searchWeb(apiKey, q) {
+async function searchWebPage(apiKey, q, offset = 0) {
   const data = await braveJson(apiKey, BRAVE_ENDPOINT, {
     q,
     country:"CA",
     search_lang:"en",
-    count:20
+    count:20,
+    offset
   });
-  return data?.web?.results || [];
+  return {
+    results:data?.web?.results || [],
+    moreResultsAvailable:!!data?.query?.more_results_available
+  };
+}
+
+async function searchWeb(apiKey, q, offset = 0) {
+  return (await searchWebPage(apiKey,q,offset)).results;
 }
 
 export default async (req) => {
@@ -558,28 +635,62 @@ export default async (req) => {
   const clueExpression=expandedClues.length
     ? "(" + expandedClues.map(clue=>'"'+clue.replaceAll('"',"")+'"').join(" OR ") + ")"
     : "";
-  const identityQuery=[nameWithCity,clueExpression].filter(Boolean).join(" ");
+  const supportTerms=[
+    quotedCity,
+    ...expandedClues.slice(0,6).map(clue=>'"'+clue.replaceAll('"',"")+'"')
+  ].filter(Boolean);
+  const supportExpression=supportTerms.length ? "(" + supportTerms.join(" OR ") + ")" : "";
+  const strictIdentityQuery=[nameWithCity,clueExpression].filter(Boolean).join(" ");
+  const supportIdentityQuery=[quotedName,supportExpression].filter(Boolean).join(" ");
+
   const queries = [
-    { group:"Open web", q:identityQuery || nameWithCity },
-    { group:"LinkedIn", q:(identityQuery || nameWithCity) + " (site:linkedin.com/in OR site:linkedin.com/posts)" },
-    { group:"Facebook", q:(identityQuery || nameWithCity) + " site:facebook.com" },
-    { group:"Social", q:(identityQuery || nameWithCity) + " (site:instagram.com OR site:tiktok.com OR site:threads.net)" },
-    { group:"Discussion", q:(identityQuery || nameWithCity) + " (site:reddit.com OR site:x.com OR site:twitter.com)" },
-    { group:"Video", q:(identityQuery || nameWithCity) + " site:youtube.com" },
-    { group:"Professional directories", q:(identityQuery || nameWithCity) + " (profile OR bio OR practice OR clinic OR directory OR association)" },
-    { group:"News & organizations", q:(identityQuery || nameWithCity) + " (news OR event OR conference OR organization OR interview)" }
+    { group:"Open web · broad", q:nameWithCity || quotedName },
+    { group:"Open web · identity", q:supportIdentityQuery || strictIdentityQuery || nameWithCity },
+    { group:"LinkedIn · profiles", q:(nameWithCity || quotedName) + " site:linkedin.com/in", deep:true },
+    { group:"LinkedIn · activity", q:(supportIdentityQuery || quotedName) + " site:linkedin.com/posts", deep:true },
+    { group:"Facebook · profiles & posts", q:(supportIdentityQuery || quotedName) + " site:facebook.com", deep:true },
+    { group:"Social", q:(supportIdentityQuery || quotedName) + " (site:instagram.com OR site:tiktok.com OR site:threads.net)" },
+    { group:"Discussion", q:(supportIdentityQuery || quotedName) + " (site:reddit.com OR site:x.com OR site:twitter.com)" },
+    { group:"Video", q:(supportIdentityQuery || quotedName) + " site:youtube.com" },
+    { group:"Professional directories", q:(supportIdentityQuery || quotedName) + " (profile OR bio OR practice OR clinic OR directory OR association)" },
+    { group:"News & organizations", q:(supportIdentityQuery || quotedName) + " (news OR event OR conference OR organization OR interview)" }
   ];
   if (username) queries.push({ group:"Username", q:'"' + username.replaceAll('"',"") + '"' });
+
   const person = { fullName, city, username, ageContext, searchClues };
   const byUrl = new Map();
   let geographyRejected = 0;
+  let identityRejected = 0;
   const contactClues = { emails:[], phones:[], addresses:[] };
 
   const queryBatches = [];
   for (const query of queries) {
     try {
-      const results = await searchWeb(apiKey, query.q);
-      queryBatches.push({ query, results, error:null });
+      const firstPage = await searchWebPage(apiKey, query.q, 0);
+      queryBatches.push({ query, results:firstPage.results, error:null, offset:0 });
+
+      if (query.deep && firstPage.moreResultsAvailable) {
+        await providerWait(180);
+        try {
+          const secondPage=await searchWebPage(apiKey,query.q,1);
+          queryBatches.push({
+            query:{...query,group:query.group+" · page 2"},
+            results:secondPage.results,
+            error:null,
+            offset:1
+          });
+        } catch (error) {
+          console.error("live-search page 2 failed", query.group, error);
+          queryBatches.push({
+            query:{...query,group:query.group+" · page 2"},
+            results:[],
+            error:error?.message || "Second search page failed",
+            status:Number(error?.status) || null,
+            code:error?.code || "",
+            offset:1
+          });
+        }
+      }
     } catch (error) {
       console.error("live-search pass failed", query.group, error);
       queryBatches.push({
@@ -587,11 +698,11 @@ export default async (req) => {
         results:[],
         error:error?.message || "Search pass failed",
         status:Number(error?.status) || null,
-        code:error?.code || ""
+        code:error?.code || "",
+        offset:0
       });
     }
 
-    // A short spacing delay keeps the demo compatible with lower burst-rate plans.
     if (query !== queries[queries.length - 1]) await providerWait(220);
   }
 
@@ -623,6 +734,7 @@ export default async (req) => {
       const match = matchResult(raw, person);
       if (match.confidence === "discard") {
         if (match.geographyRejected) geographyRejected += 1;
+        if (match.identityRejected) identityRejected += 1;
         continue;
       }
 
@@ -655,18 +767,27 @@ export default async (req) => {
   }
 
   let accountExpansionPasses=0;
+  const accountPriority={"LinkedIn":0,"Facebook":1,"Instagram":2,"X / Twitter":3,"TikTok":4,"Threads":5,"YouTube":6,"Reddit":7};
+  const seedKeys=new Set();
   const accountSeeds=[...byUrl.values()]
-    .filter(source=>source.confidence==="strong" && accountExpansionQuery(source))
-    .slice(0,2);
+    .filter(source=>source.confidence==="strong" && accountExpansionQuery(source,person))
+    .sort((a,b)=>(accountPriority[a.platform]??99)-(accountPriority[b.platform]??99))
+    .filter(source=>{
+      const key=source.platform+"|"+(accountTokenFor(source.url,source.platform)||source.url);
+      if(seedKeys.has(key)) return false;
+      seedKeys.add(key);
+      return true;
+    })
+    .slice(0,4);
 
   for (const seed of accountSeeds) {
-    const q=accountExpansionQuery(seed);
+    const q=accountExpansionQuery(seed,person);
     if (!q) continue;
     try {
       const expanded=await searchWeb(apiKey,q);
       accountExpansionPasses += 1;
       for (const raw of expanded) {
-        if (!raw?.url || byUrl.has(raw.url) || !accountExpansionMatches(raw,seed)) continue;
+        if (!raw?.url || byUrl.has(raw.url) || !accountExpansionMatches(raw,seed,person)) continue;
         const title=redact(raw.title||"");
         const snippet=redact(raw.description||"");
         const platform=platformFor(raw.url);
@@ -791,7 +912,7 @@ export default async (req) => {
 
   const sourceCoverage = {
     searched:completedPasses.length + accountExpansionPasses,
-    attempted:queries.length + accountSeeds.length,
+    attempted:queryBatches.length + accountSeeds.length,
     failed:failedPasses.length,
     matched:new Set(sources.map(s=>s.queryGroup)).size,
     sources:coverageNames.map(name=>({name,matched:platforms.has(name)}))
@@ -845,9 +966,16 @@ export default async (req) => {
     presentation,
     searchedAt:new Date().toISOString(),
     searchHealth:{
-      attempted:queries.length,
+      attempted:queryBatches.length,
       completed:completedPasses.length,
       failed:failedPasses.length,
+      rawResults:queryBatches.reduce((sum,batch)=>sum+(batch.results?.length||0),0),
+      acceptedSources:sources.length,
+      strongSources:strong,
+      possibleSources:possible,
+      identityRejected,
+      deepPages:queryBatches.filter(batch=>batch.offset===1 && !batch.error).length,
+      accountExpansionPasses,
       geographicFilterActive:!!city,
       geographicAnchor:city || null,
       geographyRejected,

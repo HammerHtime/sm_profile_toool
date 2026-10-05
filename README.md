@@ -171,3 +171,12 @@ Narrative excerpts, recurring themes and ambient thumbnails now use only corrobo
 ### Device privacy walkthroughs
 
 The iPhone and Android privacy guides now use the same teaching model as the social-app guides: tap-by-tap navigation, return to the parent menu before the next permission, then show the actual permission choices. Each terminal setting screen includes why the setting matters, the device's normal/default permission behaviour, and a recommended privacy-focused setting. iPhone coverage includes Location Services, Precise Location, Tracking, Contacts, Photos, Camera, Microphone, Local Network and Safety Check. Android coverage includes Location, precise/approximate location, Camera, Microphone, Photos and videos, Contacts, unused-app permission reset and Privacy dashboard.
+
+
+### Deep public-footprint retrieval
+
+The live search now separates retrieval breadth from identity verification. Provider queries no longer require every supplied city/clue term on every pass. It runs broad name/city, identity-support, LinkedIn profile/activity, Facebook, professional-directory, social, discussion, video, and organization/news passes. LinkedIn and Facebook high-value passes can request a second Brave result page when the API reports more results.
+
+Identity safeguards remain local: wrong-city same-name results are rejected; a result without the supplied city needs multiple independent clues to survive; and a personal LinkedIn/Facebook-style profile with full name plus anchored city can become a verified account seed. Up to four verified social accounts are then expanded into additional publicly indexed posts/photos/pages.
+
+Search diagnostics now report raw provider results, accepted sources, strong/possible counts, identity rejections, second-page depth, and account-expansion passes to make thin-result cases easier to diagnose.

@@ -204,6 +204,20 @@ const lisaRight=liveModule.matchResult({
 if(lisaRight.confidence!=="strong") fail("Kelowna counsellor synonym match was not retained");
 else pass("Kelowna counsellor synonym match is retained");
 
+const lisaLinkedInProfile=liveModule.matchResult({
+  title:"Lisa Butcher | LinkedIn",
+  description:"Kelowna, British Columbia, Canada",
+  url:"https://www.linkedin.com/in/lisa-butcher-example"
+},lisaPerson);
+if(lisaLinkedInProfile.confidence!=="strong") fail("City-matched LinkedIn profile did not become a verified account anchor");
+else pass("City-matched LinkedIn profile can anchor deeper discovery");
+
+const liveSearchCode=read("netlify/functions/live-search.mjs");
+if(!liveSearchCode.includes("more_results_available") || !liveSearchCode.includes("LinkedIn · activity") || !liveSearchCode.includes("Facebook · profiles & posts")) fail("Deep social retrieval strategy is missing");
+else pass("LinkedIn and Facebook use broader and paginated discovery passes");
+if(!liveSearchCode.includes(".slice(0,4)") || !liveSearchCode.includes("accountPriority")) fail("Verified-account expansion depth is still too shallow");
+else pass("Verified-account expansion prioritizes up to four social anchors");
+
 if(!read("netlify/functions/live-search.mjs").includes("Verified account expansion")) fail("Verified social-account expansion is missing");
 else pass("Verified social accounts can expand into indexed posts and photos");
 
