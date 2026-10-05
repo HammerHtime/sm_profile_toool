@@ -1298,3 +1298,27 @@ body.photoPresentationMode .impactSlide .photoRevealControls{
     linear-gradient(145deg,rgba(173,119,255,.075),#081720);
 }
 .voiceDemoBadge{white-space:nowrap}
+
+
+/* RC31 photo presenter readability pass */
+.photoDemoBody .livePill{font-size:.82rem}
+.photoDemoBody .statusStep span{font-size:.84rem}
+.photoDemoBody .statusStep b{font-size:.8rem}
+.photoDemoBody .photoFindingCard .findingLabel{font-size:.82rem}
+.photoDemoBody .crumbNode strong{font-size:.92rem}
+.photoDemoBody .crumbNode span{font-size:.8rem;line-height:1.42}
+.photoDemoBody .impactStat span{font-size:.86rem}
+.photoDemoBody .correlationDisclosure{font-size:.9rem}
+.photoDemoBody .searchProgressWrap>span{font-size:.82rem}
+.photoDemoBody .searchCoreCard strong{font-size:.84rem}
+.photoDemoBody .searchCoreCard span{font-size:.74rem}
+.photoDemoBody .searchNodeName{font-size:.75rem}
+.photoDemoBody .searchNode small{font-size:.62rem;line-height:1.25}
+.photoDemoBody .searchMetrics span{font-size:.75rem}
+.photoDemoBody .searchCompleteBanner strong,
+.photoDemoBody .searchCompleteBanner span{font-size:.78rem}
+.photoDemoBody .photoChoiceCard small{font-size:.76rem}
+.photoDemoBody .voiceRiskIntro p{font-size:.84rem}
+.photoDemoBody .voiceSamplePlayBtn strong{font-size:.82rem}
+.photoDemoBody .photoRevealControls strong{font-size:.8rem}
+.photoDemoBody .photoRevealControls span{font-size:.7rem}
