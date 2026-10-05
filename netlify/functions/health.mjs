@@ -30,6 +30,20 @@ function braveKeySource() {
   return null;
 }
 
+function normalizeSerpApiKey(value = "") {
+  let candidate = String(value || "").trim();
+  if (!candidate) return "";
+  const assignment = candidate.match(/^(?:SERPAPI_API_KEY|SERPAPI_KEY)\s*=\s*(.+)$/i);
+  if (assignment) candidate = assignment[1].trim();
+  const quoted = (candidate.startsWith('"') && candidate.endsWith('"')) || (candidate.startsWith("'") && candidate.endsWith("'"));
+  if (quoted && candidate.length >= 2) candidate = candidate.slice(1, -1).trim();
+  return candidate.replace(/^Bearer\s+/i, "").trim();
+}
+
+function getSerpApiKey() {
+  return normalizeSerpApiKey(process.env.SERPAPI_API_KEY || process.env.SERPAPI_KEY || "");
+}
+
 function respond(body, status = 200) {
   return Response.json(body, {
     status,
@@ -47,8 +61,10 @@ export default async (req) => {
     ok:true,
     timestamp:new Date().toISOString(),
     functionsRuntime:"request-response",
-    liveSearchConfigured:!!getBraveApiKey(),
+    liveSearchConfigured:!!(getBraveApiKey() || getSerpApiKey()),
+    braveSearchConfigured:!!getBraveApiKey(),
     braveKeySource:braveKeySource(),
+    serpApiConfigured:!!getSerpApiKey(),
     openAIConfigured:openAIConfigured(),
     openAIModel:openAIModel(),
     googleVisionConfigured:googleVisionConfigured(),
