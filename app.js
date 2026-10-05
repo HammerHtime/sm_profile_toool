@@ -316,6 +316,76 @@
     ]
   };
 
+  const PARENT_SETTING_DETAILS = {
+    "Instagram":{
+      "Family Center":{kind:"status",section:"Family Center",status:"Open Supervision / Family Center for the teen account",recommended:"Link the parent and teen accounts before reviewing controls",defaultText:"Supervision is not active until parent and teen accounts are linked.",why:"Family Center gives the parent visibility into supervision settings without giving access to private messages."},
+      "Supervision":{kind:"status",section:"Supervision",status:"Invitation pending / Connected",recommended:"Confirm both accounts show supervision as connected",defaultText:"Supervision requires an accepted invitation.",why:"If the accounts are not actually linked, the parent cannot manage or review the teen supervision controls."},
+      "Teen Account":{kind:"toggles",section:"Teen Account protections",items:[["Private account","On"],["Strict messaging","On"],["Tags & mentions","People followed"],["Sensitive content","Most restrictive"]],recommended:"Keep the built-in teen protections unless there is a specific reason to loosen one",defaultText:"Canadian Teen Accounts start with stronger privacy and contact protections.",why:"These defaults reduce unwanted contact, broad discovery and exposure to sensitive content."},
+      "Daily limit":{kind:"choices",section:"Daily time limit",options:["30 minutes","45 minutes","1 hour","2 hours","No limit"],recommended:"Choose a family limit and review it together",defaultText:"No parent-selected daily limit exists until supervision is configured.",why:"A daily limit creates a predictable stopping point and makes excessive use easier to notice."},
+      "Sleep mode":{kind:"status",section:"Sleep / Quiet mode",status:"Set start and end times for overnight quiet hours",recommended:"Cover the child's normal sleep period",defaultText:"Teen Accounts include overnight protections, but supervision lets families reinforce the schedule.",why:"Overnight quiet hours reduce late-night notifications and habitual checking."},
+      "Connections":{kind:"status",section:"Followers and following",status:"Review recent changes in followers/following",recommended:"Discuss unfamiliar accounts rather than monitoring private message content",defaultText:"Family Center provides high-level connection information, not private messages.",why:"Sudden changes in connections can be useful conversation starters about who the teen is interacting with online."}
+    },
+    "Facebook":{
+      "Family Center":{kind:"status",section:"Family Center",status:"Connect parent and teen supervision where available",recommended:"Confirm supervision is active before relying on the controls",defaultText:"Supervision is not active until the accounts are linked.",why:"Family Center centralizes teen safety and privacy supervision."},
+      "Privacy Checkup":{kind:"status",section:"Privacy Checkup",status:"Review audience, profile information, account security and blocking",recommended:"Complete every Privacy Checkup section with the teen",defaultText:"Teen Accounts use more private defaults, but existing choices can still vary.",why:"Privacy Checkup exposes the major account settings in one place and helps catch older public choices."},
+      "Discovery":{kind:"choices",section:"Friend requests and discovery",options:["Everyone","Friends of friends","More limited teen setting"],recommended:"Use the most limited option that still supports real-world friends",defaultText:"Teen Accounts use stricter discovery and unwanted-contact protections.",why:"Reducing discovery makes it harder for unknown adults or strangers to find and contact the teen."},
+      "Block / Report":{kind:"status",section:"Blocking and reporting",status:"Show where Block, Restrict and Report are located",recommended:"Practice the steps before they are needed",defaultText:"Blocking/reporting are user actions, not automatic defaults.",why:"A child who knows exactly how to block and report is more likely to act quickly when contact becomes uncomfortable."},
+      "Time limits":{kind:"status",section:"Time controls",status:"Use iPhone Screen Time or Android Family Link for enforceable limits",recommended:"Set device-level limits for Facebook if needed",defaultText:"Facebook supervision does not replace device-level Screen Time / Family Link limits.",why:"Device-level controls are more reliable when the goal is an enforceable daily time limit."}
+    },
+    "TikTok":{
+      "Family Pairing":{kind:"status",section:"Family Pairing",status:"Parent and teen accounts should show as linked",recommended:"Complete pairing before changing teen controls",defaultText:"Family Pairing is off until parent and teen link their accounts.",why:"Family Pairing lets the parent manage key teen safety and time controls from the parent's account."},
+      "Pair accounts":{kind:"status",section:"Pair accounts",status:"Parent scans the teen's QR code / completes the pairing flow",recommended:"Confirm the teen appears under Family Pairing",defaultText:"No supervision link exists before pairing.",why:"Without a completed pairing, later Family Pairing settings will not apply."},
+      "Screen time":{kind:"choices",section:"Daily screen time",options:["40 minutes","60 minutes","90 minutes","120 minutes","Custom"],recommended:"Choose a limit appropriate for the child's age and routine",defaultText:"Teen screen-time defaults vary by age; Family Pairing can set a parent-controlled limit.",why:"A parent-controlled limit prevents the teen from simply extending the limit themselves."},
+      "Restricted Mode":{kind:"toggle",section:"Restricted Mode",label:"Restricted Mode",value:"On",recommended:"On for younger teens where appropriate",defaultText:"Restricted Mode state depends on the account setup.",why:"Restricted Mode reduces exposure to content TikTok identifies as potentially unsuitable for a broad audience."},
+      "Search":{kind:"choices",section:"Search",options:["Allow search","Restrict search"],recommended:"Restrict for younger teens if search is creating unwanted exposure",defaultText:"Search availability varies by teen age and account protections.",why:"Search opens access to videos, sounds, hashtags and creators outside the teen's current feed."},
+      "Messages":{kind:"choices",section:"Direct messages",options:["Friends","Suggested friends","No one"],recommended:"Friends or No one depending on age",defaultText:"Ages 13-15 do not have DMs; older teens have restricted DM defaults.",why:"DM controls are one of the strongest protections against unwanted private contact."},
+      "Privacy":{kind:"toggles",section:"Privacy and discoverability",items:[["Private account","On"],["Suggest account","Off"],["Downloads","Off"],["Duet / Stitch","Review"],["Comments","Friends / limited"]],recommended:"Keep the account private and discovery/download features limited",defaultText:"Canadian teen accounts start with stricter privacy defaults.",why:"These settings control who can find the teen, copy content and interact with posts."}
+    },
+    "Snapchat":{
+      "Family Center":{kind:"status",section:"Family Center",status:"Parent and teen should both show the Family Center connection",recommended:"Complete the invitation before reviewing Family Center tools",defaultText:"Family Center is not active until the invitation is accepted.",why:"Family Center provides safety visibility while preserving message privacy."},
+      "Invite":{kind:"status",section:"Family Center invitation",status:"Invitation sent / Accepted",recommended:"Confirm the teen account shows as connected",defaultText:"No supervision is active before acceptance.",why:"An incomplete invitation means the parent is not actually connected to the teen's Family Center."},
+      "Friends":{kind:"status",section:"Friends and recent contacts",status:"Review recent friends and communication patterns available in Family Center",recommended:"Discuss unfamiliar contacts with the teen",defaultText:"Snapchat does not expose message contents to the parent through Family Center.",why:"Knowing who the teen is communicating with is more useful than trying to monitor private conversation content."},
+      "Snap Map":{kind:"choices",section:"Location / Snap Map",options:["Ghost Mode","My Friends","My Friends, Except...","Only These Friends"],recommended:"Ghost Mode or a very small trusted list",defaultText:"Snap Map sharing is off until the user chooses to share location.",why:"Snap Map can reveal current or recent location to selected friends, so the audience should be intentionally limited."},
+      "Sensitive content":{kind:"toggle",section:"Sensitive content controls",label:"Limit sensitive content",value:"On",recommended:"On",defaultText:"Teen accounts include safety protections; Family Center can add content controls where available.",why:"Sensitive-content controls reduce the likelihood of the teen being recommended mature or potentially harmful material."},
+      "Reporting":{kind:"status",section:"Report / Block",status:"Practice reporting and blocking a test/example account",recommended:"Make sure the teen knows both actions without needing a parent beside them",defaultText:"Reporting and blocking require user action.",why:"A teen who knows the path in advance can react faster to harassment, impersonation or unwanted contact."}
+    },
+    "Discord":{
+      "Family Center":{kind:"status",section:"Family Center",status:"Parent and teen accounts show as linked",recommended:"Complete linking before relying on Family Center activity information",defaultText:"Family Center requires the teen to link the parent.",why:"Family Center gives high-level activity information without exposing message contents."},
+      "Link":{kind:"status",section:"Link accounts",status:"Teen displays QR code; parent scans and completes connection",recommended:"Confirm the parent appears in the teen's Family Center",defaultText:"No link exists before the teen authorizes it.",why:"Discord Family Center is consent-based, so the connection itself must be complete."},
+      "Activity":{kind:"status",section:"Activity insights",status:"Review recently messaged users and recently joined/participated servers where shown",recommended:"Use activity as a conversation prompt",defaultText:"Family Center shows high-level activity, not message contents.",why:"High-level activity can highlight unfamiliar servers or contacts without reading private conversations."},
+      "Safety":{kind:"toggles",section:"Content & Social",items:[["DMs from server members","Off for unfamiliar servers"],["Message Requests","On / screened"],["Friend request safety","On"]],recommended:"Use the strictest settings that still let the teen communicate with real friends",defaultText:"Teen accounts receive additional default safety protections.",why:"Server membership alone should not automatically give strangers direct access to the teen."},
+      "Sensitive media":{kind:"choices",section:"Sensitive media",options:["Blur","Block","Show"],recommended:"Blur or Block",defaultText:"Teen accounts receive stronger sensitive-media protections.",why:"Filtering sensitive media creates a warning or barrier before potentially explicit images are displayed."}
+    },
+    "YouTube":{
+      "Supervised account":{kind:"status",section:"Supervised YouTube",status:"Child/teen account linked to the family group",recommended:"Use the supervised experience appropriate to the child's age",defaultText:"Supervision depends on the Google family/account setup.",why:"A supervised account lets the parent control content level and some activity settings."},
+      "Content level":{kind:"choices",section:"Content settings",options:["Explore","Explore more","Most of YouTube"],recommended:"Choose the narrowest level appropriate for the child's maturity",defaultText:"Content level is selected by the parent for supervised child accounts.",why:"The content level changes the range of videos the child is allowed to discover and watch."},
+      "History":{kind:"toggles",section:"History",items:[["Watch history","On / Pause"],["Search history","On / Pause"]],recommended:"Review whether history should be saved; use pause where appropriate",defaultText:"History behaviour depends on the supervised account settings.",why:"History affects recommendations and what the account remembers about viewing/search activity."},
+      "Autoplay":{kind:"toggle",section:"Autoplay",label:"Autoplay",value:"Off",recommended:"Off for stronger stopping points",defaultText:"Autoplay can be changed by the account/parent controls.",why:"Turning off autoplay creates a natural pause instead of automatically starting another video."},
+      "Time limits":{kind:"status",section:"Time controls",status:"Use Family Link / Digital Wellbeing / iPhone Screen Time",recommended:"Set enforceable device-level limits where needed",defaultText:"YouTube supervision alone is not the strongest place to enforce total daily device time.",why:"Device-level limits remain effective even when the child switches between apps."}
+    }
+  };
+
+  function parentSettingDetailFor(name,target){
+    return PARENT_SETTING_DETAILS[name]?.[target] || null;
+  }
+
+  function parentRowsFor(name,target){
+    const source=parentGuides[name] || fallbackGuide(name);
+    const controls=[];
+    const seen=new Set();
+    for(const step of source){
+      const label=String(step?.[2]||"").trim();
+      if(!label || label==="EXPLAIN" || seen.has(label)) continue;
+      seen.add(label);
+      controls.push(label);
+    }
+    const index=Math.max(0,controls.indexOf(target));
+    const start=Math.max(0,Math.min(index-2,Math.max(0,controls.length-7)));
+    const rows=controls.slice(start,start+7);
+    if(target && !rows.includes(target)) rows.splice(Math.min(2,rows.length),0,target);
+    return rows.slice(0,7);
+  }
+
   const iosPrivacy = [
     ["Open Settings","Open the Settings app on the iPhone.","Settings"],
     ["Open Privacy & Security","Scroll down and tap Privacy & Security.","Privacy & Security"],
