@@ -827,11 +827,14 @@ export default async (req) => {
     return respond({
       error:"The public search provider did not complete any search passes.",
       detail:"Try again in a moment. Synthetic Demo remains available as a presentation fallback.",
-      providerErrors:[...new Set(failedPasses.map(batch=>{
-        const status=batch.status ? ("HTTP "+batch.status+" ") : "";
-        const code=batch.code ? (batch.code+" ") : "";
-        return (status+code+(batch.error||"Search pass failed")).trim();
-      }))].slice(0,4)
+      providerErrors:[...new Set([
+        ...providerState.errors,
+        ...failedPasses.map(batch=>{
+          const status=batch.status ? ("HTTP "+batch.status+" ") : "";
+          const code=batch.code ? (batch.code+" ") : "";
+          return (status+code+(batch.error||"Search pass failed")).trim();
+        })
+      ])].slice(0,6)
     }, 502);
   }
 
