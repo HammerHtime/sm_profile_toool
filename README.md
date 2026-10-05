@@ -180,3 +180,10 @@ The live search now separates retrieval breadth from identity verification. Prov
 Identity safeguards remain local: wrong-city same-name results are rejected; a result without the supplied city needs multiple independent clues to survive; and a personal LinkedIn/Facebook-style profile with full name plus anchored city can become a verified account seed. Up to four verified social accounts are then expanded into additional publicly indexed posts/photos/pages.
 
 Search diagnostics now report raw provider results, accepted sources, strong/possible counts, identity rejections, second-page depth, and account-expansion passes to make thin-result cases easier to diagnose.
+
+
+### Parental controls and classroom readability
+
+Parent-mode walkthroughs now use the same click-by-click teaching model as the privacy guides. Social-app parental controls and iPhone Screen Time / Android Family Link return to the parent menu before each control, highlight the exact next row, and then open a simulated setting screen with the actual choices, why the setting matters, normal/default behaviour, and a recommended configuration.
+
+The presentation UI also received a readability pass for classroom/projector use. Sources now use larger text and fewer columns, and small metadata, source, result, platform, signal, parental-control, phone-setting, and photo-presenter labels were increased across the experience.
