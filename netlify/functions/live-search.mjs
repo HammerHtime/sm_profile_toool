@@ -449,19 +449,6 @@ function narrativeEligibleSource(source = {}) {
   if (clueCount >= 1 && (city || age)) return true;
   if (city && (age || profile)) return true;
   return false;
-}) {
-  if (source.confidence !== "strong") return false;
-  const reasons = Array.isArray(source.reasons) ? source.reasons : [];
-  const clueCount = reasons.filter(reason=>String(reason).startsWith("clue: ")).length;
-  const username = reasons.some(reason=>/username in url|username match/i.test(reason));
-  const city = reasons.some(reason=>/city identity context/i.test(reason));
-  const age = reasons.some(reason=>/age compatible|birth-year clue compatible/i.test(reason));
-
-  if (username) return true;
-  if (clueCount >= 2) return true;
-  if (clueCount >= 1 && (city || age)) return true;
-  if (city && age) return true;
-  return false;
 }
 
 function presentationThemes(items, person) {
