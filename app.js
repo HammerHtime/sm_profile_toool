@@ -2060,7 +2060,9 @@ function setConsentState() {
     const phoneIcon = guidePlatform?.icon || "⚙";
     const appName = guidePlatform?.name || "Privacy";
     const identity = '<div class="phoneAppIdentity" style="--app-brand:' + escapeHtml(guidePlatform?.brand || "#52d6ff") + '">' +
-      '<span class="phoneAppLogo">' + phoneIcon + '</span><span><strong>' + escapeHtml(appName) + '</strong><small>' + (guidePlatform?.device ? 'DEVICE SETTINGS' : 'PRIVACY SETTINGS') + '</small></span>' +
+      '<span class="phoneAppLogo">' + phoneIcon + '</span><span><strong>' + escapeHtml(appName) + '</strong><small>' +
+        (guideParentMode ? 'PARENT / FAMILY CONTROLS' : (guidePlatform?.device ? 'DEVICE SETTINGS' : 'PRIVACY SETTINGS')) +
+      '</small></span>' +
     '</div>';
 
     if (explanation) {
@@ -2077,17 +2079,25 @@ function setConsentState() {
 
     const navigationOnly=isGuideNavigationTarget(target);
     const actualTarget=guideNavigationTarget(target);
-    const detail = guidePlatform?.device
-      ? deviceSettingDetailFor(guidePlatform.device,actualTarget)
-      : settingDetailFor(appName,actualTarget);
+    const detail = guideParentMode
+      ? (guidePlatform?.device
+          ? parentDeviceSettingDetailFor(guidePlatform.device,actualTarget)
+          : parentSettingDetailFor(appName,actualTarget))
+      : (guidePlatform?.device
+          ? deviceSettingDetailFor(guidePlatform.device,actualTarget)
+          : settingDetailFor(appName,actualTarget));
     if (detail && !navigationOnly) {
       return '<div class="phoneScreen phoneDetailScreen">' +
         identity +
         '<div class="phoneDetailHeader"><span class="phoneBackChevron">‹</span><span><small>' + escapeHtml(detail.section||title) + '</small><strong>' + escapeHtml(title) + '</strong></span></div>' +
         detailRowsHtml(detail) +
         '<div class="phoneSettingCompare">' +
-          '<div class="phoneDefaultSetting"><strong>' + (guidePlatform?.device ? 'DEVICE DEFAULT / NORMAL BEHAVIOUR' : 'APP DEFAULT SETTING') + '</strong><span>' +
-            escapeHtml(guidePlatform?.device ? deviceDefaultSettingFor(guidePlatform.device,actualTarget,detail) : appDefaultSettingFor(appName,actualTarget,detail)) +
+          '<div class="phoneDefaultSetting"><strong>' +
+            (guideParentMode ? 'DEFAULT / NORMAL BEHAVIOUR' : (guidePlatform?.device ? 'DEVICE DEFAULT / NORMAL BEHAVIOUR' : 'APP DEFAULT SETTING')) +
+          '</strong><span>' +
+            escapeHtml(guideParentMode
+              ? parentDefaultSettingFor(detail)
+              : (guidePlatform?.device ? deviceDefaultSettingFor(guidePlatform.device,actualTarget,detail) : appDefaultSettingFor(appName,actualTarget,detail))) +
           '</span></div>' +
           '<div class="phoneRecommendation"><strong>RECOMMENDED PRIVACY SETTING</strong><span>' + escapeHtml(detail.recommended||"Review this setting") + '</span></div>' +
         '</div>' +
@@ -2096,7 +2106,7 @@ function setConsentState() {
 
     const menuTarget=navigationOnly ? actualTarget : target;
     const deviceRows = deviceRowsFor(menuTarget);
-    const rows = deviceRows || platformRowsFor(appName, menuTarget);
+    const rows = deviceRows || (guideParentMode ? parentRowsFor(appName,menuTarget) : platformRowsFor(appName, menuTarget));
     if (deviceRows && menuTarget && menuTarget !== "EXPLAIN" && !rows.includes(menuTarget)) rows.push(menuTarget);
 
     const phoneHeader = guidePlatform?.device
@@ -2150,9 +2160,13 @@ function setConsentState() {
     const copy = $("coachSlide").querySelector(".coachCopy");
     const navigationOnly=isGuideNavigationTarget(target);
     const actualTarget=guideNavigationTarget(target);
-    const detail = guidePlatform?.device
-      ? deviceSettingDetailFor(guidePlatform.device,actualTarget)
-      : settingDetailFor(guidePlatform?.name,actualTarget);
+    const detail = guideParentMode
+      ? (guidePlatform?.device
+          ? parentDeviceSettingDetailFor(guidePlatform.device,actualTarget)
+          : parentSettingDetailFor(guidePlatform?.name,actualTarget))
+      : (guidePlatform?.device
+          ? deviceSettingDetailFor(guidePlatform.device,actualTarget)
+          : settingDetailFor(guidePlatform?.name,actualTarget));
     const bullets = isExplain
       ? ["What this control changes","What exposure or risk it reduces","What the child/user will notice","Any trade-off or limitation to understand"]
       : ["Follow this exact path on the device","The highlighted row is the next tap","Use the presentation clicker to advance one action at a time"];
@@ -2162,8 +2176,12 @@ function setConsentState() {
       : detail && !navigationOnly
         ? '<div class="settingWhyCard">' +
             '<div class="settingWhyMain"><strong>WHY THIS SETTING MATTERS</strong><p>' + escapeHtml(detail.why||body) + ' ' + escapeHtml(settingTeachingExpansion(detail)) + '</p></div>' +
-            '<div class="settingDefaultTile"><strong>' + (guidePlatform?.device ? 'DEVICE DEFAULT / NORMAL BEHAVIOUR' : 'APP DEFAULT SETTING') + '</strong><p>' +
-              escapeHtml(guidePlatform?.device ? deviceDefaultSettingFor(guidePlatform.device,actualTarget,detail) : appDefaultSettingFor(guidePlatform?.name,actualTarget,detail)) +
+            '<div class="settingDefaultTile"><strong>' +
+              (guideParentMode ? 'DEFAULT / NORMAL BEHAVIOUR' : (guidePlatform?.device ? 'DEVICE DEFAULT / NORMAL BEHAVIOUR' : 'APP DEFAULT SETTING')) +
+            '</strong><p>' +
+              escapeHtml(guideParentMode
+                ? parentDefaultSettingFor(detail)
+                : (guidePlatform?.device ? deviceDefaultSettingFor(guidePlatform.device,actualTarget,detail) : appDefaultSettingFor(guidePlatform?.name,actualTarget,detail))) +
             '</p></div>' +
             '<div class="settingRecommendedTile"><strong>RECOMMENDED PRIVACY SETTING</strong><p>' + escapeHtml(detail.recommended||"Review this setting") + '</p></div>' +
           '</div>'
