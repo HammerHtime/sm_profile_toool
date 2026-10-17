@@ -570,3 +570,118 @@ body.privacyGuideDirect #recommendedFixesPanel{display:none!important}
   .coachModal .guideNavBlock{margin-bottom:16px}
   .coachModal .guideNavTrail{font-size:.76rem;padding:8px 10px}
 }
+
+
+/* Location Services on iPhone: overview and per-app permissions are distinct.
+   Realistic illustrated UI, no visitor/user account data is accessed. */
+.coachModal[data-native-skin="ios"] .iosLocationOverview,
+.coachModal[data-native-skin="ios"] .iosLocationAppPermission{
+  display:flex;flex-direction:column;gap:0;
+  padding:3px 11px 33px;
+  color:#171a20;background:#f3f3f7;
+  min-height:0;
+}
+.coachModal[data-native-skin="ios"] .iosLocationGroup{
+  margin:15px 0 0;
+  border-radius:15px;overflow:visible;
+  background:#fff;
+  box-shadow:0 1px 0 rgba(15,28,42,.04);
+}
+.coachModal[data-native-skin="ios"] .iosLocationSettingRow{
+  display:flex;align-items:center;justify-content:space-between;
+  gap:8px;padding:14px 12px;min-height:52px;
+  border-bottom:1px solid #e8e8ed;
+  font-size:.79rem;line-height:1.25;
+}
+.coachModal[data-native-skin="ios"] .iosLocationSettingRow:last-child{border-bottom:0}
+.coachModal[data-native-skin="ios"] .iosLocationMasterSwitch strong{font-size:.86rem}
+.coachModal[data-native-skin="ios"] .iosLocationToggle{
+  display:inline-flex;align-items:center;justify-content:flex-start;
+  width:41px;height:25px;padding:2px;border-radius:30px;
+  background:#c6cad0;flex:0 0 41px;
+}
+.coachModal[data-native-skin="ios"] .iosLocationToggle.on{background:#00a24b;justify-content:flex-end}
+.coachModal[data-native-skin="ios"] .iosLocationToggle::after{
+  content:"";display:block;width:21px;height:21px;border-radius:50%;
+  background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.14)
+}
+.coachModal[data-native-skin="ios"] .iosLocationRowArrow{
+  font-size:1.45rem;color:#9ba2ae;line-height:.75;
+  font-weight:400;flex-shrink:0;
+}
+.coachModal[data-native-skin="ios"] .iosLocationFootnote{
+  padding:0 11px;margin:11px 0 0;
+  font-size:.7rem;line-height:1.48;color:#777c87;
+}
+.coachModal[data-native-skin="ios"] .iosLocationFootnote span{color:#1265b7;font-weight:620}
+.coachModal[data-native-skin="ios"] .iosLocationFootnote.bottom{margin-bottom:18px}
+.coachModal[data-native-skin="ios"] .iosLocationAppsKicker,
+.coachModal[data-native-skin="ios"] .iosLocationPermissionLabel{
+  margin:20px 9px 0;color:#7b8695;
+  font-size:.59rem;font-weight:800;letter-spacing:.045em;
+}
+.coachModal[data-native-skin="ios"] .iosLocationAppGroup{margin-top:8px}
+.coachModal[data-native-skin="ios"] .iosLocationAppRow{
+  display:flex;align-items:center;gap:11px;
+  padding:10px 10px;min-height:58px;
+  border-bottom:1px solid #e8e8ed;
+}
+.coachModal[data-native-skin="ios"] .iosLocationAppGroup>.iosLocationAppRow:last-child{
+  border-bottom:0
+}
+.coachModal[data-native-skin="ios"] .iosLocationAppIcon{
+  flex:0 0 31px;width:31px;height:31px;
+  display:grid;place-items:center;border-radius:8px;
+  background:#dde7f5;color:#216bbb;
+  font-size:1.13rem;font-weight:800
+}
+.coachModal[data-native-skin="ios"] .iosLocationNextApp .iosLocationAppIcon,
+.coachModal[data-native-skin="ios"] .iosLocationPermissionApp .iosLocationAppIcon{
+  background:linear-gradient(140deg,#fdb341,#e92889,#9238df);
+  color:white;
+}
+.coachModal[data-native-skin="ios"] .iosLocationAppCopy{
+  flex:1;min-width:0;display:grid;gap:3px;
+}
+.coachModal[data-native-skin="ios"] .iosLocationAppCopy strong{
+  font-size:.77rem;color:#131e30;
+}
+.coachModal[data-native-skin="ios"] .iosLocationAppCopy small{
+  font-size:.66rem;color:#717c89;
+}
+.coachModal[data-native-skin="ios"] .iosLocationNextApp{
+  position:relative;
+}
+.coachModal[data-native-skin="ios"] .iosLocationNextApp.nativeFocus::after{
+  content:"SELECT APP";
+  right:4px;
+}
+.coachModal[data-native-skin="ios"] .iosLocationDemoBanner{
+  margin:10px 4px 0;padding:8px 9px;border-radius:9px;
+  background:#e1ecfa;color:#336a9e;
+  font-size:.57rem;font-weight:800;letter-spacing:.035em;
+}
+.coachModal[data-native-skin="ios"] .iosLocationPermissionApp{
+  display:flex;align-items:center;gap:9px;
+  padding:16px 9px 1px;
+  font-size:.85rem;color:#202b3e;
+}
+.coachModal[data-native-skin="ios"] .iosLocationPermissionChoices{
+  margin-top:8px;padding:0 11px;
+}
+.coachModal[data-native-skin="ios"] .iosLocationPermissionChoices .phoneSettingOption{
+  margin:0;border-radius:0;min-height:51px;
+  padding:11px 0;background:white;
+}
+.coachModal[data-native-skin="ios"] .iosLocationPermissionChoices .phoneSettingOption:last-child{
+  border-bottom:0;
+}
+.coachModal[data-native-skin="ios"] .iosLocationPermissionChoices .phoneRadio{
+  border:0;color:#126fc8;font-size:1.08rem;
+}
+.coachModal[data-native-skin="ios"] .iosLocationPreciseFocus.nativeFocus{
+  background:#eaf4ff;
+}
+.coachModal[data-native-skin="ios"] .phoneDetailHeader.nativeDetailSubtitle{
+  padding-bottom:2px;
+}
