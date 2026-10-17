@@ -408,7 +408,15 @@ function matchResult(result, person) {
     const token=accountTokenFor(result.url||"",platform);
     const nameParts=full.split(" ").filter(part=>part.length>=5);
     const nameInHandle=!!token && nameParts.some(part=>token.includes(part));
-    if(profileIdentity && (nameInHandle || clueMatches.length>=1)){
+    // If a profile explicitly claims a different home city/location,
+    // keep the original strict discard rule. Unstated location is different
+    // from contradictory location.
+    const statedLocation=String(result.description||"").match(
+      /\\b(?:based in|lives in|located in|resides in)\\s+(?:the\\s+)?([^.,;!\\n]+)/i
+    )?.[1]||"";
+    const explicitOtherLocation=!!statedLocation &&
+      !normalize(statedLocation).includes(normalize(person.city));
+    if(profileIdentity && !explicitOtherLocation && (nameInHandle || clueMatches.length>=1)){
       return {
         confidence:"possible",
         reasons:[...reasons,"requires identity confirmation; city not validated"]
@@ -778,7 +786,7 @@ export default async (req) => {
     { group:"Open web · broad", q:nameWithCity || quotedName },
     { group:"Social · Instagram & TikTok", q:quotedName + " (site:instagram.com OR site:tiktok.com OR site:threads.net)", deep:true },
     { group:"LinkedIn · profiles", q:quotedName + " site:linkedin.com/in", deep:true },
-    { group:"Facebook · profiles", q:quotedName + " site:facebook.com", deep:true },
+    { group:"Facebook · profiles & posts", q:quotedName + " site:facebook.com", deep:true },
     { group:"Video and X", q:quotedName + " (site:youtube.com OR site:x.com OR site:twitter.com)", deep:true },
     { group:"Open web · identity", q:supportIdentityQuery || strictIdentityQuery || nameWithCity },
     { group:"LinkedIn · activity", q:(supportIdentityQuery || quotedName) + " site:linkedin.com/posts", deep:true },
