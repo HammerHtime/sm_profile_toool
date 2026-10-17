@@ -2367,7 +2367,40 @@ function setConsentState() {
       '<div class="coachCopy"></div>';
   }
 
-  function updateCoachCopy(title, body, target, isExplain, direction = 0) {
+  function activeGuideRoute(){
+    return globalThis.GuidePaths?.resolve({
+      platform:guidePlatform?.name || "Settings",
+      device:guidePlatform?.device || "",
+      parent:guideParentMode,
+      steps:currentGuide || [],
+      index:guideIndex
+    }) || {path:[guidePlatform?.name || "Settings"],alternative:null};
+  }
+
+  function routeCrumbsHtml(parts){
+    return parts.map((part,i)=>
+      (i ? '<span class="guideNavChevron" aria-hidden="true">›</span>' : '')+
+      '<span class="guideNavPart'+(i===parts.length-1?' current':'')+'">'+
+      escapeHtml(part)+'</span>'
+    ).join("");
+  }
+
+  function routeDisplayHtml(route){
+    const parts=route.path||[];
+    const readable=parts.join(" → ");
+    const alternate=route.alternative||[];
+    return '<div class="guideNavBlock" role="group" aria-label="Navigation path to this setting">'+
+      '<span class="guideNavLabel">NAVIGATION PATH</span>'+
+      '<nav class="guideNavTrail" aria-label="'+escapeHtml(readable)+'">'+
+      '<span class="guideNavIcon" aria-hidden="true">⚙</span>'+
+      routeCrumbsHtml(parts)+'</nav>'+
+      (alternate.length?
+        '<div class="guideNavAlternate"><strong>ANDROID</strong><span>'+
+        escapeHtml(alternate.join(' › '))+'</span></div>':'')+
+      '</div>';
+  }
+
+  function updateCoachCopy(title, body, target, isExplain, direction = 0, route = activeGuideRoute()) {
     const copy = $("coachSlide").querySelector(".coachCopy");
     const navigationOnly=isGuideNavigationTarget(target);
     const actualTarget=guideNavigationTarget(target);
@@ -2399,6 +2432,7 @@ function setConsentState() {
         : '<div class="tapCallout"><strong>Next action:</strong>&nbsp; ' + escapeHtml(navigationOnly ? actualTarget : target) + "</div>";
 
     const html =
+      routeDisplayHtml(route) +
       '<div class="coachAppBadge" style="--brand:' + escapeHtml(guidePlatform?.brand || "#52d6ff") + '"><span>' + (guidePlatform?.icon || "⚙") + '</span><strong>' + escapeHtml(guidePlatform?.name || "Privacy") + '</strong></div>' +
       '<div class="eyebrow">' + (isExplain ? "WHY THIS SETTING MATTERS" : "STEP " + (guideIndex + 1)) + '</div>' +
       "<h2>" + escapeHtml(title) + "</h2><p>" + escapeHtml(body) + "</p>" + actionBlock;
@@ -2419,11 +2453,12 @@ function setConsentState() {
     setTimeout(() => copy.classList.remove("copyFadeIn"), 430);
   }
 
-  function updatePhoneScene(title, target, isExplain, direction = 0) {
+  function updatePhoneScene(title, target, isExplain, direction = 0, route = activeGuideRoute()) {
     ensureCoachStructure();
     const viewport = $("coachSlide").querySelector(".phoneViewport");
     const newScene = document.createElement("div");
     newScene.className = "phoneScene";
+    newScene.dataset.guidePath = JSON.stringify(route.path || []);
     newScene.innerHTML = phoneSceneHtml(title,target,isExplain);
 
     const oldScene = viewport.querySelector(".phoneScene");
@@ -2463,8 +2498,9 @@ function setConsentState() {
     $("coachOfficial").href = officialHelp(guidePlatform.name, guidePlatform.device);
     $("coachProgress").innerHTML = '<span class="coachProgressBar" style="width:' + Math.round((guideIndex+1)/currentGuide.length*100) + '%"></span>';
 
-    updatePhoneScene(title,target,isExplain,direction);
-    updateCoachCopy(title,body,target,isExplain,direction);
+    const route=activeGuideRoute();
+    updatePhoneScene(title,target,isExplain,direction,route);
+    updateCoachCopy(title,body,target,isExplain,direction,route);
 
     $("coachPrev").disabled = guideIndex === 0;
     $("coachNext").textContent = guideIndex === currentGuide.length - 1 ? "Finish guide" : "Next";
