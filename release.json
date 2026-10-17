@@ -1,5 +1,5 @@
 {
-  "release": "public-footprint-rc2-smoke-v39",
-  "purpose": "Presenter walkthrough breadcrumbs: full root-to-setting navigation path above every guide step and mirrored inside the iPhone, Android, and social app UI, including Screen Time/Family Link branch changes.",
-  "verification": "37 breadcrumb routing checks plus existing code QA; browser screenshot review of iPhone Contacts, Instagram Private account, and Family Link Google Play approvals."
+  "release": "public-footprint-rc2-smoke-v40",
+  "purpose": "Match current iPhone Location Services overview: device-wide master switch, Location Alerts, Share My Location and per-app list; guide to app-specific location access and Precise Location as a separate screen.",
+  "verification": "New iPhone Location Services regression QA and original app QA. UI is illustrative and never depicts actual visitor location settings."
 }

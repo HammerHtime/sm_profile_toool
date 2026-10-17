@@ -193,3 +193,7 @@ The presentation UI also received a readability pass for classroom/projector use
 Every guided phone and social-media privacy walkthrough now shows a root-to-destination path both above the presenter instructions and inside the illustrated phone. The breadcrumb follows the **current** step, including backtracking between Screen Time, Apple Family settings and a child's device, or between sections of Android Family Link. App-specific phone permissions also show an Android alternative to the displayed iPhone path.
 
 The phone screens are **illustrations**, not captured or connected user account screens. Labels and settings menus can vary by app/device release, region and account age. The path regression checks are in `scripts/guide-paths-qa.mjs` and run with `npm run qa`.
+
+## iPhone Location Services teaching screens
+
+The iPhone guide now separates **Settings → Privacy & Security → Location Services** (device-wide switch, Location Alerts, Share My Location, list of apps) from the per-app location-permission screen (Never / While Using and Precise Location). The highlighted action on the overview is to choose an app, **not** to turn off the device-wide switch. Example app names are marked as illustrative, and no screenshots or app lists from a presenter’s device are copied to the website. The walkthrough UI is checked with `scripts/location-guide-qa.mjs` via `npm run qa`.
