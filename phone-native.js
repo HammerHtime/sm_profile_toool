@@ -254,6 +254,70 @@
     screen.appendChild(label);
   }
 
+  // A menu list is not an accurate first screen for opening a social app.
+  // Show the actual navigation region on the opening step, and the profile
+  // page on the next "open menu" step. All account data stays illustrative.
+  function nativeAppEntry(screen,skin) {
+    if (skin==="ios" || skin==="android" || screen.classList.contains("phoneDetailScreen")) return false;
+    const action=$(".phoneRow.target",screen)?.querySelector("span")?.textContent.trim()||"";
+    const first=action==="Profile" || action==="You" || action==="Me";
+    const menu=action==="Menu" && (skin==="instagram" || skin==="tiktok");
+    if (!first && !menu)return false;
+    screen.classList.add("nativeEntryScreen",menu?"nativeEntryProfile":"nativeEntryFeed");
+    const top=$(".nativeTopBar",screen);
+    $(".nativeBack",top).textContent="";
+    $(".nativeHeadingLabel",top).textContent=menu?"Your profile":(names[skin]||"Social app");
+    const extra=$(".nativeMore",top);
+    extra.textContent=menu?"☰":"♡";
+    if(menu) {
+      extra.classList.add("nativeFocus","nativeInteractive");
+      extra.setAttribute("role","button");
+      extra.setAttribute("tabindex","0");
+      extra.setAttribute("aria-label","Tap menu to continue");
+    }
+    const rows=$(".phoneRows",screen);
+    if(!rows)return false;
+    rows.classList.add("nativeEntryBody");
+    if(menu){
+      rows.innerHTML=
+        '<div class="nativeEntryAccount">'+
+          '<span class="nativeProfileAvatar">◉</span>'+
+          '<span class="nativeAccountStats"><strong>—</strong><small>Posts</small></span>'+
+          '<span class="nativeAccountStats"><strong>—</strong><small>Followers</small></span>'+
+          '<span class="nativeAccountStats"><strong>—</strong><small>Following</small></span>'+
+        '</div>'+
+        '<div class="nativeProfileText"><strong>Your profile</strong><small>Illustrative account view — no personal details shown</small></div>'+
+        '<div class="nativeProfileActions"><span>Edit profile</span><span>Share profile</span></div>'+
+        '<div class="nativeProfileSeparator">▦ &nbsp;&nbsp; ◉ &nbsp;&nbsp; ▣</div>'+
+        '<div class="nativeProfileTiles"><i></i><i></i><i></i><i></i><i></i><i></i></div>';
+    }else{
+      rows.innerHTML=
+        '<div class="nativeStories">'+
+          '<span><i></i><small>Your story</small></span>'+
+          '<span><i></i><small>Stories</small></span>'+
+          '<span><i></i><small>Following</small></span>'+
+          '<span><i></i><small>Suggested</small></span>'+
+        '</div>'+
+        '<div class="nativeFeedByline"><span class="nativeTinyAvatar"></span><span>Public feed preview<small>Illustrative app home</small></span><b>•••</b></div>'+
+        '<div class="nativeFeedMedia"><span>PUBLIC FEED</span></div>'+
+        '<div class="nativeFeedReactions">♡ &nbsp; ◯ &nbsp; ➤ <small>▣</small></div>'+
+        '<div class="nativeFeedCaption">Open your profile using the tab highlighted below.</div>';
+    }
+    nativeBottom(screen,skin);
+    const nav=$(".nativeBottom",screen);
+    if(first && nav){
+      nav.setAttribute("aria-hidden","false");
+      const tab=nav.lastElementChild;
+      if(tab){
+        tab.classList.add("nativeFocus","nativeInteractive");
+        tab.setAttribute("role","button");
+        tab.setAttribute("tabindex","0");
+        tab.setAttribute("aria-label","Tap profile to continue");
+      }
+    }
+    return true;
+  }
+
   function enhanceScene(scene,skin){
     if(scene.dataset.nativeEnhanced==="1")return;
     scene.dataset.nativeEnhanced="1";
@@ -261,9 +325,11 @@
     if(!screen)return;
     screen.classList.add("nativeScreen","native-"+skin);
     nativeTopBar(screen,skin);
-    addRowIcons(screen,skin);
-    spotlight(screen,skin);
-    nativeBottom(screen,skin);
+    if(!nativeAppEntry(screen,skin)){
+      addRowIcons(screen,skin);
+      spotlight(screen,skin);
+      nativeBottom(screen,skin);
+    }
     createFootnote(screen,skin);
   }
 
@@ -296,8 +362,20 @@
 
   slide.addEventListener("click",(event)=>{
     const focus=event.target.closest(".nativeFocus");
-    if(!focus||!$(".phoneDetailScreen",slide))return;
+    if(!focus)return;
+    if(focus.classList.contains("nativeInteractive")){
+      event.preventDefault();
+      $("#coachNext")?.click();
+      return;
+    }
+    if(!$(".phoneDetailScreen",slide))return;
     if(focus.matches(".phoneRow.target"))return;
+    $("#coachNext")?.click();
+  });
+  slide.addEventListener("keydown",(event)=>{
+    const focus=event.target.closest(".nativeInteractive");
+    if(!focus || !["Enter"," "].includes(event.key))return;
+    event.preventDefault();
     $("#coachNext")?.click();
   });
   refresh();
