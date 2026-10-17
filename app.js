@@ -1015,20 +1015,30 @@ async function checkLiveSearchReady() {
       const label=source.platform||source.domain||"Public web";
       counts.set(label,(counts.get(label)||0)+1);
     }
+    if(mode==="synthetic"){
+      for(const entry of report.sourceCoverage?.sources||[]){
+        if(entry.matched)counts.set(entry.name,1);
+      }
+    }
     const platforms=[...counts.entries()].sort((a,b)=>b[1]-a[1]).slice(0,6);
     const title=$("observedDensityTitle"),desc=$("observedDensityDesc");
     const bars=$("observedDensityBars"),network=$("observedNetwork");
     if(!title||!desc||!bars||!network)return;
-    const amount=sources.length, kinds=counts.size, anchored=strong.length;
-    const level=amount>=24&&kinds>=4?"MANY OBSERVED SIGNALS":
+    const amount=mode==="synthetic"?(report.accounts||[]).length:sources.length,
+      kinds=counts.size,anchored=strong.length;
+    const level=mode==="synthetic"?"SYNTHETIC DEMONSTRATION":
+      amount>=24&&kinds>=4?"MANY OBSERVED SIGNALS":
       amount>=8&&kinds>=2?"SOME OBSERVED SIGNALS":
       amount>0?"LIMITED OBSERVED SIGNALS":"NO VERIFIED SIGNALS";
     title.textContent=level;
-    const caveat=mode==="synthetic"?"Synthetic illustration only. No live search evidence.":
-      mode==="evidence"?"Based on supplied evidence; not independently verified by this app.":
-      "These counts reflect public/indexed results returned, not everything a person has ever shared.";
-    desc.textContent=amount+" public result"+(amount===1?"":"s")+" across "+kinds+
-      " source type"+(kinds===1?"":"s")+". "+anchored+" stronger identifier matches. "+caveat;
+    if(mode==="synthetic"){
+      desc.textContent="An illustrative network of "+kinds+" social platforms. These nodes and counts are entirely fictional and do not represent a real person's results.";
+    }else{
+      const caveat=mode==="evidence"?"Based on supplied evidence; not independently verified by this app.":
+        "These counts reflect public/indexed results returned, not everything a person has ever shared.";
+      desc.textContent=amount+" public result"+(amount===1?"":"s")+" across "+kinds+
+        " source type"+(kinds===1?"":"s")+". "+anchored+" stronger identifier matches. "+caveat;
+    }
     const segments=Math.min(8,Math.max(0,Math.ceil(amount/5)+Math.floor(kinds/3)));
     bars.innerHTML=Array.from({length:8},(_,i)=>
       '<span class="observedDensityBar'+(i<segments?' filled':'')+'"></span>').join("");
@@ -1050,7 +1060,7 @@ async function checkLiveSearchReady() {
       node.style.setProperty("--x",x+"%");
       node.style.setProperty("--y",y+"%");
       node.style.setProperty("--node-color",nodeColors[i]);
-      node.textContent=name+" · "+count;
+      node.textContent=name+" · "+(mode==="synthetic"?"SAMPLE":count);
       network.appendChild(node);
     });
     const button=$("openFoundFixes");
@@ -1068,6 +1078,12 @@ async function checkLiveSearchReady() {
       if(mode==="verified"&&item.confidence!=="strong")continue;
       const p=PLATFORMS.find(p=>!p.device&&p.name===item.platform);
       if(p)counts.set(p.name,(counts.get(p.name)||0)+1);
+    }
+    if(mode==="synthetic"){
+      for(const entry of report.sourceCoverage?.sources||[]){
+        const p=PLATFORMS.find(p=>!p.device&&p.name===entry.name);
+        if(entry.matched&&p)counts.set(p.name,1);
+      }
     }
     const picks=[...counts.entries()].sort((a,b)=>b[1]-a[1])
       .slice(0,4)
@@ -1088,8 +1104,8 @@ async function checkLiveSearchReady() {
       btn.style.setProperty("--brand",platform.brand||"#52d6ff");
       btn.innerHTML='<span class="recoIcon">'+platform.icon+'</span>'+
         '<strong>'+escapeHtml(platform.name)+'</strong>'+
-        '<small>'+hits+' matching public source'+(hits===1?"":"s")+
-        '. Review visibility, tags, discovery and account permissions.</small>'+
+        '<small>'+(mode==="synthetic"?"SYNTHETIC SAMPLE. ":hits+" matching public source"+(hits===1?"":"s")+". ")+
+        'Review visibility, tags, discovery and account permissions.</small>'+
         '<span class="recoArrow">OPEN STEP-BY-STEP GUIDE →</span>';
       btn.addEventListener("click",()=>openGuideDirect(platform,false));
       root.appendChild(btn);
