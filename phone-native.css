@@ -497,3 +497,76 @@ body.privacyGuideDirect #recommendedFixesPanel{display:none!important}
 .coachModal[data-native-skin="tiktok"] .nativeProfileText{color:#e0edfb}
 .coachModal[data-native-skin="tiktok"] .nativeProfileActions span{background:#353f4c;color:#f2f6ff}
 .coachModal[data-native-skin="tiktok"] .nativeFeedMedia{background:linear-gradient(130deg,#252e36,#455668,#0f1b26)}
+
+
+/* The approved navigation-path treatment: large presenter trail, matching
+   compact trail inside the phone. Each branch is computed per guide step. */
+.coachModal .guideNavBlock{
+  display:flex;flex-direction:column;align-items:flex-start;gap:8px;
+  margin:0 0 24px;max-width:100%;
+}
+.coachModal .guideNavLabel{
+  font-size:.7rem;font-weight:850;letter-spacing:.14em;
+  line-height:1.2;color:#a9c4d9;
+}
+.coachModal .guideNavTrail{
+  display:flex;align-items:center;flex-wrap:wrap;gap:7px;
+  border:1px solid rgba(148,196,218,.27);
+  border-radius:22px;background:rgba(25,47,62,.48);
+  padding:9px 13px;max-width:100%;
+  color:#e7f2fa;font-size:.85rem;line-height:1.45;
+}
+.coachModal .guideNavPart{
+  font-size:inherit;font-weight:540;overflow-wrap:anywhere;
+}
+.coachModal .guideNavPart.current{
+  font-weight:850;color:white;
+}
+.coachModal .guideNavIcon{
+  font-size:1.1rem;line-height:1;color:#9fdaf0;margin-right:3px;
+}
+.coachModal .guideNavChevron{
+  color:#8fb4c8;font-size:1.15rem;font-weight:800;
+  line-height:1;
+}
+.coachModal .guideNavAlternate{
+  display:flex;flex-wrap:wrap;gap:8px;align-items:center;
+  font-size:.73rem;line-height:1.5;color:#a8c7da;
+  padding-left:5px;
+}
+.coachModal .guideNavAlternate strong{
+  font-size:.65rem;letter-spacing:.08em;
+  border:1px solid rgba(115,177,208,.35);
+  border-radius:8px;padding:2px 6px;
+  color:#a4d9f2;
+}
+.coachModal[data-native-skin] .nativePhoneBreadcrumb{
+  display:flex;align-items:center;flex-wrap:wrap;align-content:center;
+  gap:3px 6px;padding:7px 9px;margin:5px 12px 6px;
+  border-radius:11px;background:rgba(112,153,189,.11);
+  border:1px solid rgba(112,153,189,.075);
+  font-size:.58rem;line-height:1.45;
+  color:#516b83;flex:0 0 auto;
+  max-height:80px;overflow-y:auto;
+  scrollbar-width:thin;
+}
+.coachModal[data-native-skin] .nativePhoneChevron{
+  color:#608ca9;font-size:.85rem;font-weight:850;line-height:1;
+}
+.coachModal[data-native-skin] .nativePhoneSegment{
+  font-size:inherit;font-weight:520;overflow-wrap:anywhere;
+}
+.coachModal[data-native-skin] .nativePhoneSegment.current{
+  color:#203b54;font-weight:840;
+}
+.coachModal:is([data-native-skin="tiktok"],[data-native-skin="discord"],[data-native-skin="twitter"],[data-native-skin="twitch"]) .nativePhoneBreadcrumb{
+  background:rgba(187,212,242,.1);border-color:rgba(187,212,242,.12);
+  color:#c3d6e9
+}
+.coachModal:is([data-native-skin="tiktok"],[data-native-skin="discord"],[data-native-skin="twitter"],[data-native-skin="twitch"]) .nativePhoneSegment.current{
+  color:#f0f9ff
+}
+@media(max-width:730px){
+  .coachModal .guideNavBlock{margin-bottom:16px}
+  .coachModal .guideNavTrail{font-size:.76rem;padding:8px 10px}
+}
