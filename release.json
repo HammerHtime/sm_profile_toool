@@ -1,5 +1,5 @@
 {
-  "release": "public-footprint-rc2-smoke-v35",
-  "purpose": "Expanded parallel public discovery and bounded SerpApi fallback; observed-source visualization and privacy guide handoff; realistic native-style iPhone, Android and social-app setting walkthroughs with highlighted tap targets.",
+  "release": "public-footprint-rc2-smoke-v36",
+  "purpose": "Redeploy current visual walkthrough build to refresh production Netlify environment variables, including SerpApi key.",
   "verification": "Synthetic/demo previews and automated static/runtime QA. Real-world discovery coverage remains unverified until usable production search-provider credentials and benchmark data are available."
 }
