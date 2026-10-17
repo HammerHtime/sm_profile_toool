@@ -1,0 +1,25 @@
+name: Public Profile Benchmarks
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/public-profile-benchmark.yml"
+  workflow_dispatch:
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 9
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test three public-profile examples
+        env:
+          SITE_URL: https://sm-profile-tool.netlify.app
+        run: node scripts/public-profile-benchmark.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: public-profile-benchmark-results
+          path: public-profile-benchmark-results.json
+          retention-days: 7
