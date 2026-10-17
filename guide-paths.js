@@ -237,7 +237,7 @@
     if(target==="Downtime")return [...androidChild,"Screen time","Downtime"];
     if(target==="App limits")return [...androidChild,"Screen time","Time limits","App limits"];
     if(target==="Google Play")return [...androidControls,"Google Play"];
-    if(target==="App approvals")return [...androidControls,"Google Play","Purchase & download approvals"];
+    if(target==="App approvals")return [...androidControls,"Google Play","Purchase & download approvals","App approvals"];
     if(target==="Purchases")return [...androidControls,"Google Play","Purchase approvals"];
     if(target==="Chrome")return [...androidControls,"Google Chrome"];
     if(target==="Websites")return [...androidControls,"Google Chrome","Manage sites"];
