@@ -17,6 +17,45 @@
     ["Pinterest","pinterest"],["Twitch","twitch"]
   ];
   const dark=new Set(["tiktok","discord","twitter","twitch"]);
+  const nativeMenuExamples={
+    instagram:{
+      "Menu":["Settings and activity","Your activity","Archive","Saved","QR code"],
+      "Settings and activity":["Accounts Center","Account privacy","Close Friends","Tags and mentions","Messages and story replies","Notifications"],
+      "Account privacy":["Private account","Status sharing","Blocked accounts","Hide story"],
+      "Private account":["Private account","Profile information","Visibility"],
+      "Tags and mentions":["Allow tags from","Manually approve tags","Allow mentions from"],
+      "Messages and story replies":["Message requests","Group chat settings","Story replies"]
+    },
+    facebook:{
+      "Menu":["Settings & privacy","Friends","Groups","Saved","Pages"],
+      "Settings & privacy":["Settings","Privacy Checkup","Privacy Center","Audience and visibility"],
+      "Privacy Checkup":["Who can see what you share","How people find you","Account security"],
+      "Audience":["Future posts","Stories","Profile information","Friends list"]
+    },
+    tiktok:{
+      "Profile":["Menu","Edit profile","Saved","Videos","Followers"],
+      "Menu":["Settings and privacy","Creator tools","Your balance","QR code"],
+      "Settings and privacy":["Account","Privacy","Security & permissions","Notifications","Screen time"],
+      "Privacy":["Private account","Suggest your account to others","Sync contacts","Downloads","Direct messages"]
+    },
+    linkedin:{
+      "Settings":["Account preferences","Sign in & security","Visibility","Data privacy","Advertising data"],
+      "Visibility":["Edit your public profile","Profile discovery using email","Profile discovery using phone","Who can see your email"],
+      "Public profile":["Your profile's public visibility","Profile photo","Headline","Experience","Education"]
+    },
+    snapchat:{
+      "Settings":["Contact Me","View My Story","See Me in Quick Add","Snap Map","Notification settings"],
+      "Snap Map":["Ghost Mode","Friends","Selected friends","Location sharing"]
+    },
+    discord:{
+      "User Settings":["My Account","Profiles","Privacy & Safety","Content & Social","Notifications"],
+      "Content & Social":["Direct messages","Message requests","Friend requests","Sensitive media"]
+    },
+    youtube:{
+      "Settings":["General","Notifications","History & privacy","Privacy","Connected apps"],
+      "Privacy":["Keep all subscriptions private","Playlists","Video visibility"]
+    }
+  };
   const colors={ios:"#0a84ff",android:"#4263cb",instagram:"#d62976",
     facebook:"#1877f2",tiktok:"#25f4ee",linkedin:"#0a66c2",
     snapchat:"#ffdf00",discord:"#5865f2",youtube:"#ff0033",
@@ -79,7 +118,7 @@
     const header=$(".phoneTitle",screen);
     const detail=$(".phoneDetailHeader",screen);
     const isDetail=!!detail;
-    const titleText=(isDetail ? ($("strong",detail)?.textContent || "Privacy settings") :
+    const titleText=(isDetail ? ($("small",detail)?.textContent || $("strong",detail)?.textContent || "Privacy settings") :
       (header?.lastElementChild?.textContent || "Settings")).trim();
     const title=titleText.replace(/^Tap\s+/i,"");
     const el=document.createElement("div");
@@ -101,6 +140,23 @@
   }
 
   function addRowIcons(screen,skin){
+    const target=$(".phoneRow.target",screen)?.querySelector("span")?.textContent || "";
+    const title=$(".phoneTitle",screen)?.lastElementChild?.textContent || "";
+    const templates=nativeMenuExamples[skin] || {};
+    const preset=templates[target] || templates[title];
+    if(preset && $(".phoneRows",screen)){
+      const rows=$(".phoneRows",screen);
+      let labels=[...preset];
+      if(target && !labels.includes(target)) labels.splice(Math.min(1,labels.length),0,target);
+      const count=labels.length;
+      if(count){
+        rows.innerHTML=labels.slice(0,8).map(label=>
+          '<div class="phoneRow'+(label===target?' target':'')+'"><span>'+
+          label.replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]))+
+          '</span><span class="phoneChevron">›</span></div>'
+        ).join("");
+      }
+    }
     for(const row of all(".phoneRow",screen)){
       if ($(".nativeRowSymbol",row)) continue;
       const label=$("span",row)?.textContent || "";
@@ -132,7 +188,7 @@
       focus=$(".phoneSettingOption.selected",screen) ||
         all(".phoneSettingToggleRow",screen).find(x=>/Off|On|Private account/i.test(x.textContent)) ||
         $(".phoneSettingMenuRow.emphasized",screen) ||
-        $(".phoneSettingOption",screen) ||
+        ($(".phoneSettingOption",screen) ? $(".phoneSettingGroup",screen) : null) ||
         $(".phoneSettingToggleRow",screen) ||
         $(".phoneSettingMenuRow",screen) ||
         $(".phoneStatusSettingPrimary",screen);
@@ -192,7 +248,9 @@
     if($(".nativeScreenLabel",screen))return;
     const label=document.createElement("div");
     label.className="nativeScreenLabel";
-    label.textContent=(skin==="ios"?"iPhone":skin==="android"?"Android":names[skin])+" · illustrative settings view";
+    const reviewed={ios:"October 2026",android:"October 2026",linkedin:"October 2026"}[skin];
+    label.textContent=(skin==="ios"?"iPhone":skin==="android"?"Android":names[skin])+
+      " • illustrated UI"+(reviewed?" • guide reviewed "+reviewed:" • verify current app version");
     screen.appendChild(label);
   }
 
@@ -241,13 +299,6 @@
     if(!focus||!$(".phoneDetailScreen",slide))return;
     if(focus.matches(".phoneRow.target"))return;
     $("#coachNext")?.click();
-  });
-  slide.addEventListener("keydown",(event)=>{
-    if(event.key!=="Enter"&&event.key!==" ")return;
-    if(event.target.matches(".phoneRow.target")){
-      event.preventDefault();
-      $("#coachNext")?.click();
-    }
   });
   refresh();
 })();
