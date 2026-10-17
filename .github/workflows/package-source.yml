@@ -1,0 +1,24 @@
+name: Package Source ZIP
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/package-source.yml"
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build clean source ZIP
+        shell: bash
+        run: |
+          set -euo pipefail
+          zip -qr sm_profile_toool-main.zip .             -x ".git/*"             -x "node_modules/*"             -x "sm_profile_toool-main.zip"
+      - name: Upload source ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: sm_profile_toool-main
+          path: sm_profile_toool-main.zip
+          retention-days: 1
