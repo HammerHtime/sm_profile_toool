@@ -318,6 +318,35 @@
     return true;
   }
 
+  function addPhoneBreadcrumb(scene,screen){
+    if($(".nativePhoneBreadcrumb",screen))return;
+    let parts=[];
+    try{
+      parts=JSON.parse(scene.dataset.guidePath||"[]");
+    }catch{}
+    if(!Array.isArray(parts)||!parts.length)return;
+    const bar=document.createElement("div");
+    bar.className="nativePhoneBreadcrumb";
+    bar.setAttribute("role","note");
+    bar.setAttribute("aria-label","Navigation path: "+parts.join(" then "));
+    parts.forEach((part,index)=>{
+      if(index){
+        const arrow=document.createElement("span");
+        arrow.className="nativePhoneChevron";
+        arrow.setAttribute("aria-hidden","true");
+        arrow.textContent="›";
+        bar.appendChild(arrow);
+      }
+      const item=document.createElement("span");
+      item.className="nativePhoneSegment"+(index===parts.length-1?" current":"");
+      item.textContent=String(part);
+      bar.appendChild(item);
+    });
+    const header=$(".nativeTopBar",screen);
+    if(header)header.insertAdjacentElement("afterend",bar);
+    else screen.prepend(bar);
+  }
+
   function enhanceScene(scene,skin){
     if(scene.dataset.nativeEnhanced==="1")return;
     scene.dataset.nativeEnhanced="1";
@@ -325,6 +354,7 @@
     if(!screen)return;
     screen.classList.add("nativeScreen","native-"+skin);
     nativeTopBar(screen,skin);
+    addPhoneBreadcrumb(scene,screen);
     if(!nativeAppEntry(screen,skin)){
       addRowIcons(screen,skin);
       spotlight(screen,skin);
