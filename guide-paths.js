@@ -185,7 +185,7 @@
       "Content level":["Content settings"],
       "History":["History controls"],
       "Autoplay":["Autoplay"],
-      "Time limits":["Family Link","Screen time"]
+      "Time limits":["Screen time"]
     }
   };
   const iosPrivacy=["Settings","Privacy & Security"];
@@ -299,7 +299,8 @@
     const route=device==="ios" ? {path:iosPath(target,!!parent,steps,index,title)}:
       device==="android" ? {path:androidPath(target,!!parent)}:
       socialPath(platform,target,!!parent);
-    let path=[...new Set((route.path||[]).map(x=>String(x||"").trim()).filter(Boolean))];
+    const listed=(route.path||[]).map(x=>String(x||"").trim()).filter(Boolean);
+    let path=listed.filter((step,i)=>i===0 || step!==listed[i-1]);
     // Do not show an empty bar even for future platforms.
     if(!path.length)path=[platform||"Settings"];
     return Object.freeze({
