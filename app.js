@@ -445,8 +445,8 @@
       "App Store, Media, Web & Games":{kind:"status",section:"Content restrictions",status:"Set app age ratings, web content and media/game limits",recommended:"Match ratings to the child's age and maturity",defaultText:"Age/content restrictions are configurable by the parent.",why:"Age ratings and web restrictions reduce access to content outside the family's intended range."},
       "Allow Changes to Settings":{kind:"choices",section:"Allow Changes",options:["Allow changes","Don't Allow changes"],recommended:"Don't Allow changes for protected privacy/account settings",defaultText:"Change permissions must be configured for each protected setting.",why:"A restriction has little value if the child can change the underlying account, contacts, location or privacy setting."},
       "Communication Safety":{kind:"toggle",section:"Communication Safety",label:"Communication Safety",value:"On",recommended:"On for child/teen accounts",defaultText:"Availability/default depends on child account and OS version.",why:"On-device detection can warn and blur potentially sensitive images before the child views or sends them."},
-      "Location Services":{kind:"status",section:"Child device Location Services",status:"Review each app's location permission",recommended:"Use While Using or Never for most apps",defaultText:"Apps need permission before they can access location.",why:"Reviewing location at the child-device level catches apps not covered by an individual app walkthrough."},
-      "Precise Location":{kind:"toggle",section:"App location permission",label:"Precise Location",value:"Off",recommended:"Off unless exact position is genuinely needed",defaultText:"Precise Location is controlled per app.",why:"Approximate location is enough for many apps and exposes less exact location data."},
+      "Location Services":{kind:"iosLocationOverview",section:"Location Services",recommended:"Keep the master service available when needed; review individual app permissions below",defaultText:"The main switch controls location availability for the whole device. Each app has its own permission below.",why:"The Location Services screen lists apps and their current permissions. Select an individual app before changing Never, While Using or Precise Location. Turning off the master switch affects every app, including navigation and safety features."},
+      "Precise Location":{kind:"iosAppLocation",section:"Location permission · example app",recommended:"Review whether this app needs access and whether Precise Location is necessary",defaultText:"The options appear only after selecting an installed app in Location Services.",why:"Precise Location is an app-specific switch on the app permission screen, not on the main Location Services page. Approximate location is sufficient for many social apps."},
       "Contacts":{kind:"status",section:"Contacts permission",status:"Review every app with Contacts access",recommended:"Remove access from apps that do not genuinely need the address book",defaultText:"Apps require permission before accessing contacts.",why:"A child's address book can expose friends' names, phone numbers and email addresses to apps."},
       "Photos":{kind:"choices",section:"Photos permission",options:["None","Limited Access","Full Access"],recommended:"Limited Access where possible",defaultText:"Apps require permission before accessing the photo library.",why:"Limiting photo access prevents an app from seeing the child's entire image library."}
     },
@@ -535,8 +535,8 @@
   const iosPrivacy = [
     ["Open Settings","Open the Settings app on the iPhone.","Settings"],
     ["Open Privacy & Security","Scroll down and tap Privacy & Security.","Privacy & Security"],
-    ["Location Services","Tap Location Services to see every app that has requested location access.","Location Services"],
-    ["Precise Location","Inside an app's Location Services screen, review Precise Location.","Precise Location"],
+    ["Location Services","This screen has the main Location Services switch, Location Alerts, Share My Location and a scrollable list of apps. Scroll to an app and tap its name, not the master switch.","Location Services"],
+    ["Precise Location","After you select an app from the list, review Never / While Using and the Precise Location switch. These are permissions for that one app.","Precise Location"],
     ["Tracking","Go back to Privacy & Security and tap Tracking.","Tracking"],
     ["Contacts","Go back to Privacy & Security and tap Contacts.","Contacts"],
     ["Photos","Go back to Privacy & Security and tap Photos.","Photos"],
@@ -579,8 +579,8 @@
     ["Select child in Family","Select the same child in Family settings.","Child"],
     ["Ask to Buy","Review approval for eligible app downloads and purchases.","Ask to Buy"],
     ["Child's privacy settings","On the child's iPhone, open Settings then Privacy & Security.","Privacy & Security"],
-    ["Location Services","Tap Location Services and review each app.","Location Services"],
-    ["Precise Location","Within an app's Location Services page, review Precise Location.","Precise Location"],
+    ["Location Services","On the child's iPhone, open Location Services. Keep the device-wide switch separate from individual app permissions; scroll to an app and tap its name.","Location Services"],
+    ["Precise Location","After selecting an individual app in Location Services, review its location-access choices and Precise Location switch.","Precise Location"],
     ["Contacts","Review contacts access app by app.","Contacts"],
     ["Photos","Use selected-photo access when appropriate.","Photos"]
   ];
@@ -1944,8 +1944,8 @@ function setConsentState() {
 
   const DEVICE_SETTING_DETAILS = {
     ios:{
-      "Location Services":{kind:"choices",section:"Location Services",options:["Never","Ask Next Time Or When I Share","While Using the App","Always"],recommended:"While Using or Never for most social apps",defaultText:"Apps have no location access until you grant permission.",why:"Location access can reveal where you are or support location-based features. Review each app individually instead of leaving broad access in place."},
-      "Precise Location":{kind:"toggle",section:"App Location Access",label:"Precise Location",value:"Off",recommended:"Off unless the app genuinely needs your exact position",defaultText:"Precise Location is chosen per app after location permission is granted.",why:"Turning Precise Location off gives an app an approximate area instead of your specific location."},
+      "Location Services":{kind:"iosLocationOverview",section:"Location Services",recommended:"Keep the main switch available when needed; select an individual app below to review its access",defaultText:"Location Services is a device-wide switch. App-specific permissions are listed below and must be reviewed individually.",why:"This is the main Location Services screen. The large green switch is device-wide, not Instagram's or another app's permission. Review Location Alerts, Share My Location and the app list, then tap an app to change its access."},
+      "Precise Location":{kind:"iosAppLocation",section:"App location permission · example app",recommended:"Choose Never or While Using as appropriate; turn off Precise Location unless exact position is necessary",defaultText:"App-specific choices appear only after you tap an app's name on the main Location Services screen.",why:"The permission choices and Precise Location switch belong to the individual app. The main Location Services switch stays separate; turning it off would affect every app."},
       "Tracking":{kind:"toggle",section:"Tracking",label:"Allow Apps to Request to Track",value:"Off",recommended:"Off",defaultText:"Apps must request permission before tracking across other companies' apps and websites.",why:"Limiting tracking reduces cross-app advertising and profiling based on activity outside the app."},
       "Contacts":{kind:"toggles",section:"Contacts",items:[["Messaging / social apps","Off unless needed"],["Utilities","Off unless needed"],["Trusted communication apps","Review individually"]],recommended:"Allow only apps that genuinely need your address book",defaultText:"Apps cannot access Contacts until permission is granted.",why:"Contact access can expose names, phone numbers and email addresses and can help apps connect you to other users."},
       "Photos":{kind:"choices",section:"Photos",options:["None","Add Photos Only","Limited Access","Full Access"],recommended:"Limited Access where possible",defaultText:"Apps must request photo-library permission before access is granted.",why:"Full photo-library access can expose far more than the one image you intended to share, including screenshots and other personal media."},
@@ -2148,6 +2148,8 @@ function setConsentState() {
   function settingTeachingExpansion(detail) {
     if (!detail) return "";
     if (detail.kind==="location") return "Device location permission and in-app location sharing are separate controls, so review both.";
+    if (detail.kind==="iosLocationOverview") return "First choose an app from the list. Do not mistake the device-wide Location Services switch for an individual app's permissions.";
+    if (detail.kind==="iosAppLocation") return "The app permission choices and Precise Location control are shown after choosing that app, not on the main Location Services overview.";
     if (detail.kind==="notification") return "Lock-screen previews can expose content even while the phone is locked, so review previews as well as the main notification switch.";
     if (detail.kind==="choices") return "Choosing a narrower audience reduces how many people can see or use this information to connect your account to other parts of your life.";
     if (detail.kind==="toggle" || detail.kind==="toggles") return "This control affects future exposure, so confirm the switch matches how public you actually want this feature to be.";
@@ -2203,6 +2205,54 @@ function setConsentState() {
         '</span>' +
       '</div>';
 
+    // Realistic iPhone Location Services overview, aligned to the
+    // Settings screenshot supplied by a presenter. App names are examples.
+    if (detail.kind === "iosLocationOverview") {
+      const exampleApp=(label,permission,icon)=>
+        '<div class="iosLocationAppRow">' +
+          '<span class="iosLocationAppIcon" aria-hidden="true">'+icon+'</span>'+
+          '<span class="iosLocationAppCopy"><strong>'+escapeHtml(label)+'</strong><small>'+escapeHtml(permission)+'</small></span>'+
+          '<span class="iosLocationRowArrow" aria-hidden="true">›</span></div>';
+      return '<div class="iosLocationOverview">' +
+        '<div class="iosLocationGroup iosLocationMasterGroup">'+
+          '<div class="iosLocationSettingRow iosLocationMasterSwitch"><strong>Location Services</strong><span class="iosLocationToggle on" aria-label="Location Services enabled"></span></div>'+
+          '<div class="iosLocationSettingRow"><strong>Location Alerts</strong><span class="iosLocationRowArrow" aria-hidden="true">›</span></div>'+
+        '</div>'+
+        '<p class="iosLocationFootnote">Location Services uses GPS, Bluetooth, and crowd-sourced Wi-Fi hotspot and cell tower locations to determine your location. <span>About Location Services &amp; Privacy…</span></p>'+
+        '<p class="iosLocationFootnote">Location Services settings also apply to your Apple Watch.</p>'+
+        '<div class="iosLocationGroup">'+
+          '<div class="iosLocationSettingRow"><strong>Share My Location</strong><span class="iosLocationRowArrow" aria-hidden="true">›</span></div>'+
+        '</div>'+
+        '<p class="iosLocationFootnote">This iPhone may be used for location sharing.</p>'+
+        '<div class="iosLocationAppsKicker">EXAMPLE APPS · YOUR LIST WILL DIFFER</div>'+
+        '<div class="iosLocationGroup iosLocationAppGroup">'+
+          exampleApp("App Clips","0","▣")+
+          exampleApp("Maps","While Using","⌖")+
+          '<div class="iosLocationNextApp" role="note" aria-label="Example app to tap next">'+
+            exampleApp("Instagram","While Using","◎")+
+          '</div>'+
+          exampleApp("Camera","Never","◉")+
+        '</div>'+
+        '<p class="iosLocationFootnote bottom">Tap an individual app to review Never, While Using and Precise Location. Leave the main switch as a separate device-wide decision.</p>'+
+      '</div>';
+    }
+    if (detail.kind === "iosAppLocation") {
+      return '<div class="iosLocationAppPermission">'+
+        '<div class="iosLocationDemoBanner">EXAMPLE APP · YOUR OPTIONS MAY DIFFER</div>'+
+        '<div class="iosLocationPermissionApp"><span class="iosLocationAppIcon">◎</span><strong>Instagram</strong></div>'+
+        '<p class="iosLocationPermissionLabel">ALLOW LOCATION ACCESS</p>'+
+        '<div class="iosLocationGroup iosLocationPermissionChoices">'+
+          optionRow("Never",false)+
+          optionRow("Ask Next Time Or When I Share",false)+
+          optionRow("While Using the App",true)+
+        '</div>'+
+        '<p class="iosLocationFootnote">Available location choices depend on the selected app and how it uses location.</p>'+
+        '<div class="iosLocationGroup">'+
+          '<div class="iosLocationSettingRow iosLocationPreciseFocus"><strong>Precise Location</strong><span class="iosLocationToggle" aria-label="Precise Location off"></span></div>'+
+        '</div>'+
+        '<p class="iosLocationFootnote bottom">When Precise Location is off, this app receives an approximate location rather than a precise position.</p>'+
+      '</div>';
+    }
     if (detail.kind === "menu") {
       return '<div class="phoneSettingGroup phoneMenuSettings">' + (detail.rows||[]).map((row,index)=>{
         const label=Array.isArray(row)?row[0]:row;
