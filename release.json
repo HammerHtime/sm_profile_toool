@@ -1,5 +1,5 @@
 {
-  "release": "public-footprint-rc2-smoke-v36",
-  "purpose": "Redeploy current visual walkthrough build to refresh production Netlify environment variables, including SerpApi key.",
+  "release": "public-footprint-rc2-smoke-v37",
+  "purpose": "Search coverage correction: prioritize major social platforms before provider budget expires; keep full-name profile hits as unconfirmed candidates even when city is missing; adjust SerpApi timeout.",
   "verification": "Synthetic/demo previews and automated static/runtime QA. Real-world discovery coverage remains unverified until usable production search-provider credentials and benchmark data are available."
 }
