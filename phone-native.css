@@ -1,0 +1,305 @@
+/* Stage-sized native phone recreations, October 2026.
+   Screens are illustrative and do not pretend to be app screenshots. */
+.coachModal[data-native-skin] .coachDeck{
+  width:min(1370px,calc(100vw - 26px));
+  background:radial-gradient(circle at 18% 46%,rgba(84,203,255,.08),transparent 36%),linear-gradient(135deg,#091824,#07101b);
+}
+.coachModal[data-native-skin] .coachSlide{
+  grid-template-columns:minmax(362px,.90fr) minmax(380px,1fr);
+  gap:clamp(18px,3vw,56px);
+  padding:20px clamp(18px,4vw,60px);
+  align-items:center;
+  overflow:auto;
+}
+.coachModal[data-native-skin] .coachVisual{min-height:0;display:grid;place-items:center}
+.coachModal[data-native-skin] .phoneMock{
+  width:352px;
+  height:min(690px,calc(100vh - 194px));
+  min-height:522px;
+  border-radius:53px;
+  border:4px solid #323a43;
+  background:#02060b;
+  padding:14px 12px 18px;
+  box-shadow:0 46px 110px rgba(0,0,0,.55),inset 0 0 0 2px #0b0d12,0 0 52px color-mix(in srgb,var(--native-brand) 19%,transparent);
+  transform:none;
+}
+.coachModal[data-native-skin] .phoneMock:before{
+  inset:7px;
+  border-radius:43px;
+  background:#f3f3f8;
+}
+.coachModal[data-native-skin] .phoneNotch{
+  width:99px;
+  height:27px;
+  border-radius:22px;
+  top:15px;
+  background:#03060a;
+}
+.coachModal[data-native-skin] .phoneFixed .phoneStatus{
+  top:17px;
+  left:23px;
+  right:23px;
+  padding:4px 9px;
+  font-size:.76rem;
+  color:#17202b;
+}
+.coachModal[data-native-skin] .phoneViewport{
+  top:49px;
+  bottom:13px;
+  left:10px;
+  right:10px;
+  border-radius:0 0 34px 34px;
+  background:#f4f4f9;
+  overflow:hidden;
+}
+.coachModal[data-native-skin] .nativeSignals{display:flex;gap:5px;align-items:center;font-size:.76rem;letter-spacing:-.06em}
+.coachModal[data-native-skin] .nativeBattery{
+  width:18px;height:9px;border:1.8px solid currentColor;border-radius:3px;padding:1px;position:relative;
+}
+.coachModal[data-native-skin] .nativeBattery:after{content:"";position:absolute;right:-4px;top:2px;width:2px;height:4px;border-radius:0 2px 2px 0;background:currentColor}
+.coachModal[data-native-skin] .nativeBattery i{display:block;width:83%;height:100%;background:currentColor;border-radius:1px}
+.coachModal[data-native-skin] .nativeGestureBar{
+  position:absolute;bottom:14px;left:50%;transform:translateX(-50%);
+  height:5px;width:105px;border-radius:10px;background:#111a25;z-index:6;
+}
+.coachModal[data-native-skin] .phoneViewport .phoneScreen{
+  display:flex;flex-direction:column;gap:0;
+  padding:0 0 24px;
+  overflow:auto;
+  overscroll-behavior:contain;
+  scrollbar-width:none;
+  background:#f3f3f7;
+  color:#15202c;
+}
+.coachModal[data-native-skin] .phoneViewport .phoneScreen::-webkit-scrollbar,
+.coachModal[data-native-skin] .phoneRows::-webkit-scrollbar{display:none}
+.coachModal[data-native-skin] .phoneAppIdentity,
+.coachModal[data-native-skin] .phoneTitle,
+.coachModal[data-native-skin] .phoneCurrentScreen{display:none}
+.coachModal[data-native-skin] .nativeTopBar{
+  min-height:68px;
+  padding:13px 13px 10px;
+  display:grid;grid-template-columns:25px 1fr 25px;gap:10px;align-items:center;
+  background:#f3f3f7;
+  color:#141e2a;
+  border-bottom:1px solid rgba(21,30,41,.06);
+  position:sticky;top:0;z-index:5;
+}
+.coachModal[data-native-skin] .nativeBack{
+  font-size:2rem;color:#147af0;font-weight:400;line-height:1;
+}
+.coachModal[data-native-skin] .nativeTopHeading{
+  display:flex;align-items:center;justify-content:center;gap:9px;min-width:0;
+}
+.coachModal[data-native-skin] .nativeAppMark{
+  display:grid;place-items:center;flex:0 0 28px;width:28px;height:28px;
+  border-radius:8px;background:var(--native-brand);color:white;font-size:1rem;font-weight:900;line-height:1;
+}
+.coachModal[data-native-skin] .nativeHeadingLabel{
+  font-size:1rem;line-height:1.16;font-weight:760;
+  white-space:normal;overflow-wrap:anywhere;text-align:center;
+}
+.coachModal[data-native-skin] .nativeMore{
+  font-size:1.1rem;text-align:center;color:#5981a0;line-height:1
+}
+.coachModal[data-native-skin] .phoneRows{
+  padding:17px 12px 32px;
+  display:flex;flex-direction:column;gap:0;
+  overflow-y:auto;overflow-x:visible;min-height:0;
+}
+.coachModal[data-native-skin] .phoneRow{
+  border:0;
+  border-bottom:1px solid rgba(17,31,47,.08);
+  border-radius:0;
+  background:white;
+  min-height:55px;
+  flex:0 0 auto;
+  padding:10px 13px;
+  gap:11px;
+  font-size:.84rem;
+  font-weight:630;
+  text-align:left;
+}
+.coachModal[data-native-skin] .phoneRow:first-child{border-radius:13px 13px 0 0}
+.coachModal[data-native-skin] .phoneRow:last-child{border-bottom:0;border-radius:0 0 13px 13px}
+.coachModal[data-native-skin] .phoneRow .phoneChevron{
+  color:#a8afb7;font-weight:300;font-size:1.4rem;margin-left:auto;
+}
+.coachModal[data-native-skin] .nativeRowSymbol{
+  display:grid;place-items:center;flex:0 0 29px;width:29px;height:29px;border-radius:8px;
+  background:color-mix(in srgb,var(--native-brand) 78%,white);
+  color:white;font-size:1.08rem;font-weight:700;line-height:1;
+}
+.coachModal[data-native-skin] .phoneRow>span:not(.nativeRowSymbol):first-of-type{
+  flex:1;min-width:0;
+}
+.coachModal[data-native-skin] .phoneDetailHeader.nativeDetailSubtitle{
+  border:0;background:transparent;padding:17px 15px 9px;color:#27394b;
+}
+.coachModal[data-native-skin] .phoneDetailHeader.nativeDetailSubtitle .phoneBackChevron{display:none}
+.coachModal[data-native-skin] .phoneDetailHeader.nativeDetailSubtitle strong{font-size:.94rem;line-height:1.2}
+.coachModal[data-native-skin] .phoneDetailHeader.nativeDetailSubtitle small{font-size:.66rem;text-transform:uppercase;letter-spacing:.06em;color:#667b88}
+.coachModal[data-native-skin] .phoneSettingGroup{
+  margin:8px 12px 32px;display:flex;flex-direction:column;gap:0;
+  background:#fff;border-radius:13px;overflow:visible;
+  border:0;box-shadow:0 1px 1px rgba(0,0,0,.035);
+}
+.coachModal[data-native-skin] .phoneSettingOption,
+.coachModal[data-native-skin] .phoneSettingToggleRow,
+.coachModal[data-native-skin] .phoneSettingMenuRow{
+  min-height:58px;flex:0 0 auto;position:relative;
+  background:#fff;border:0;border-radius:0;
+  border-bottom:1px solid rgba(20,32,44,.08);
+  box-shadow:none;
+  padding:11px 13px;
+  color:#1e2c39;
+}
+.coachModal[data-native-skin] .phoneSettingMenuRow{
+  display:flex;gap:10px;align-items:center;justify-content:space-between;
+}
+.coachModal[data-native-skin] .phoneSettingMenuRow>span:first-of-type{flex:1}
+.coachModal[data-native-skin] .phoneSettingOption:last-child,
+.coachModal[data-native-skin] .phoneSettingToggleRow:last-child,
+.coachModal[data-native-skin] .phoneSettingMenuRow:last-child{border-bottom:0}
+.coachModal[data-native-skin] .phoneSettingOption strong,
+.coachModal[data-native-skin] .phoneSettingToggleRow strong,
+.coachModal[data-native-skin] .phoneSettingMenuRow strong{font-size:.78rem;line-height:1.2}
+.coachModal[data-native-skin] .phoneSettingOption small,
+.coachModal[data-native-skin] .phoneSettingToggleRow small,
+.coachModal[data-native-skin] .phoneSettingMenuRow small{font-size:.68rem;line-height:1.3}
+.coachModal[data-native-skin] .phoneSettingCompare{display:none}
+.coachModal[data-native-skin] .phoneStatusSettingPrimary .phoneStatusCheck{display:none}
+.coachModal[data-native-skin] .phoneStatusSettingPrimary{min-height:65px;position:relative}
+.coachModal[data-native-skin] .nativeFocus{
+  position:relative!important;
+  z-index:3;
+  outline:3px solid #0a84ff!important;
+  outline-offset:-3px;
+  background:#eaf4ff!important;
+  box-shadow:0 0 0 4px rgba(14,130,255,.17),0 10px 28px rgba(14,130,255,.13)!important;
+  border-radius:11px!important;
+  animation:nativeSpotlight 2s ease-in-out infinite!important;
+  cursor:pointer;
+  min-height:59px;
+}
+.coachModal[data-native-skin] .nativeFocus:after{
+  content:"TAP HERE";position:absolute;right:10px;top:-12px;
+  border-radius:99px;padding:4px 8px;background:#0a84ff;color:white;
+  font-size:.57rem;font-weight:900;letter-spacing:.04em;
+  box-shadow:0 6px 16px rgba(0,98,206,.24);
+}
+.coachModal[data-native-skin] .nativeTapPin{
+  position:absolute;left:-8px;top:-12px;width:27px;height:27px;
+  display:grid;place-items:center;border-radius:50%;color:#fff;background:#0068ec;
+  border:3px solid white;font-size:.66rem;font-weight:900;
+  box-shadow:0 7px 20px rgba(0,98,206,.3);
+}
+.coachModal[data-native-skin] .phoneRow.nativeFocus:after{content:"TAP HERE";right:36px;font-size:.57rem}
+@keyframes nativeSpotlight{
+  50%{box-shadow:0 0 0 8px rgba(14,130,255,.12),0 12px 28px rgba(14,130,255,.14)}
+}
+.coachModal[data-native-skin] .phoneSettingOption.selected{background:#fff}
+.coachModal[data-native-skin] .phoneSettingOption.selected.nativeFocus{background:#eaf4ff}
+.coachModal[data-native-skin] .nativeScreenLabel{
+  position:absolute;left:18px;right:18px;bottom:17px;text-align:center;
+  color:#6c7885;background:rgba(247,249,252,.88);font-size:.52rem;
+  padding:3px 1px;letter-spacing:.01em;pointer-events:none;z-index:4;
+}
+.coachModal[data-native-skin] .nativeDeviceNote{font-size:.66rem;color:#758391;text-align:center;margin:0 12px 25px}
+.coachModal[data-native-skin] .nativeBottom{
+  margin-top:auto;position:sticky;bottom:0;
+  height:53px;flex:0 0 53px;
+  background:#fff;border-top:1px solid #e9eef2;
+  display:flex;justify-content:space-around;align-items:center;
+  color:#617181;font-size:1.25rem;z-index:2;
+}
+.coachModal[data-native-skin] .nativeBottom .active{color:var(--native-brand)}
+.coachModal[data-native-skin] .nativeGuideHint{
+  margin-top:16px;padding:15px 17px;
+  border:1px solid rgba(93,211,255,.24);
+  border-radius:16px;background:rgba(93,211,255,.045);
+  color:#d5eaf8;display:grid;gap:6px;
+}
+.coachModal[data-native-skin] .nativeGuideHint strong{
+  font-size:.69rem;letter-spacing:.1em;color:#7bdefc
+}
+.coachModal[data-native-skin] .nativeGuideHint span{font-size:.95rem;line-height:1.45}
+.coachModal[data-native-skin] .nativeGuideHint small{font-size:.7rem;color:#a2b7c7;line-height:1.44}
+.coachModal[data-native-skin] .coachCopy h2{font-size:clamp(1.8rem,3vw,3.25rem);line-height:1.06}
+.coachModal[data-native-skin] .coachCopy>p{font-size:1.08rem;line-height:1.6}
+.coachModal[data-native-skin] .phoneSettingInfoRow{
+  margin:0;border-radius:0;border:0;border-top:1px solid #e5ebf1;padding:15px 14px;
+}
+.coachModal[data-native-skin] .phoneStatusSettings{overflow:visible}
+.coachModal[data-native-skin] .phoneTeachingScreen{background:#f5f7fc}
+.coachModal[data-native-skin] .settingSuccess{margin:22px 16px 20px;background:white;border-radius:22px;padding:30px 18px}
+.coachModal[data-native-skin="android"] .phoneMock:before,
+.coachModal[data-native-skin="android"] .nativeScreen{background:#f8f9ff}
+.coachModal[data-native-skin="android"] .phoneNotch{
+  width:17px;height:17px;top:20px;border-radius:50%;
+}
+.coachModal[data-native-skin="android"] .nativeTopBar{
+  background:#f8f9ff;min-height:82px;padding-top:22px;
+}
+.coachModal[data-native-skin="android"] .nativeTopHeading{justify-content:flex-start}
+.coachModal[data-native-skin="android"] .nativeBack{color:#4c5567}
+.coachModal[data-native-skin="android"] .nativeAppMark{border-radius:100%;background:#5d74df}
+.coachModal[data-native-skin="android"] .phoneRow,
+.coachModal[data-native-skin="android"] .phoneSettingOption,
+.coachModal[data-native-skin="android"] .phoneSettingToggleRow,
+.coachModal[data-native-skin="android"] .phoneSettingMenuRow{
+  border-radius:15px;margin-bottom:7px;border:0;background:#fff;min-height:58px;
+}
+.coachModal[data-native-skin="android"] .nativeRowSymbol{border-radius:50%;background:#e2e7fd;color:#3e4e8c}
+.coachModal[data-native-skin="android"] .phoneRows{gap:0}
+.coachModal[data-native-skin="android"] .phoneSettingGroup{background:transparent;box-shadow:none}
+.coachModal[data-native-skin="android"] .nativeFocus{outline-color:#4263cb!important;background:#dfe8ff!important}
+.coachModal[data-native-skin="android"] .nativeFocus:after,
+.coachModal[data-native-skin="android"] .nativeTapPin{background:#4263cb}
+
+/* Application-specific look and feel */
+.coachModal[data-native-skin="instagram"] .nativeAppMark{background:linear-gradient(140deg,#ffbc43,#f62a79,#8626d9)}
+.coachModal[data-native-skin="linkedin"] .nativeAppMark{background:#0a66c2;border-radius:4px;font-size:.8rem}
+.coachModal[data-native-skin="facebook"] .nativeAppMark{background:#1877f2;font-size:1.5rem}
+.coachModal[data-native-skin="youtube"] .nativeAppMark{background:#ff0033}
+.coachModal[data-native-skin="whatsapp"] .nativeAppMark{background:#25d366;border-radius:50%}
+.coachModal[data-native-skin="snapchat"] .nativeAppMark{background:#ffed00;color:#121212}
+.coachModal[data-native-skin="tiktok"] .nativeAppMark{background:#111a23;color:#25f4ee}
+.coachModal[data-native-skin="discord"] .nativeAppMark{background:#5865f2}
+.coachModal[data-native-skin="twitter"] .nativeAppMark{background:#111}
+.coachModal[data-native-skin="tiktok"] .nativeRowSymbol,
+.coachModal[data-native-skin="linkedin"] .nativeRowSymbol,
+.coachModal[data-native-skin="instagram"] .nativeRowSymbol,
+.coachModal[data-native-skin="facebook"] .nativeRowSymbol{background:#f0f3f7;color:#3f5063}
+.coachModal:is([data-native-skin="tiktok"],[data-native-skin="discord"],[data-native-skin="twitter"],[data-native-skin="twitch"]) .nativeScreen,
+.coachModal:is([data-native-skin="tiktok"],[data-native-skin="discord"],[data-native-skin="twitter"],[data-native-skin="twitch"]) .nativeTopBar{
+  background:#171b24;color:#f8faff
+}
+.coachModal:is([data-native-skin="tiktok"],[data-native-skin="discord"],[data-native-skin="twitter"],[data-native-skin="twitch"]) .phoneMock:before{background:#171b24}
+.coachModal:is([data-native-skin="tiktok"],[data-native-skin="discord"],[data-native-skin="twitter"],[data-native-skin="twitch"]) .phoneStatus{color:#fff}
+.coachModal:is([data-native-skin="tiktok"],[data-native-skin="discord"],[data-native-skin="twitter"],[data-native-skin="twitch"]) .phoneRow,
+.coachModal:is([data-native-skin="tiktok"],[data-native-skin="discord"],[data-native-skin="twitter"],[data-native-skin="twitch"]) .phoneSettingOption,
+.coachModal:is([data-native-skin="tiktok"],[data-native-skin="discord"],[data-native-skin="twitter"],[data-native-skin="twitch"]) .phoneSettingToggleRow,
+.coachModal:is([data-native-skin="tiktok"],[data-native-skin="discord"],[data-native-skin="twitter"],[data-native-skin="twitch"]) .phoneSettingMenuRow{
+  color:#f1f3f8;background:#272c36;border-color:#3b414a
+}
+.coachModal:is([data-native-skin="tiktok"],[data-native-skin="discord"],[data-native-skin="twitter"],[data-native-skin="twitch"]) .nativeBottom{background:#171b24;color:#f2f3f6}
+.coachModal:is([data-native-skin="tiktok"],[data-native-skin="discord"],[data-native-skin="twitter"],[data-native-skin="twitch"]) .phoneDetailHeader.nativeDetailSubtitle{color:#edf5fd}
+.coachModal:is([data-native-skin="tiktok"],[data-native-skin="discord"],[data-native-skin="twitter"],[data-native-skin="twitch"]) .nativeFocus{
+  color:#17212f;background:#e3f3ff!important
+}
+.coachModal:is([data-native-skin="tiktok"],[data-native-skin="discord"],[data-native-skin="twitter"],[data-native-skin="twitch"]) .nativeScreenLabel{background:rgba(23,27,36,.9);color:#c3cdd8}
+@media(max-width:1000px){
+  .coachModal[data-native-skin] .coachSlide{grid-template-columns:minmax(290px,.85fr) minmax(320px,1fr);gap:16px;padding:14px 22px}
+  .coachModal[data-native-skin] .phoneMock{transform:scale(.88);transform-origin:center}
+}
+@media(max-width:730px){
+  .coachModal[data-native-skin] .coachSlide{grid-template-columns:1fr;gap:0;padding:12px 12px 20px;overflow:auto}
+  .coachModal[data-native-skin] .phoneMock{transform:scale(.76);transform-origin:top center}
+  .coachModal[data-native-skin] .coachVisual{height:calc(min(690px,100vh - 194px) * .76);align-items:start}
+  .coachModal[data-native-skin] .coachCopy{margin:0}
+  .coachModal[data-native-skin] .coachCopy h2{font-size:1.65rem}
+}
+@media(prefers-reduced-motion:reduce){
+  .coachModal[data-native-skin] .nativeFocus{animation:none!important}
+}
