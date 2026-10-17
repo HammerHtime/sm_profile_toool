@@ -30,7 +30,7 @@ for(const label of ["Never","Ask Next Time Or When I Share","While Using the App
 assert.ok(!app.includes("Location Alerts"),"per-app permissions are not the main overview");
 assert.ok(app.includes("EXAMPLE APP"),"illustration should not claim to reflect user settings");
 assert.ok(native.includes('focus=$(".iosLocationNextApp",screen)') &&
-  native.includes('"iosLocationPreciseFocus"'),"native spotlight must target actual app controls");
+  native.includes('$(".iosLocationPreciseFocus",screen)'),"native spotlight must target actual app controls");
 assert.ok(style.includes(".iosLocationAppGroup")&&style.includes(".iosLocationMasterSwitch"),
  "Phone UI must style the overview and per-app controls");
 assert.ok(source.includes('if(p.device==="ios" && target==="Precise Location" && previousWasDetail)'),
