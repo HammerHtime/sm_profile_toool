@@ -187,3 +187,9 @@ Search diagnostics now report raw provider results, accepted sources, strong/pos
 Parent-mode walkthroughs now use the same click-by-click teaching model as the privacy guides. Social-app parental controls and iPhone Screen Time / Android Family Link return to the parent menu before each control, highlight the exact next row, and then open a simulated setting screen with the actual choices, why the setting matters, normal/default behaviour, and a recommended configuration.
 
 The presentation UI also received a readability pass for classroom/projector use. Sources now use larger text and fewer columns, and small metadata, source, result, platform, signal, parental-control, phone-setting, and photo-presenter labels were increased across the experience.
+
+## Settings navigation breadcrumbs
+
+Every guided phone and social-media privacy walkthrough now shows a root-to-destination path both above the presenter instructions and inside the illustrated phone. The breadcrumb follows the **current** step, including backtracking between Screen Time, Apple Family settings and a child's device, or between sections of Android Family Link. App-specific phone permissions also show an Android alternative to the displayed iPhone path.
+
+The phone screens are **illustrations**, not captured or connected user account screens. Labels and settings menus can vary by app/device release, region and account age. The path regression checks are in `scripts/guide-paths-qa.mjs` and run with `npm run qa`.
