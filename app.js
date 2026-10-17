@@ -395,22 +395,34 @@
         ["Purchase Sharing","Review family purchase sharing"],
         ["Location Sharing","Review family location sharing"]
       ],recommended:"Select the child or teen account before changing parental controls",defaultText:"Family settings are organized by family member and the services shared with them.",why:"Opening the correct child profile ensures the controls you change apply to the intended account."},
-      "Child":{kind:"menu",section:"Child account",rows:[
-        ["Screen Time","Open the child's Screen Time controls"],
-        ["Ask to Buy","Review app download and purchase approvals"],
-        ["Location Sharing","Review family location sharing"],
-        ["Purchases","Review purchases and subscriptions"],
-        ["Personal Information","Review account information"]
-      ],recommended:"Open Screen Time for device use, communication and content restrictions",defaultText:"The child profile is the hub for that family member's parental controls.",why:"This is where the parent's settings branch into Screen Time, purchases, location and other child-specific controls."},
+      "Child":{kind:"menu",section:"Child Screen Time",rows:[
+        ["App & Website Activity","Review current usage"],
+        ["Downtime","Schedule times without distracting apps"],
+        ["App Limits","Set daily limits for apps or categories"],
+        ["Communication Limits","Review supported call and message limits"],
+        ["Communication Safety","Review sensitive-image protections"],
+        ["Content & Privacy Restrictions","Review age and privacy controls"]
+      ],recommended:"Review individual settings for the child",defaultText:"Screen Time settings vary by family and device.",why:"Each control has its own screen; selecting the child does not configure everything."},
       "Screen Time":{kind:"menu",section:"Screen Time",rows:[
-        ["Apps & Websites","Review app and website activity"],
-        ["Time Allowances","Set app or category time limits"],
-        ["Screen Time Schedules","Set downtime and scheduled limits"],
-        ["Allowed Contacts","Review communication limits"],
-        ["Always Allowed","Choose apps and contacts that remain available"],
-        ["Content & Privacy Restrictions","Manage content, purchases and protected settings"],
-        ["Communication Safety","Review sensitive-content protections"]
-      ],recommended:"Review each section instead of treating Screen Time as one master switch",defaultText:"Screen Time is a hub. Individual limits and restrictions must be configured inside its sections.",why:"The important protections live inside the Screen Time sections, so the walkthrough should show the actual control pages rather than stop at the Screen Time menu."},
+        ["Child","Select child under Family"],
+        ["App & Website Activity","Review activity"],
+        ["Downtime","Create a schedule"],
+        ["App Limits","Create daily limits"],
+        ["Communication Limits","Control supported communications"],
+        ["Communication Safety","Review image safety"],
+        ["Content & Privacy Restrictions","Review restrictions"]
+      ],recommended:"Select the child's name under Family",defaultText:"Screen Time contains personal and family controls.",why:"Choose the correct child before changing their restrictions."},
+      "App & Website Activity":{kind:"toggle",section:"App & Website Activity",label:"App & Website Activity",value:"On",recommended:"On when managing Screen Time activity",defaultText:"State depends on the child's setup.",why:"Usage reports support informed app limits."},
+      "Downtime":{kind:"toggles",section:"Downtime",items:[["Scheduled","On"],["Block at Downtime","On"],["Customize Days","Review"]],recommended:"Review both schedule and enforcement",defaultText:"The family chooses downtime schedules.",why:"Downtime establishes regular quiet periods."},
+      "App Limits":{kind:"menu",section:"App Limits",rows:[
+        ["Add Limit","Select apps or categories"],
+        ["Social","Review social app limits"],
+        ["Games","Review game limits"],
+        ["Entertainment","Review entertainment limits"],
+        ["Block at End of Limit","Review enforcement"]
+      ],recommended:"Tap Add Limit, choose apps and set a duration",defaultText:"No custom limit exists until configured.",why:"App Limits manage individual apps or categories."},
+      "Communication Limits":{kind:"choices",section:"Communication Limits",options:["Everyone","Contacts Only","Specific Contacts"],recommended:"Contacts Only or a selected set for younger children",defaultText:"Options depend on supported apps and OS.",why:"These limits affect supported Apple communications, not all third-party social apps."},
+      "Allowed Apps & Features":{kind:"toggles",section:"Allowed Apps & Features",items:[["Safari","Review"],["FaceTime","Review"],["Camera","Review"],["AirDrop","Review"]],recommended:"Review which built-in features are appropriate",defaultText:"Available features depend on the child setup.",why:"This controls access to selected built-in Apple apps/features."},
       "Privacy & Security":{kind:"menu",section:"Privacy & Security",rows:[
         ["Location Services","Review which apps can access location"],
         ["Tracking","Review cross-app tracking requests"],
@@ -548,31 +560,29 @@
     ["Privacy dashboard","Go back to Privacy and tap Privacy dashboard to review recent sensitive access.","Privacy dashboard"]
   ];
 
+  // Follow Apple's Screen Time child setup, not the older Family-first menu.
   const iosParent = [
     ["Open Settings","On the parent's iPhone, open Settings.","Settings"],
-    ["Open Family","Tap Family.","Family"],
-    ["Select your child","Tap the child's name in the Family group.","Child"],
-    ["Open Screen Time","Tap Screen Time to open the child's current parental-control settings.","Screen Time"],
-    ["Apps & Websites","Review which apps and websites the child can access.","Apps & Websites"],
-    ["Ask to Buy","Inside Apps & Websites restrictions, require approval for eligible new app purchases and downloads.","Ask to Buy"],
-    ["Ask to Browse","Review website filtering and Ask to Browse so new websites can require parent approval.","Ask to Browse"],
-    ["Allowed Contacts","Choose who the child can communicate with in supported Phone, Messages and FaceTime experiences, including approval for new contacts.","Allowed Contacts"],
-    ["Always Allowed","Choose essential apps and contacts that remain available even when other Screen Time limits are active.","Always Allowed"],
-    ["Time Allowances","Set daily time budgets for categories such as entertainment, games and social media.","Time Allowances"],
-    ["Screen Time Schedules","Create school, after-school, evening or weekend routines for when apps can be used.","Screen Time Schedules"],
-    ["Content & Privacy Restrictions","Open Content & Privacy Restrictions to manage age ratings, built-in features and sensitive settings.","Content & Privacy Restrictions"],
-    ["App Store purchases","Review installing apps, deleting apps and in-app purchase restrictions.","iTunes & App Store Purchases"],
-    ["Age-appropriate content","Review App Store, Media, Web & Games restrictions and age ratings.","App Store, Media, Web & Games"],
-    ["Allow changes to settings","Review whether the child can change Accounts, Contacts, Photos, Location Services and other protected settings.","Allow Changes to Settings"],
-    ["Communication Safety","Open Communication Safety and review the protection for the child account.","Communication Safety"],
-    ["What Communication Safety does","On supported Apple services, on-device detection can warn and blur sensitive photos or videos before they are viewed or sent. Apple does not receive the image merely because sensitive content was detected.","EXPLAIN"],
-    ["Extra protection for younger children","With a Screen Time passcode, younger child accounts can require parent or guardian approval before viewing certain detected sensitive content. This is not a system that simply forwards the child's image to the parent.","EXPLAIN"],
-    ["Open Privacy & Security","On the child's iPhone, return to Settings and open Privacy & Security.","Privacy & Security"],
-    ["Location Services","Open Location Services and review which apps can use the child's location.","Location Services"],
-    ["Precise Location","For apps that only need a general area, turn off Precise Location where appropriate.","Precise Location"],
-    ["Contacts","Return to Privacy & Security and review which apps can access Contacts.","Contacts"],
-    ["Photos","Review Photos access and use limited-library access where a full photo library is not required.","Photos"],
-    ["Finish with the child","Review the most-used apps together and explain why each protection exists. The goal is safer habits, not just locked settings.","EXPLAIN"]
+    ["Open Screen Time","In Settings, tap Screen Time.","Screen Time"],
+    ["Choose your child","Under Family, select the child's name. If no child appears, check Family Sharing.","Child"],
+    ["App & Website Activity","Review the child's app and website usage.","App & Website Activity"],
+    ["Downtime","Tap Downtime to set quiet periods and a schedule.","Downtime"],
+    ["App Limits","Tap App Limits then Add Limit to choose apps and categories.","App Limits"],
+    ["Communication Limits","Review who the child can contact in supported Apple communication apps.","Communication Limits"],
+    ["Communication Safety","Review the child's sensitive-image safety protections.","Communication Safety"],
+    ["Content & Privacy Restrictions","Turn on restrictions, then review each sub-setting.","Content & Privacy Restrictions"],
+    ["Allowed Apps & Features","Review which built-in apps and features remain available.","Allowed Apps & Features"],
+    ["App Store, Media, Web & Games","Set age ratings and web/media content rules.","App Store, Media, Web & Games"],
+    ["App Store Purchases","Review installing, deleting and in-app purchase limits.","iTunes & App Store Purchases"],
+    ["Prevent changes","Review whether the child can change sensitive privacy and account settings.","Allow Changes to Settings"],
+    ["Open Family","For purchase approvals, return to Settings and open Family.","Family"],
+    ["Select child in Family","Select the same child in Family settings.","Child"],
+    ["Ask to Buy","Review approval for eligible app downloads and purchases.","Ask to Buy"],
+    ["Child's privacy settings","On the child's iPhone, open Settings then Privacy & Security.","Privacy & Security"],
+    ["Location Services","Tap Location Services and review each app.","Location Services"],
+    ["Precise Location","Within an app's Location Services page, review Precise Location.","Precise Location"],
+    ["Contacts","Review contacts access app by app.","Contacts"],
+    ["Photos","Use selected-photo access when appropriate.","Photos"]
   ];
 
   const androidParent = [
@@ -1696,8 +1706,9 @@ function setConsentState() {
     const privacyRows = ["Location Services","Tracking","Contacts","Calendars","Photos","Bluetooth","Local Network","Microphone","Camera","Safety Check"];
 
     if (target === "Family") return ensureTarget(["Airplane Mode","Wi-Fi","Bluetooth","Cellular","Notifications","Sounds & Haptics","Family","Screen Time","General","Privacy & Security"]);
-    if (target === "Child") return ensureTarget(["Family Checklist","Subscriptions","Purchase Sharing","Location Sharing","Child","Parents / Guardians"]);
-    if (target === "Screen Time") return ensureTarget(["Personal Information","Purchases","Subscriptions","Location Sharing","Screen Time"]);
+    if (target === "Child") return ensureTarget(["Child","App & Website Activity","Downtime","App Limits","Communication Limits","Communication Safety","Content & Privacy Restrictions"]);
+    if (target === "Screen Time") return ensureTarget(["Screen Time","Child","App & Website Activity","Downtime","App Limits","Communication Limits","Communication Safety","Content & Privacy Restrictions"]);
+    if (["App & Website Activity","App Limits","Downtime","Communication Limits","Allowed Apps & Features"].includes(target)) return ensureTarget(["App & Website Activity","Downtime","App Limits","Communication Limits","Communication Safety","Content & Privacy Restrictions","Always Allowed"]);
     if (["Ask to Buy","Ask to Browse"].includes(target)) return ensureTarget(["Apps & Websites","Restrictions","Ask to Buy","Websites","Ask to Browse","Allowed","Blocked"]);
     if (["iTunes & App Store Purchases","App Store, Media, Web & Games","Allow Changes to Settings"].includes(target)) {
       return ensureTarget(["Content & Privacy Restrictions","iTunes & App Store Purchases","App Store, Media, Web & Games","Other Features","Allow Changes to Settings"]);
@@ -1754,11 +1765,13 @@ function setConsentState() {
 
   function phoneHeaderFor(target) {
     if (guidePlatform?.device === "ios") {
-      const screenTimeTargets = ["Apps & Websites","Ask to Buy","Ask to Browse","Allowed Contacts","Always Allowed","Time Allowances","Screen Time Schedules","Content & Privacy Restrictions","iTunes & App Store Purchases","App Store, Media, Web & Games","Allow Changes to Settings","Communication Safety"];
+      const screenTimeTargets = ["App & Website Activity","App Limits","Downtime","Communication Limits","Always Allowed","Allowed Apps & Features","Content & Privacy Restrictions","iTunes & App Store Purchases","App Store, Media, Web & Games","Allow Changes to Settings","Communication Safety"];
       const privacyTargets = ["Location Services","Tracking","Contacts","Calendars","Photos","Bluetooth","Local Network","Microphone","Camera","Precise Location","Safety Check"];
       if (screenTimeTargets.includes(target)) return "Screen Time";
       if (privacyTargets.includes(target)) return target === "Precise Location" ? "Location Services" : "Privacy & Security";
-      if (target === "Child" || target === "Screen Time") return "Family";
+      if (target === "Screen Time") return "Settings";
+      if (target === "Child") return "Screen Time";
+      if (target === "Ask to Buy") return "Family";
       return "Settings";
     }
     if (guidePlatform?.device === "android") {
