@@ -130,7 +130,7 @@
   background:color-mix(in srgb,var(--native-brand) 78%,white);
   color:white;font-size:1.08rem;font-weight:700;line-height:1;
 }
-.coachModal[data-native-skin] .phoneRow>span:not(.nativeRowSymbol):first-of-type{
+.coachModal[data-native-skin] .phoneRow>span:nth-child(2){
   flex:1;min-width:0;
 }
 .coachModal[data-native-skin] .phoneDetailHeader.nativeDetailSubtitle{
@@ -157,7 +157,7 @@
 .coachModal[data-native-skin] .phoneSettingMenuRow{
   display:flex;gap:10px;align-items:center;justify-content:space-between;
 }
-.coachModal[data-native-skin] .phoneSettingMenuRow>span:first-of-type{flex:1}
+.coachModal[data-native-skin] .phoneSettingMenuRow>span:nth-child(2){flex:1}
 .coachModal[data-native-skin] .phoneSettingOption:last-child,
 .coachModal[data-native-skin] .phoneSettingToggleRow:last-child,
 .coachModal[data-native-skin] .phoneSettingMenuRow:last-child{border-bottom:0}
@@ -389,3 +389,6 @@
   .recommendedGuideGrid{grid-template-columns:1fr}
   .observedNetwork{transform:scale(.89);transform-origin:center}
 }
+
+/* Direct-access guide starts clean, without result-dependent cards. */
+body.privacyGuideDirect #recommendedFixesPanel{display:none!important}
