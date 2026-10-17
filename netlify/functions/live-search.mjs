@@ -402,6 +402,18 @@ function matchResult(result, person) {
     if (clueMatches.length >= 2 || (clueMatches.length >= 1 && age.supported)) {
       return { confidence:"strong", reasons };
     }
+    // Social profiles often omit city. Keep exact-name matches as UNCONFIRMED
+    // candidates only when the profile handle agrees with part of that name,
+    // or an independent clue appears in the snippet.
+    const token=accountTokenFor(result.url||"",platform);
+    const nameParts=full.split(/\\s+/).filter(part=>part.length>=5);
+    const nameInHandle=!!token && nameParts.some(part=>token.includes(part));
+    if(profileIdentity && (nameInHandle || clueMatches.length>=1)){
+      return {
+        confidence:"possible",
+        reasons:[...reasons,"requires identity confirmation; city not validated"]
+      };
+    }
     return {
       confidence:"discard",
       reasons,
@@ -515,7 +527,7 @@ async function serpApiJson(apiKey, params, maxRetries = 1) {
     const response = await fetch(url,{
       method:"GET",
       headers:{"accept":"application/json"},
-      signal:AbortSignal.timeout(15000)
+      signal:AbortSignal.timeout(20000)
     });
     const data = await response.json().catch(()=>({}));
     if (response.ok && !data?.error) return data;
@@ -662,7 +674,7 @@ async function searchSerpPage(state,q,offset=0,location="") {
   state.serpQueries += 1;
   try {
     const data=await serpApiJson(state.serpKey,{
-      engine:"google",q,location:location||undefined,hl:"en",
+      engine:"google",q,hl:"en",
       num:10,start:Math.max(0,Number(offset)||0)*10
     });
     state.used.add("SerpApi Google");
@@ -758,15 +770,19 @@ export default async (req) => {
   const strictIdentityQuery=[nameWithCity,clueExpression].filter(Boolean).join(" ");
   const supportIdentityQuery=[quotedName,supportExpression].filter(Boolean).join(" ");
 
+  // Put different major platform groups first so a small provider budget
+  // does not get exhausted before we have searched Instagram, Facebook or video.
+  // Platform discovery queries intentionally omit city: a public social profile
+  // rarely mentions its user's town. Identity matching happens after discovery.
   const queries = [
     { group:"Open web · broad", q:nameWithCity || quotedName },
+    { group:"Social · Instagram & TikTok", q:quotedName + " (site:instagram.com OR site:tiktok.com OR site:threads.net)", deep:true },
+    { group:"LinkedIn · profiles", q:quotedName + " site:linkedin.com/in", deep:true },
+    { group:"Facebook · profiles", q:quotedName + " site:facebook.com", deep:true },
+    { group:"Video and X", q:quotedName + " (site:youtube.com OR site:x.com OR site:twitter.com)", deep:true },
     { group:"Open web · identity", q:supportIdentityQuery || strictIdentityQuery || nameWithCity },
-    { group:"LinkedIn · profiles", q:(nameWithCity || quotedName) + " site:linkedin.com/in", deep:true },
     { group:"LinkedIn · activity", q:(supportIdentityQuery || quotedName) + " site:linkedin.com/posts", deep:true },
-    { group:"Facebook · profiles & posts", q:(supportIdentityQuery || quotedName) + " site:facebook.com", deep:true },
-    { group:"Social", q:(supportIdentityQuery || quotedName) + " (site:instagram.com OR site:tiktok.com OR site:threads.net)" },
     { group:"Discussion", q:(supportIdentityQuery || quotedName) + " (site:reddit.com OR site:x.com OR site:twitter.com)" },
-    { group:"Video", q:(supportIdentityQuery || quotedName) + " site:youtube.com" },
     { group:"Professional directories", q:(supportIdentityQuery || quotedName) + " (profile OR bio OR practice OR clinic OR directory OR association)" },
     { group:"News & organizations", q:(supportIdentityQuery || quotedName) + " (news OR event OR conference OR organization OR interview)" }
   ];
