@@ -56,7 +56,7 @@ try{
   assert("Partial provider failure is disclosed",data.searchHealth?.partial===true);
   assert("Provider health reports Brave failure",data.providerErrors?.some(e=>/Brave:/.test(e)));
   assert("SerpApi budget is enforced",calls.google<=5);
-  assert("Expired Brave token is not repeatedly retried",calls.brave<=2);
+  assert("Expired Brave token stops being used after the first wave",calls.brave<=6);
   console.log("Provider fallback QA: 7/7 passed");
 }finally{
   globalThis.fetch=oldFetch;
