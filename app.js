@@ -1822,7 +1822,7 @@ function setConsentState() {
 
     if (target === "Family") return ensureTarget(["Airplane Mode","Wi-Fi","Bluetooth","Cellular","Notifications","Sounds & Haptics","Family","Screen Time","General","Privacy & Security"]);
     if (target === "Child") return ensureTarget(["Child","App & Website Activity","Downtime","App Limits","Communication Limits","Communication Safety","Content & Privacy Restrictions"]);
-    if (target === "Screen Time") return ensureTarget(["Screen Time","Child","App & Website Activity","Downtime","App Limits","Communication Limits","Communication Safety","Content & Privacy Restrictions"]);
+    if (target === "Screen Time") return ensureTarget(["Airplane Mode","Wi-Fi","Bluetooth","Cellular","Notifications","Sounds & Haptics","Screen Time","General","Privacy & Security"]);
     if (["App & Website Activity","App Limits","Downtime","Communication Limits","Allowed Apps & Features"].includes(target)) return ensureTarget(["App & Website Activity","Downtime","App Limits","Communication Limits","Communication Safety","Content & Privacy Restrictions","Always Allowed"]);
     if (["Ask to Buy","Ask to Browse"].includes(target)) return ensureTarget(["Apps & Websites","Restrictions","Ask to Buy","Websites","Ask to Browse","Allowed","Blocked"]);
     if (["iTunes & App Store Purchases","App Store, Media, Web & Games","Allow Changes to Settings"].includes(target)) {
