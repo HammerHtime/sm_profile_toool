@@ -412,7 +412,7 @@ function matchResult(result, person) {
     // keep the original strict discard rule. Unstated location is different
     // from contradictory location.
     const statedLocation=String(result.description||"").match(
-      /\\b(?:based in|lives in|located in|resides in)\\s+(?:the\\s+)?([^.,;!\\n]+)/i
+      /\b(?:based in|lives in|located in|resides in)\s+(?:the\s+)?([^.,;!\n]+)/i
     )?.[1]||"";
     const explicitOtherLocation=!!statedLocation &&
       !normalize(statedLocation).includes(normalize(person.city));
