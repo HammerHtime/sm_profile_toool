@@ -775,7 +775,7 @@ export default async (req) => {
     firstName + " " + lastName[0] + "."
   ].filter(Boolean);
   const suggestedHandles=[firstName+lastName,firstName+"."+lastName,firstName+"_"+lastName,
-    firstName[0]+lastName].map(v=>normalize(v).replace(/\\s+/g,"")).filter(v=>v.length>=6);
+    firstName[0]+lastName].map(v=>normalize(v).replaceAll(" ","")).filter(v=>v.length>=6);
   const verifiedHandle=username.replace(/^@/,"").trim();
   queries.push(
     {group:"Sports & activities",q:(supportIdentityQuery||quotedName)+" (site:strava.com OR site:athletics.ca OR site:results.raceroster.com)",deep:true},
