@@ -513,6 +513,12 @@
     for(const step of base){
       const target=String(step[2]||"");
       const detail=p.device ? parentDeviceSettingDetailFor(p.device,target) : parentSettingDetailFor(p.name,target);
+      if(p.device==="ios" && target==="Precise Location" && previousWasDetail){
+        // The preceding overview already highlights the app to select.
+        // Do not invent an extra "go back" screen before per-app settings.
+        expanded.push(step);
+        continue;
+      }
       if(detail){
         const menu=p.device ? phoneHeaderFor(target) : (p.name+" parent controls");
         expanded.push([
@@ -1995,6 +2001,10 @@ function setConsentState() {
     for(const step of base){
       const target=String(step[2]||"");
       const detail=deviceSettingDetailFor(p.device,target);
+      if(p.device==="ios" && target==="Precise Location" && previousWasDetail){
+        expanded.push(step);
+        continue;
+      }
       if(detail){
         const menu=deviceMenuNameFor(p.device,target);
         expanded.push([
