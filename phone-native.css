@@ -395,7 +395,7 @@ body.privacyGuideDirect #recommendedFixesPanel{display:none!important}
 
 
 /* Home/feed entry and profile menu must not masquerade as Settings menus */
-.coachModal[data-native-skin] .nativeEntryScreen .nativeTopBar{min-height:62px}
+.coachModal[data-native-skin] .nativeEntryScreen .nativeTopBar{min-height:62px;grid-template-columns:minmax(0,1fr) 38px;align-items:center}
 .coachModal[data-native-skin] .nativeEntryScreen .nativeTopHeading{
   justify-content:flex-start;text-align:left
 }
