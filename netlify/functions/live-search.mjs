@@ -406,7 +406,7 @@ function matchResult(result, person) {
     // candidates only when the profile handle agrees with part of that name,
     // or an independent clue appears in the snippet.
     const token=accountTokenFor(result.url||"",platform);
-    const nameParts=full.split(/\\s+/).filter(part=>part.length>=5);
+    const nameParts=full.split(" ").filter(part=>part.length>=5);
     const nameInHandle=!!token && nameParts.some(part=>token.includes(part));
     if(profileIdentity && (nameInHandle || clueMatches.length>=1)){
       return {
