@@ -5,6 +5,11 @@ on:
     branches: [main]
     paths:
       - ".github/workflows/package-source.yml"
+      - "phone-native.js"
+      - "phone-native.css"
+      - "index.html"
+      - "app.js"
+      - "release.json"
 
 jobs:
   package:
