@@ -1007,6 +1007,95 @@ async function checkLiveSearchReady() {
     });
   }
 
+  function renderObservedFootprint(report,mode){
+    const strong=(report.publicSources||[]).filter(s=>s.confidence==="strong");
+    const sources=(report.publicSources||[]).filter(s=>s.confidence!=="discard");
+    const counts=new Map();
+    for(const source of sources){
+      const label=source.platform||source.domain||"Public web";
+      counts.set(label,(counts.get(label)||0)+1);
+    }
+    const platforms=[...counts.entries()].sort((a,b)=>b[1]-a[1]).slice(0,6);
+    const title=$("observedDensityTitle"),desc=$("observedDensityDesc");
+    const bars=$("observedDensityBars"),network=$("observedNetwork");
+    if(!title||!desc||!bars||!network)return;
+    const amount=sources.length, kinds=counts.size, anchored=strong.length;
+    const level=amount>=24&&kinds>=4?"MANY OBSERVED SIGNALS":
+      amount>=8&&kinds>=2?"SOME OBSERVED SIGNALS":
+      amount>0?"LIMITED OBSERVED SIGNALS":"NO VERIFIED SIGNALS";
+    title.textContent=level;
+    const caveat=mode==="synthetic"?"Synthetic illustration only. No live search evidence.":
+      mode==="evidence"?"Based on supplied evidence; not independently verified by this app.":
+      "These counts reflect public/indexed results returned, not everything a person has ever shared.";
+    desc.textContent=amount+" public result"+(amount===1?"":"s")+" across "+kinds+
+      " source type"+(kinds===1?"":"s")+". "+anchored+" stronger identifier matches. "+caveat;
+    const segments=Math.min(8,Math.max(0,Math.ceil(amount/5)+Math.floor(kinds/3)));
+    bars.innerHTML=Array.from({length:8},(_,i)=>
+      '<span class="observedDensityBar'+(i<segments?' filled':'')+'"></span>').join("");
+    const positions=[[13,20],[85,20],[5,53],[88,58],[25,90],[69,87]];
+    const nodeColors=["#61d7f1","#aa86ff","#f6a76d","#7ee2aa","#f58ebd","#7eaeff"];
+    const centre=network.querySelector(".observedNetworkCenter");
+    network.innerHTML="";
+    if(centre)network.appendChild(centre);
+    platforms.forEach(([name,count],i)=>{
+      const [x,y]=positions[i];
+      const dx=(x-50)*4.1,dy=(y-50)*2.5;
+      const edge=document.createElement("span");
+      edge.className="observedConnector";
+      edge.style.setProperty("--length",Math.round(Math.hypot(dx,dy))+"px");
+      edge.style.setProperty("--angle",Math.round(Math.atan2(dy,dx)*180/Math.PI)+"deg");
+      network.appendChild(edge);
+      const node=document.createElement("span");
+      node.className="observedNode";
+      node.style.setProperty("--x",x+"%");
+      node.style.setProperty("--y",y+"%");
+      node.style.setProperty("--node-color",nodeColors[i]);
+      node.textContent=name+" · "+count;
+      network.appendChild(node);
+    });
+    const button=$("openFoundFixes");
+    if(button&&!button.dataset.wired){
+      button.dataset.wired="1";
+      button.addEventListener("click",()=>showReportStage(4));
+    }
+  }
+
+  function renderRelevantGuides(report,mode){
+    const root=$("recommendedGuideGrid"),panel=$("recommendedFixesPanel");
+    if(!root||!panel)return;
+    const counts=new Map();
+    for(const item of report.publicSources||[]){
+      if(mode==="verified"&&item.confidence!=="strong")continue;
+      const p=PLATFORMS.find(p=>!p.device&&p.name===item.platform);
+      if(p)counts.set(p.name,(counts.get(p.name)||0)+1);
+    }
+    const picks=[...counts.entries()].sort((a,b)=>b[1]-a[1])
+      .slice(0,4)
+      .map(([name,hits])=>({platform:PLATFORMS.find(p=>p.name===name),hits}));
+    panel.classList.toggle("hidden",!picks.length||privacyGuideDirectMode);
+    root.innerHTML="";
+    if(!picks.length){
+      const note=document.createElement("p");
+      note.className="recommendedEmpty";
+      note.textContent="No strongly matched platforms were identified. Browse the guides below without assuming an account was absent.";
+      root.appendChild(note);
+      return;
+    }
+    for(const {platform,hits} of picks){
+      const btn=document.createElement("button");
+      btn.type="button";
+      btn.className="recommendedGuideCard";
+      btn.style.setProperty("--brand",platform.brand||"#52d6ff");
+      btn.innerHTML='<span class="recoIcon">'+platform.icon+'</span>'+
+        '<strong>'+escapeHtml(platform.name)+'</strong>'+
+        '<small>'+hits+' matching public source'+(hits===1?"":"s")+
+        '. Review visibility, tags, discovery and account permissions.</small>'+
+        '<span class="recoArrow">OPEN STEP-BY-STEP GUIDE →</span>';
+      btn.addEventListener("click",()=>openGuideDirect(platform,false));
+      root.appendChild(btn);
+    }
+  }
+
   function updatePlatformGuideHits(report){
     const found=new Set((report?.publicSources||[]).map(source=>source.platform).filter(Boolean));
     document.querySelectorAll("#platformGrid .platformCard").forEach(card=>{
@@ -1176,6 +1265,8 @@ function setConsentState() {
     $("score").textContent = report.score || 0;
     $("scoreLabel").textContent = report.level || "LOW";
 
+    renderObservedFootprint(report,mode);
+    renderRelevantGuides(report,mode);
     $("stats").innerHTML = "";
     (report.stats || []).forEach((s) => {
       const el = document.createElement("div");
@@ -1206,6 +1297,14 @@ function setConsentState() {
 
     const sourcePanel = $("sourceCoveragePanel");
     $("sourceCoverageGrid").innerHTML = "";
+    const coverageWarning=$("sourceCoverageWarning");
+    if(coverageWarning){
+      const sh=report.searchHealth||{};
+      const isPartial=mode==="verified"&&(sh.partial||sh.failed>0);
+      coverageWarning.textContent=isPartial
+        ? "PARTIAL SEARCH. "+(sh.completed||0)+" of "+(sh.attempted||0)+" query passes completed. Missing platforms are not proof that no account exists."
+        : "Search results only reflect publicly accessible or indexed information. A platform with no confirmed result may still contain an account.";
+    }
     if ((mode === "verified" || mode === "synthetic") && report.sourceCoverage) {
       sourcePanel.classList.remove("hidden");
       $("sourceSearched").textContent = report.sourceCoverage.searched || 0;
