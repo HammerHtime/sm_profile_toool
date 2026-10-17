@@ -155,6 +155,20 @@
             </section>
             <section class="stats" id="stats"></section>
           </div>
+          <section class="panel observedFootprintPanel" id="observedFootprintPanel">
+            <div class="observedIntro">
+              <div>
+                <div class="eyebrow">OBSERVED PUBLIC SIGNALS</div>
+                <h3 id="observedDensityTitle">What the search actually saw</h3>
+                <p id="observedDensityDesc">This describes discovered/indexed sources, not a percentage of someone's entire online footprint.</p>
+                <div class="observedDensityBars" id="observedDensityBars" aria-label="Observed source density"></div>
+                <button type="button" id="openFoundFixes" class="observedFixesButton">Review relevant privacy settings →</button>
+              </div>
+              <div class="observedNetwork" id="observedNetwork" aria-label="Platform source network">
+                <div class="observedNetworkCenter">PUBLIC<br/>FOOTPRINT</div>
+              </div>
+            </div>
+          </section>
           <section class="panel findings deckCompactPanel">
             <div class="coverageHeader">
               <div><div class="eyebrow">KEY FINDINGS</div><h3>What matters most</h3></div>
@@ -193,6 +207,7 @@
                   <div><strong id="sourceMatched">0</strong><span>matched</span></div>
                 </div>
               </div>
+              <p class="sourceCoverageWarning" id="sourceCoverageWarning"></p>
               <div class="sourceCoverageGrid" id="sourceCoverageGrid"></div>
             </section>
           </div>
@@ -308,6 +323,17 @@
           <div class="reportStageIntro">
             <div><span>05</span><div><strong>App privacy</strong><small>Choose an app and fix the exposure</small></div></div>
           </div>
+          <section class="panel recommendedFixesPanel" id="recommendedFixesPanel">
+            <div class="coachHead">
+              <div>
+                <div class="eyebrow">RELEVANT TO THESE RESULTS</div>
+                <h3>Recommended settings to review</h3>
+                <p class="fineprint">A matching public result does not mean your privacy setting is wrong. These are the best places to start checking.</p>
+              </div>
+              <div class="privacyChip">STEP BY STEP</div>
+            </div>
+            <div class="recommendedGuideGrid" id="recommendedGuideGrid"></div>
+          </section>
           <section class="panel privacyCoachPanel stageHubPanel">
             <div class="coachHead">
               <div>
