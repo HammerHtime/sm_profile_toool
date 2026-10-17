@@ -521,8 +521,8 @@ async function serpApiJson(apiKey, params, maxRetries = 1) {
     if (response.ok && !data?.error) return data;
 
     const detail = data?.error || ("SerpApi returned HTTP " + response.status);
-    if (response.status === 429 && attempt < maxRetries) {
-      await providerWait(900);
+    if ((response.status === 429 || response.status >= 500) && attempt < maxRetries) {
+      await providerWait(800 * (attempt + 1));
       continue;
     }
     const error = new Error(detail);
@@ -636,7 +636,7 @@ async function braveJson(apiKey, endpoint, params, maxRetries = 2) {
     if (response.ok) return data;
 
     const detail = data?.error?.detail || data?.message || ("Search provider returned HTTP " + response.status);
-    if (response.status === 429 && attempt < maxRetries) {
+    if ((response.status === 429 || response.status >= 500) && attempt < maxRetries) {
       const resetHeader = response.headers.get("x-ratelimit-reset") || "";
       const resetValues = resetHeader.split(",").map(v=>Number(v.trim())).filter(Number.isFinite);
       const seconds = Math.max(1, Math.min(4, resetValues[0] || 1));
@@ -653,50 +653,59 @@ async function braveJson(apiKey, endpoint, params, maxRetries = 2) {
   throw new Error("Search provider retry limit reached");
 }
 
-async function searchWebPage(providerState, q, offset = 0, location = "") {
-  if (providerState.braveKey && !providerState.braveDisabled) {
+async function searchSerpPage(state,q,offset=0,location="") {
+  if (!state.serpKey || state.serpDisabled || state.serpQueries >= state.serpBudget) {
+    const error=new Error("SerpApi is unavailable or the search budget was reached");
+    error.code="SERPAPI_UNAVAILABLE";
+    throw error;
+  }
+  state.serpQueries += 1;
+  try {
+    const data=await serpApiJson(state.serpKey,{
+      engine:"google",q,location:location||undefined,hl:"en",
+      num:10,start:Math.max(0,Number(offset)||0)*10
+    });
+    state.used.add("SerpApi Google");
+    const results=(data?.organic_results||[]).map(normalizeSerpOrganic);
+    return {
+      results,
+      moreResultsAvailable:!!data?.serpapi_pagination?.next || results.length>=10,
+      provider:"SerpApi Google"
+    };
+  } catch(error) {
+    state.errors.push("SerpApi: "+(error?.message||"search failed"));
+    if ([401,402,403].includes(Number(error?.status))) state.serpDisabled=true;
+    throw error;
+  }
+}
+
+async function searchWebPage(providerState, q, offset=0, location="") {
+  let braveResult=null, braveError=null;
+  if(providerState.braveKey && !providerState.braveDisabled){
     try {
-      const data = await braveJson(providerState.braveKey, BRAVE_ENDPOINT, {
-        q,
-        country:"CA",
-        search_lang:"en",
-        count:20,
-        offset
+      const data=await braveJson(providerState.braveKey,BRAVE_ENDPOINT,{
+        q,country:"CA",search_lang:"en",count:20,offset
       });
       providerState.used.add("Brave Search API");
-      return {
-        results:data?.web?.results || [],
+      braveResult={
+        results:data?.web?.results||[],
         moreResultsAvailable:!!data?.query?.more_results_available,
         provider:"Brave Search API"
       };
-    } catch (error) {
-      providerState.errors.push("Brave: " + (error?.message || "failed"));
-      if ([401,402,403].includes(Number(error?.status))) providerState.braveDisabled = true;
+      if(braveResult.results.length) return braveResult;
+    }catch(error){
+      braveError=error;
+      providerState.errors.push("Brave: "+(error?.message||"search failed"));
+      if([401,402,403].includes(Number(error?.status))) providerState.braveDisabled=true;
     }
   }
-
-  if (providerState.serpKey) {
-    const start=Math.max(0,Number(offset)||0) * 10;
-    const data=await serpApiJson(providerState.serpKey,{
-      engine:"google",
-      q,
-      location:location || undefined,
-      hl:"en",
-      num:10,
-      start
-    });
-    providerState.used.add("SerpApi Google");
-    const results=(data?.organic_results || []).map(normalizeSerpOrganic);
-    return {
-      results,
-      moreResultsAvailable:!!data?.serpapi_pagination?.next || results.length >= 10,
-      provider:"SerpApi Google"
-    };
+  if(providerState.serpKey && !providerState.serpDisabled){
+    try {return await searchSerpPage(providerState,q,offset,location);}
+    catch(error){if(!braveResult)throw error;}
   }
-
-  const error = new Error("No usable public search provider is available.");
-  error.status = 503;
-  throw error;
+  if(braveResult)return braveResult;
+  if(braveError)throw braveError;
+  throw new Error("No usable public search provider is available");
 }
 
 async function searchWeb(providerState, q, offset = 0, location = "") {
@@ -761,13 +770,32 @@ export default async (req) => {
     { group:"Professional directories", q:(supportIdentityQuery || quotedName) + " (profile OR bio OR practice OR clinic OR directory OR association)" },
     { group:"News & organizations", q:(supportIdentityQuery || quotedName) + " (news OR event OR conference OR organization OR interview)" }
   ];
-  if (username) queries.push({ group:"Username", q:'"' + username.replaceAll('"',"") + '"' });
+  const aliasForms = [
+    firstName[0] && firstName[0] + ". " + lastName,
+    firstName + " " + lastName[0] + "."
+  ].filter(Boolean);
+  const suggestedHandles=[firstName+lastName,firstName+"."+lastName,firstName+"_"+lastName,
+    firstName[0]+lastName].map(v=>normalize(v).replace(/\\s+/g,"")).filter(v=>v.length>=6);
+  const verifiedHandle=username.replace(/^@/,"").trim();
+  queries.push(
+    {group:"Sports & activities",q:(supportIdentityQuery||quotedName)+" (site:strava.com OR site:athletics.ca OR site:results.raceroster.com)",deep:true},
+    {group:"Creators & code",q:(supportIdentityQuery||quotedName)+" (site:github.com OR site:medium.com OR site:substack.com OR site:goodreads.com)"},
+    {group:"Events & alumni",q:(supportIdentityQuery||quotedName)+" (race OR results OR volunteer OR alumni OR conference OR team OR interview)"},
+    {group:"Name variants",q:"("+aliasForms.map(v=>'"'+v.replaceAll('"',"")+'"').join(" OR ")+") "+(quotedCity||"")}
+  );
+  if (verifiedHandle) queries.push({group:"Confirmed username",q:'"'+verifiedHandle.replaceAll('"',"")+'"'});
+  else if (city || searchClues.length) queries.push({
+    group:"Username patterns (unverified)",q:"("+suggestedHandles.slice(0,3).map(v=>'"'+v+'"').join(" OR ")+") "+(quotedCity||quotedName)
+  });
 
   const person = { fullName, city, username, ageContext, searchClues };
   const providerState = {
     braveKey:braveApiKey,
     serpKey:serpApiKey,
     braveDisabled:false,
+    serpDisabled:false,
+    serpQueries:0,
+    serpBudget:5,
     used:new Set(),
     errors:[]
   };
@@ -776,48 +804,56 @@ export default async (req) => {
   let identityRejected = 0;
   const contactClues = { emails:[], phones:[], addresses:[] };
 
-  const queryBatches = [];
-  for (const query of queries) {
-    try {
-      const firstPage = await searchWebPage(providerState, query.q, 0, city);
-      queryBatches.push({ query, results:firstPage.results, error:null, offset:0, provider:firstPage.provider });
-
-      if (query.deep && firstPage.moreResultsAvailable) {
-        await providerWait(180);
-        try {
-          const secondPage=await searchWebPage(providerState,query.q,1,city);
-          queryBatches.push({
-            query:{...query,group:query.group+" · page 2"},
-            results:secondPage.results,
-            error:null,
-            offset:1,
-            provider:secondPage.provider
-          });
-        } catch (error) {
-          console.error("live-search page 2 failed", query.group, error);
-          queryBatches.push({
-            query:{...query,group:query.group+" · page 2"},
-            results:[],
-            error:error?.message || "Second search page failed",
-            status:Number(error?.status) || null,
-            code:error?.code || "",
-            offset:1
-          });
-        }
-      }
-    } catch (error) {
-      console.error("live-search pass failed", query.group, error);
-      queryBatches.push({
-        query,
-        results:[],
-        error:error?.message || "Search pass failed",
-        status:Number(error?.status) || null,
-        code:error?.code || "",
-        offset:0
-      });
+  const imageQuery=[
+    quotedName,
+    city && '"'+city.replaceAll('"',"")+'"',
+    expandedClues.slice(0,3).map(clue=>'"'+clue.replaceAll('"',"")+'"').join(" "),
+    username && '"'+username.replaceAll('"',"")+'"'
+  ].filter(Boolean).join(" ");
+  // Image search overlaps the text-search wave rather than running afterwards.
+  const imageSearchTask=searchImages(providerState,imageQuery,city)
+    .then(results=>({attempted:true,completed:true,error:null,results}))
+    .catch(error=>({attempted:true,completed:false,error:error?.message||"Image search unavailable",results:[]}));
+  const queryBatches=[];
+  const executeQuery=async(query,offset=0)=>{
+    try{
+      const page=await searchWebPage(providerState,query.q,offset,city);
+      const strongMatches=(page.results||[]).filter(raw=>matchResult(raw,person).confidence==="strong").length;
+      queryBatches.push({query,results:page.results,error:null,offset,
+        provider:page.provider,more:page.moreResultsAvailable,strongMatches});
+    }catch(error){
+      queryBatches.push({query,results:[],error:error?.message||"Search failed",offset,
+        code:error?.code||"",status:Number(error?.status)||null});
     }
-
-    if (query !== queries[queries.length - 1]) await providerWait(220);
+  };
+  const runPool=async(list,limit)=>{
+    let next=0;
+    const workers=Array.from({length:Math.min(limit,list.length)},async()=>{
+      while(next<list.length)await executeQuery(list[next++]);
+    });
+    await Promise.all(workers);
+  };
+  // Four provider calls in flight at most for the initial wave.
+  await runPool(queries.slice(0,8),4);
+  // Starting with only high-confidence profile URLs avoids promoting guessed handles.
+  const earlySeeds=queryBatches.flatMap(batch=>(batch.results||[])
+    .filter(raw=>matchResult(raw,person).confidence==="strong")
+    .map(raw=>({url:raw.url,platform:platformFor(raw.url)}))
+    .filter(seed=>isProfileIdentityUrl(seed.url,seed.platform)))
+    .slice(0,3);
+  const earlyPivots=earlySeeds.map(seed=>({
+    group:"Early confirmed account pivot · "+seed.platform,
+    q:accountExpansionQuery(seed,{fullName,city,searchClues})
+  })).filter(query=>query.q);
+  await Promise.all([
+    runPool(queries.slice(8),3),
+    runPool(earlyPivots,2)
+  ]);
+  // Paginate only the 2-3 query groups that genuinely produced useful matches.
+  const ranked=queryBatches.filter(batch=>!batch.error && batch.offset===0 && batch.more && batch.results.length)
+    .sort((a,b)=>b.strongMatches-a.strongMatches || b.results.length-a.results.length);
+  for(const best of ranked.slice(0,3)) {
+    await executeQuery({...best.query,group:best.query.group+" · page 2"},1);
   }
 
   const completedPasses = queryBatches.filter(batch => !batch.error);
@@ -934,7 +970,7 @@ export default async (req) => {
       if (a.confidence !== b.confidence) return a.confidence === "strong" ? -1 : 1;
       return a.platform.localeCompare(b.platform);
     })
-    .slice(0,60);
+    .slice(0,48);
 
   const strong = sources.filter(s=>s.confidence==="strong").length;
   const possible = sources.filter(s=>s.confidence==="possible").length;
@@ -981,31 +1017,21 @@ export default async (req) => {
       basis:"Web result thumbnail"
     }));
 
-  let imageSearch = { attempted:true, completed:false, error:null, results:[] };
-  try {
-    const imageQuery = [
-      quotedName,
-      city && '"' + city.replaceAll('"',"") + '"',
-      expandedClues.slice(0,5).map(clue=>'"'+clue.replaceAll('"',"")+'"').join(" "),
-      username && '"' + username.replaceAll('"',"") + '"'
-    ].filter(Boolean).join(" ");
-    const imageResults = await searchImages(providerState,imageQuery,city);
-    imageSearch.completed = true;
-    imageSearch.results = imageResults
+  const imageResponse=await imageSearchTask;
+  const imageSearch={
+    attempted:true,completed:imageResponse.completed,error:imageResponse.error,
+    results:(imageResponse.results||[])
       .filter(result=>imageMatchesPerson(result,person))
       .map(result=>({
         src:braveThumbnail(result),
-        platform:platformFor(result.url || ""),
-        domain:clean(result.source || (()=>{ try{return new URL(result.url).hostname.replace(/^www\./,"");}catch{return"";} })(),100),
+        platform:platformFor(result.url||""),
+        domain:clean(result.source||"",100),
         confidence:"candidate",
-        basis:"Image search matched supplied identifiers"
+        basis:"Image search matched public identifiers; no facial verification"
       }))
       .filter(result=>result.src)
-      .slice(0,12);
-  } catch (error) {
-    imageSearch.error = error?.message || "Image search failed";
-    console.error("live image search failed",error);
-  }
+      .slice(0,12)
+  };
 
   const visualPhotos = [...webThumbnails,...imageSearch.results]
     .filter((item,index,list)=>list.findIndex(other=>other.src===item.src)===index)
@@ -1033,6 +1059,8 @@ export default async (req) => {
     attempted:queryBatches.length + accountSeeds.length,
     failed:failedPasses.length,
     matched:new Set(sources.map(s=>s.queryGroup)).size,
+    strongGroups:[...new Set(sources.filter(s=>s.confidence==="strong").map(s=>s.queryGroup))].slice(0,12),
+    partial:failedPasses.length>0 || !!providerState.errors.length,
     sources:coverageNames.map(name=>({name,matched:platforms.has(name)}))
   };
 
@@ -1091,6 +1119,8 @@ export default async (req) => {
       acceptedSources:sources.length,
       strongSources:strong,
       possibleSources:possible,
+      partial:failedPasses.length>0 || providerState.errors.length>0,
+      productiveGroups:[...new Set(sources.filter(s=>s.confidence==="strong").map(s=>s.queryGroup))].slice(0,12),
       identityRejected,
       deepPages:queryBatches.filter(batch=>batch.offset===1 && !batch.error).length,
       accountExpansionPasses,
