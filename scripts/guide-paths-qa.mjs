@@ -52,7 +52,7 @@ equal("Android Family Link child daily limit",
   ["Family Link","Child","Screen time","Time limits","Daily limit"]);
 equal("Android Google Play approvals",
   route("Android / Family Link","android",true,"App approvals","App approvals").path,
-  ["Family Link","Child","Controls","Google Play","Purchase & download approvals"]);
+  ["Family Link","Child","Controls","Google Play","Purchase & download approvals","App approvals"]);
 equal("Instagram opening profile",
   route("Instagram","",false,"Open Instagram","Profile").path,
   ["Instagram","Profile"]);
