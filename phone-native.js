@@ -185,7 +185,9 @@
   function spotlight(screen,skin){
     let focus=$(".phoneRow.target",screen);
     if(!focus){
-      focus=$(".phoneSettingOption.selected",screen) ||
+      focus=$(".iosLocationNextApp",screen) ||
+        $(".iosLocationPreciseFocus",screen) ||
+        $(".phoneSettingOption.selected",screen) ||
         all(".phoneSettingToggleRow",screen).find(x=>/Off|On|Private account/i.test(x.textContent)) ||
         $(".phoneSettingMenuRow.emphasized",screen) ||
         ($(".phoneSettingOption",screen) ? $(".phoneSettingGroup",screen) : null) ||
