@@ -392,3 +392,108 @@
 
 /* Direct-access guide starts clean, without result-dependent cards. */
 body.privacyGuideDirect #recommendedFixesPanel{display:none!important}
+
+
+/* Home/feed entry and profile menu must not masquerade as Settings menus */
+.coachModal[data-native-skin] .nativeEntryScreen .nativeTopBar{min-height:62px}
+.coachModal[data-native-skin] .nativeEntryScreen .nativeTopHeading{
+  justify-content:flex-start;text-align:left
+}
+.coachModal[data-native-skin] .nativeEntryScreen .nativeBack{display:none}
+.coachModal[data-native-skin] .nativeEntryScreen .nativeMore{
+  font-size:1.2rem;font-weight:900;letter-spacing:.02em
+}
+.coachModal[data-native-skin] .nativeEntryScreen .nativeMore.nativeFocus{
+  width:33px;height:36px;display:grid;place-items:center;
+  font-size:1.45rem;border-radius:12px;justify-self:end
+}
+.coachModal[data-native-skin] .nativeEntryBody{
+  display:block;flex:1;overflow:auto;min-height:0;
+  padding:7px 10px 19px;background:inherit
+}
+.coachModal[data-native-skin] .nativeStories{
+  display:flex;gap:13px;padding:15px 4px;
+  border-bottom:1px solid #e3e6ec;overflow:hidden
+}
+.coachModal[data-native-skin] .nativeStories>span{display:grid;justify-items:center;gap:6px}
+.coachModal[data-native-skin] .nativeStories i{
+  display:block;width:52px;height:52px;
+  border-radius:50%;border:3px solid #d84191;
+  background:linear-gradient(140deg,#f5c8e4,#8497cf);
+  box-shadow:inset 0 0 0 3px white
+}
+.coachModal[data-native-skin] .nativeStories small{font-size:.54rem;color:#607186}
+.coachModal[data-native-skin] .nativeFeedByline{
+  margin:12px 0;display:flex;align-items:center;gap:9px;
+  font-size:.66rem;font-weight:800;color:#253444
+}
+.coachModal[data-native-skin] .nativeFeedByline>span:nth-child(2){flex:1}
+.coachModal[data-native-skin] .nativeFeedByline small{display:block;font-size:.58rem;font-weight:450;color:#637588}
+.coachModal[data-native-skin] .nativeTinyAvatar{
+  width:28px;height:28px;border-radius:50%;display:block;
+  background:linear-gradient(135deg,#f6a9dd,#718ac7)
+}
+.coachModal[data-native-skin] .nativeFeedMedia{
+  height:187px;border-radius:4px;
+  display:grid;place-items:center;color:rgba(255,255,255,.9);font-size:.66rem;
+  font-weight:950;letter-spacing:.2em;
+  background:linear-gradient(135deg,#38566e,#59677e 55%,#b4a6b8);
+}
+.coachModal[data-native-skin] .nativeFeedReactions{
+  padding:10px 2px;font-size:1.35rem;line-height:1.3;color:#2f3f51
+}
+.coachModal[data-native-skin] .nativeFeedReactions small{float:right;font-size:1.2rem}
+.coachModal[data-native-skin] .nativeFeedCaption{font-size:.63rem;color:#607183;line-height:1.4}
+.coachModal[data-native-skin] .nativeEntryScreen .nativeBottom{
+  flex:0 0 52px;min-height:52px;margin-top:auto;
+  padding-bottom:2px;z-index:7
+}
+.coachModal[data-native-skin] .nativeBottom .nativeInteractive{
+  position:relative;display:grid;place-items:center;
+  width:40px;height:36px;color:#147af0;font-size:1.2rem
+}
+.coachModal[data-native-skin] .nativeEntryScreen .nativeFocus:after{
+  top:-15px;right:-12px;z-index:4;white-space:nowrap
+}
+.coachModal[data-native-skin] .nativeEntryAccount{
+  display:flex;gap:12px;align-items:center;justify-content:space-between;
+  padding:20px 6px 11px
+}
+.coachModal[data-native-skin] .nativeProfileAvatar{
+  width:76px;height:76px;border-radius:50%;
+  background:linear-gradient(135deg,#dfb4ce,#a3bce6);
+  display:grid;place-items:center;font-size:2rem;color:#f7f9fb;
+  border:3px solid white;box-shadow:0 0 0 2px #c8d2df;
+}
+.coachModal[data-native-skin] .nativeAccountStats{display:grid;gap:1px;text-align:center;color:#23364d}
+.coachModal[data-native-skin] .nativeAccountStats strong{font-size:1rem}
+.coachModal[data-native-skin] .nativeAccountStats small{font-size:.57rem}
+.coachModal[data-native-skin] .nativeProfileText{
+  display:grid;gap:5px;font-size:.72rem;color:#24384d;padding:0 6px 18px
+}
+.coachModal[data-native-skin] .nativeProfileText small{font-size:.61rem;color:#73889c}
+.coachModal[data-native-skin] .nativeProfileActions{display:flex;gap:8px}
+.coachModal[data-native-skin] .nativeProfileActions span{
+  flex:1;display:grid;place-items:center;padding:10px 3px;
+  border-radius:8px;background:#e1e7ee;color:#32445c;font-size:.64rem;font-weight:780
+}
+.coachModal[data-native-skin] .nativeProfileSeparator{
+  text-align:center;font-size:.93rem;letter-spacing:1.8em;padding:17px 0 12px;color:#74889c
+}
+.coachModal[data-native-skin] .nativeProfileTiles{
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:3px
+}
+.coachModal[data-native-skin] .nativeProfileTiles i{
+  display:block;aspect-ratio:1;
+  background:linear-gradient(128deg,#5c7e93,#a1a9b9,#7e7e9a)
+}
+.coachModal[data-native-skin] .nativeProfileTiles i:nth-child(3n + 2){background:linear-gradient(128deg,#879eaa,#6b799d,#e0a6b4)}
+.coachModal[data-native-skin] .nativeProfileTiles i:nth-child(3n + 3){background:linear-gradient(128deg,#779c8b,#afbac1,#829ea6)}
+.coachModal[data-native-skin="tiktok"] .nativeEntryBody,
+.coachModal[data-native-skin="discord"] .nativeEntryBody{color:#eff5ff;background:#171b24}
+.coachModal[data-native-skin="tiktok"] .nativeFeedByline,
+.coachModal[data-native-skin="tiktok"] .nativeFeedCaption,
+.coachModal[data-native-skin="tiktok"] .nativeAccountStats,
+.coachModal[data-native-skin="tiktok"] .nativeProfileText{color:#e0edfb}
+.coachModal[data-native-skin="tiktok"] .nativeProfileActions span{background:#353f4c;color:#f2f6ff}
+.coachModal[data-native-skin="tiktok"] .nativeFeedMedia{background:linear-gradient(130deg,#252e36,#455668,#0f1b26)}
