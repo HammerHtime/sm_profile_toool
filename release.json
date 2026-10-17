@@ -1,4 +1,5 @@
 {
-  "release": "public-footprint-rc2-smoke-v34",
-  "purpose": "SerpApi fallback plus credential validation: production health now verifies the SerpApi account key and live-search errors show all provider failures."
+  "release": "public-footprint-rc2-smoke-v35",
+  "purpose": "Expanded parallel public discovery and bounded SerpApi fallback; observed-source visualization and privacy guide handoff; realistic native-style iPhone, Android and social-app setting walkthroughs with highlighted tap targets.",
+  "verification": "Synthetic/demo previews and automated static/runtime QA. Real-world discovery coverage remains unverified until usable production search-provider credentials and benchmark data are available."
 }
